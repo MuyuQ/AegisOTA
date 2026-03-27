@@ -78,7 +78,9 @@ class Device(Base):
     leases: Mapped[list["DeviceLease"]] = relationship(
         "DeviceLease", back_populates="device", cascade="all, delete-orphan"
     )
-    # run_sessions 关系将在 Task 1.5 中添加
+    run_sessions: Mapped[list["RunSession"]] = relationship(
+        "RunSession", back_populates="device", cascade="all, delete-orphan"
+    )
 
     def get_tags(self) -> list[str]:
         """获取标签列表。"""
@@ -99,10 +101,7 @@ class Device(Base):
 
 
 class DeviceLease(Base):
-    """设备租约实体。
-
-    注意：run_id 的外键约束将在 Task 1.5 中添加（需要 RunSession 模型）。
-    """
+    """设备租约实体。"""
 
     __tablename__ = "device_leases"
 
@@ -110,8 +109,9 @@ class DeviceLease(Base):
     device_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    # run_id 外键将在 Task 1.5 中添加外键约束
-    run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    run_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("run_sessions.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # 租约时间
     leased_at: Mapped[datetime] = mapped_column(
@@ -127,7 +127,9 @@ class DeviceLease(Base):
 
     # 关系
     device: Mapped["Device"] = relationship("Device", back_populates="leases")
-    # run_session 关系将在 Task 1.5 中添加
+    run_session: Mapped[Optional["RunSession"]] = relationship(
+        "RunSession", back_populates="lease"
+    )
 
     def is_active(self) -> bool:
         """检查租约是否有效。"""
