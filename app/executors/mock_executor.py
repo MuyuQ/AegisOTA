@@ -45,9 +45,10 @@ class MockExecutor(CommandRunner):
         """执行 Mock 命令。"""
         self.executed_commands.append(command)
 
-        # 检查是否有预设响应
+        # 检查是否有预设响应（支持子串匹配）
         for cmd_pattern, (exit_code, stdout, stderr) in self.responses.items():
-            if command.startswith(cmd_pattern) or command == cmd_pattern:
+            # 检查是否完全匹配或包含该模式
+            if command == cmd_pattern or cmd_pattern in command:
                 return CommandResult(
                     command=command,
                     exit_code=exit_code,
@@ -78,9 +79,9 @@ class MockExecutor(CommandRunner):
         # 设备列表响应
         executor.set_response("adb devices", stdout="ABC123\tdevice\nXYZ789\tdevice\n")
 
-        # getprop 响应
+        # getprop 响应（匹配任何 shell getprop 命令）
         executor.set_response(
-            "adb shell getprop",
+            "shell getprop",
             stdout="""[ro.product.brand]: [Google]
 [ro.product.model]: [Pixel 6]
 [ro.build.version.release]: [14]
@@ -89,15 +90,15 @@ class MockExecutor(CommandRunner):
 """
         )
 
-        # 电量响应
+        # 电量响应（匹配任何 dumpsys battery 命令）
         executor.set_response(
-            "adb shell dumpsys battery",
+            "dumpsys battery",
             stdout="Current Battery Service state:\n  level: 85\n"
         )
 
-        # 存储响应
+        # 存储响应（匹配任何 df /data 命令）
         executor.set_response(
-            "adb shell df /data",
+            "df /data",
             stdout="Filesystem      Size  Used Avail Use% Mounted on\n/dev/block/dm-0  64G   32G   32G  50% /data\n"
         )
 
