@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}创建任务 - AegisOTA{% endblock %}
+
+{% block content %}
+<h1>创建升级任务</h1>
+
+<div class="card" style="max-width: 600px; margin-top: 2rem;">
+    <form hx-post="/api/runs" hx-swap="innerHTML" hx-target="#result">
+        <div class="form-group">
+            <label class="form-label">升级计划</label>
+            <select name="plan_id" class="form-select" required>
+                <option value="">请选择升级计划</option>
+                {% for plan in plans %}
+                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.upgrade_type.value }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">设备（可选，留空自动分配）</label>
+            <select name="device_serial" class="form-select">
+                <option value="">自动分配</option>
+                {% for device in devices %}
+                <option value="{{ device.serial }}">{{ device.serial }} ({{ device.brand }} {{ device.model }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+            创建任务
+        </button>
+    </form>
+
+    <div id="result" style="margin-top: 1rem;"></div>
+</div>
+{% endblock %}

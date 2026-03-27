@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}设备管理 - AegisOTA{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>设备管理</h1>
+    <button class="btn btn-primary" hx-post="/api/devices/sync" hx-swap="innerHTML" hx-target="#device-list">
+        同步设备
+    </button>
+</div>
+
+<div id="device-list" class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>序列号</th>
+                <th>品牌/型号</th>
+                <th>Android 版本</th>
+                <th>状态</th>
+                <th>电量</th>
+                <th>健康度</th>
+                <th>最后在线</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td><strong>{{ device.serial }}</strong></td>
+                <td>{{ device.brand }} {{ device.model }}</td>
+                <td>{{ device.android_version }}</td>
+                <td>
+                    <span class="status-badge status-{{ device.status }}">{{ device.status }}</span>
+                </td>
+                <td>{{ device.battery_level }}%</td>
+                <td>{{ device.health_score }}%</td>
+                <td>{{ device.last_seen_at }}</td>
+                <td>
+                    {% if device.status == 'quarantined' %}
+                    <button class="btn btn-sm btn-primary" hx-post="/api/devices/{{ device.serial }}/recover" hx-swap="outerHTML" hx-target="closest tr">
+                        恢复
+                    </button>
+                    {% elif device.status == 'idle' %}
+                    <button class="btn btn-sm btn-danger" hx-post="/api/devices/{{ device.serial }}/quarantine" hx-vals='{"reason": "手动隔离"}' hx-swap="outerHTML" hx-target="closest tr">
+                        隔离
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
