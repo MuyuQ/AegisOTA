@@ -10,6 +10,7 @@ from app.executors.step_handlers import (
     ApplyUpdateHandler, RebootWaitHandler,
     PostValidateHandler,
 )
+from app.executors.run_executor import RunExecutor, MockRunExecutor, RunExecutionResult, ExecutionResult
 
 __all__ = [
     "CommandRunner",
@@ -27,4 +28,8 @@ __all__ = [
     "ApplyUpdateHandler",
     "RebootWaitHandler",
     "PostValidateHandler",
+    "RunExecutor",
+    "MockRunExecutor",
+    "RunExecutionResult",
+    "ExecutionResult",
 ]
