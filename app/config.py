@@ -3,7 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -31,13 +31,14 @@ class Settings(BaseSettings):
     MAX_CONCURRENT_RUNS: int = 5  # 最大并发任务数
     LEASE_DEFAULT_DURATION: int = 3600  # 默认租约时长（秒）
 
-    model_config = {
-        "env_prefix": "AEGISOTA_",
-        "env_file": ".env",
-    }
+    model_config = SettingsConfigDict(
+        env_prefix="AEGISOTA_",
+        env_file=".env",
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # 确保产物目录存在，应用启动时自动创建
         self.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -45,3 +46,11 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """获取配置实例（缓存）。"""
     return Settings()
+
+
+def clear_settings_cache() -> None:
+    """清除配置缓存。
+
+    用于测试环境重置配置状态。
+    """
+    get_settings.cache_clear()

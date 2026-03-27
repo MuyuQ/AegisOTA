@@ -1,11 +1,11 @@
 """配置系统测试。"""
 
-import os
 from pathlib import Path
+import shutil
 
 import pytest
 
-from app.config import Settings
+from app.config import Settings, clear_settings_cache, get_settings
 
 
 def test_default_settings():
@@ -18,19 +18,15 @@ def test_default_settings():
     assert settings.ARTIFACTS_DIR == Path("artifacts")
 
 
-def test_settings_from_env():
+def test_settings_from_env(monkeypatch):
     """测试从环境变量读取配置。"""
-    os.environ["AEGISOTA_DEBUG"] = "true"
-    os.environ["AEGISOTA_DATABASE_URL"] = "sqlite:///./test.db"
+    monkeypatch.setenv("AEGISOTA_DEBUG", "true")
+    monkeypatch.setenv("AEGISOTA_DATABASE_URL", "sqlite:///./test.db")
 
     settings = Settings()
 
     assert settings.DEBUG is True
     assert settings.DATABASE_URL == "sqlite:///./test.db"
-
-    # 清理环境变量
-    del os.environ["AEGISOTA_DEBUG"]
-    del os.environ["AEGISOTA_DATABASE_URL"]
 
 
 def test_artifacts_dir_creation():
@@ -40,5 +36,23 @@ def test_artifacts_dir_creation():
     assert settings.ARTIFACTS_DIR.exists()
 
     # 清理测试目录
-    import shutil
     shutil.rmtree("test_artifacts", ignore_errors=True)
+
+
+def test_clear_settings_cache():
+    """测试清除配置缓存。"""
+    # 获取缓存的配置实例
+    settings1 = get_settings()
+    settings2 = get_settings()
+
+    # 验证是同一个实例（缓存生效）
+    assert settings1 is settings2
+
+    # 清除缓存
+    clear_settings_cache()
+
+    # 获取新实例
+    settings3 = get_settings()
+
+    # 验证是新实例（缓存已清除）
+    assert settings3 is not settings1
