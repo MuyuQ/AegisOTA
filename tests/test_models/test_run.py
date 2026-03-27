@@ -6,9 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
+from app.models.artifact import Artifact
 from app.models.device import Device, DeviceLease, DeviceStatus
+from app.models.fault import FaultProfile, FaultStage, FaultType
 from app.models.run import (
-    Artifact,
     FailureCategory,
     RunSession,
     RunStatus,

@@ -1,8 +1,9 @@
 """数据模型模块。"""
 
+from app.models.artifact import Artifact, ArtifactType
 from app.models.device import Device, DeviceLease, DeviceStatus, LeaseStatus
+from app.models.fault import FaultProfile, FaultStage, FaultType
 from app.models.run import (
-    Artifact,
     FailureCategory,
     RunSession,
     RunStatus,
@@ -23,10 +24,16 @@ __all__ = [
     "UpgradePlan",
     "RunSession",
     "RunStep",
-    "Artifact",
     "RunStatus",
     "UpgradeType",
     "StepName",
     "StepStatus",
     "FailureCategory",
+    # Fault models
+    "FaultProfile",
+    "FaultStage",
+    "FaultType",
+    # Artifact models
+    "Artifact",
+    "ArtifactType",
 ]

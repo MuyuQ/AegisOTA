@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import (
     DateTime,
@@ -16,6 +16,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.fault import FaultProfile
+
+if TYPE_CHECKING:
+    from app.models.artifact import Artifact
 
 
 class RunStatus(str, Enum):
@@ -92,7 +96,9 @@ class UpgradePlan(Base):
     target_build: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
     # 配置关联
-    fault_profile_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    fault_profile_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("fault_profiles.id", ondelete="SET NULL"), nullable=True
+    )
     validation_profile_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # 设备选择器（JSON 存储）
@@ -115,6 +121,9 @@ class UpgradePlan(Base):
     # 关系
     run_sessions: Mapped[list["RunSession"]] = relationship(
         "RunSession", back_populates="plan", cascade="all, delete-orphan"
+    )
+    fault_profile: Mapped[Optional["FaultProfile"]] = relationship(
+        "FaultProfile", back_populates="upgrade_plans"
     )
 
     def get_device_selector(self) -> dict[str, Any]:
@@ -259,40 +268,3 @@ class RunStep(Base):
             delta = self.ended_at - self.started_at
             return delta.total_seconds()
         return None
-
-
-class Artifact(Base):
-    """执行产物实体。
-
-    存储任务执行过程中产生的日志、截图等文件。
-    """
-
-    __tablename__ = "artifacts"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    step_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("run_steps.id", ondelete="SET NULL"), nullable=True
-    )
-
-    # 文件信息
-    artifact_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    file_path: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    mime_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-
-    # 元数据
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    # 时间戳
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
-
-    # 关系
-    run_session: Mapped["RunSession"] = relationship(
-        "RunSession", back_populates="artifacts"
-    )
-    step: Mapped[Optional["RunStep"]] = relationship("RunStep")
