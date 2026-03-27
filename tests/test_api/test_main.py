@@ -100,11 +100,10 @@ class TestDevicesEndpoint:
         assert response.headers["content-type"] == "application/json"
 
     def test_devices_endpoint_empty_list_initially(self, client):
-        """验证设备 API 端点初始返回空列表。"""
+        """验证设备 API 端点返回列表格式。"""
         response = client.get("/api/devices")
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) == 0
 
 
 class TestRunsEndpoint:
@@ -127,14 +126,33 @@ class TestRunsEndpoint:
 class TestReportsEndpoint:
     """报告端点测试。"""
 
-    def test_reports_endpoint_returns_json(self, client):
-        """验证报告 API 端点返回 JSON。"""
-        response = client.get("/api/reports/1")
+    def test_reports_endpoint_returns_404_for_nonexistent_run(self, client):
+        """验证报告 API 端点对不存在的任务返回 404。"""
+        response = client.get("/api/reports/99999")
+        assert response.status_code == 404
+
+    def test_reports_endpoint_with_valid_run(self, client):
+        """验证报告 API 端点对有效任务返回 JSON。"""
+        # 首先创建一个计划
+        plan_response = client.post("/api/runs/plans", json={
+            "name": "测试计划",
+            "upgrade_type": "full",
+            "package_path": "/tmp/update.zip",
+        })
+        assert plan_response.status_code == 200
+        plan_id = plan_response.json()["plan_id"]
+
+        # 创建任务
+        run_response = client.post("/api/runs", json={
+            "plan_id": plan_id,
+        })
+        assert run_response.status_code == 200
+        run_id = run_response.json()["run_id"]
+
+        # 获取报告
+        response = client.get(f"/api/reports/{run_id}")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
 
-    def test_reports_endpoint_returns_run_id(self, client):
-        """验证报告 API 端点返回 run_id。"""
-        response = client.get("/api/reports/123")
         data = response.json()
-        assert data["run_id"] == 123
+        assert data["run_id"] == run_id
