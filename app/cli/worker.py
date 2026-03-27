@@ -45,11 +45,14 @@ def worker_start(
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    if max_iterations > 0:
-        # 有限次执行
-        for _ in range(max_iterations):
+    if max_iterations >= 0:
+        # 有限次执行（0 次表示只启动不执行任何迭代）
+        for i in range(max_iterations):
             _worker.process_one_iteration()
-        typer.echo(f"完成 {max_iterations} 次迭代")
+        if max_iterations > 0:
+            typer.echo(f"完成 {max_iterations} 次迭代")
+        else:
+            typer.echo("Worker 已初始化（max-iterations=0）")
     else:
         # 无限循环
         _worker.start()
