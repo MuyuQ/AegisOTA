@@ -1,6 +1,7 @@
 """Web 页面路由。"""
 
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Request, Depends
@@ -15,7 +16,9 @@ from app.models.device import Device, DeviceStatus
 from app.models.run import RunSession, RunStatus
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
+# 禁用 Jinja2 缓存以避免版本兼容性问题
+templates.env.cache = None
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -65,9 +68,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "stats": stats,
             "recent_runs": runs_data,
         }
@@ -96,8 +99,9 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
+        request,
         "devices.html",
-        {"request": request, "devices": devices_data}
+        {"devices": devices_data}
     )
 
 
@@ -122,8 +126,9 @@ async def runs_page(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
+        request,
         "runs.html",
-        {"request": request, "runs": runs_data}
+        {"runs": runs_data}
     )
 
 
@@ -140,8 +145,9 @@ async def run_detail_page(
 
     if not run:
         return templates.TemplateResponse(
+            request,
             "base.html",
-            {"request": request},
+            {},
             status_code=404
         )
 
@@ -174,8 +180,9 @@ async def run_detail_page(
     ]
 
     return templates.TemplateResponse(
+        request,
         "run_detail.html",
-        {"request": request, "run": run_data, "steps": steps_data}
+        {"run": run_data, "steps": steps_data}
     )
 
 
@@ -188,9 +195,9 @@ async def create_run_page(request: Request, db: Session = Depends(get_db)):
     devices = db.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
 
     return templates.TemplateResponse(
+        request,
         "create_run.html",
         {
-            "request": request,
             "plans": plans,
             "devices": devices,
         }

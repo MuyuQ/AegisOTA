@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/devices", tags=["devices"])
+router = APIRouter(prefix="/api/devices", tags=["devices"])
 
 
 @router.get("")
