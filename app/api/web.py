@@ -41,9 +41,10 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         func.date(RunSession.created_at) == today
     ).count()
 
-    # 最近任务
+    # 最近任务（按创建时间倒序，ID倒序作为第二排序）
     recent_runs = db.query(RunSession).order_by(
-        RunSession.created_at.desc()
+        RunSession.created_at.desc().nullslast(),
+        RunSession.id.desc()
     ).limit(5).all()
 
     stats = {
@@ -108,7 +109,10 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/runs", response_class=HTMLResponse)
 async def runs_page(request: Request, db: Session = Depends(get_db)):
     """任务列表页面。"""
-    runs = db.query(RunSession).order_by(RunSession.created_at.desc()).limit(50).all()
+    runs = db.query(RunSession).order_by(
+        RunSession.created_at.desc().nullslast(),
+        RunSession.id.desc()
+    ).limit(50).all()
 
     runs_data = [
         {
