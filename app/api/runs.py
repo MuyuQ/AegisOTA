@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -139,7 +140,7 @@ async def create_run(
     request: CreateRunRequest,
     db: Session = Depends(get_db),
 ):
-    """创建升级任务。"""
+    """创建升级任务（JSON API）。"""
     run_service = RunService(db)
     scheduler = SchedulerService(db)
 
@@ -172,6 +173,55 @@ async def create_run(
         "run_id": run.id,
         "status": run.status.value if hasattr(run.status, 'value') else str(run.status)
     }
+
+
+@router.post("/form", response_class=HTMLResponse)
+async def create_run_form(
+    request: Request,
+    plan_id: int = Form(...),
+    device_serial: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    """创建升级任务（表单提交，返回 HTML）。"""
+    from fastapi.templating import Jinja2Templates
+    from pathlib import Path
+
+    templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
+
+    run_service = RunService(db)
+
+    # 检查计划是否存在
+    plan = run_service.get_upgrade_plan(plan_id)
+    if not plan:
+        return HTMLResponse(content='<div class="alert alert-error">升级计划不存在</div>', status_code=400)
+
+    # 选择设备
+    device = None
+    if device_serial:
+        device = db.query(Device).filter_by(serial=device_serial).first()
+
+    # 创建任务
+    if device:
+        run = run_service.create_run_session(
+            plan_id=plan.id,
+            device_id=device.id,
+        )
+    else:
+        # 无设备，排队等待
+        run = RunSession(plan_id=plan.id, status=RunStatus.QUEUED)
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+
+    status_str = run.status.value if hasattr(run.status, 'value') else str(run.status)
+    return HTMLResponse(
+        content=f'''<div class="alert alert-success">
+            任务创建成功！<br>
+            任务 ID: {run.id}<br>
+            状态: {status_str}<br>
+            <a href="/runs/{run.id}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看详情</a>
+        </div>'''
+    )
 
 
 @router.get("/{run_id}", response_model=RunResponse)

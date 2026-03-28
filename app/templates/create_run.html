@@ -6,13 +6,13 @@
 <h1>创建升级任务</h1>
 
 <div class="card" style="max-width: 600px; margin-top: 2rem;">
-    <form hx-post="/api/runs" hx-swap="innerHTML" hx-target="#result">
+    <form hx-post="/api/runs/form" hx-swap="innerHTML" hx-target="#result">
         <div class="form-group">
             <label class="form-label">升级计划</label>
             <select name="plan_id" class="form-select" required>
                 <option value="">请选择升级计划</option>
                 {% for plan in plans %}
-                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.upgrade_type.value }})</option>
+                <option value="{{ plan.id }}">{{ plan.name }} ({{ plan.upgrade_type.value if plan.upgrade_type.value else plan.upgrade_type }})</option>
                 {% endfor %}
             </select>
         </div>
