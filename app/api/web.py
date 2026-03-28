@@ -132,6 +132,24 @@ async def runs_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/runs/create", response_class=HTMLResponse)
+async def create_run_page(request: Request, db: Session = Depends(get_db)):
+    """创建任务页面。"""
+    from app.models.run import UpgradePlan
+
+    plans = db.query(UpgradePlan).all()
+    devices = db.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
+
+    return templates.TemplateResponse(
+        request,
+        "create_run.html",
+        {
+            "plans": plans,
+            "devices": devices,
+        }
+    )
+
+
 @router.get("/runs/{run_id}", response_class=HTMLResponse)
 async def run_detail_page(
     request: Request,
@@ -183,22 +201,4 @@ async def run_detail_page(
         request,
         "run_detail.html",
         {"run": run_data, "steps": steps_data}
-    )
-
-
-@router.get("/runs/create", response_class=HTMLResponse)
-async def create_run_page(request: Request, db: Session = Depends(get_db)):
-    """创建任务页面。"""
-    from app.models.run import UpgradePlan
-
-    plans = db.query(UpgradePlan).all()
-    devices = db.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
-
-    return templates.TemplateResponse(
-        request,
-        "create_run.html",
-        {
-            "plans": plans,
-            "devices": devices,
-        }
     )
