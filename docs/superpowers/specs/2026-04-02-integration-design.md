@@ -422,6 +422,58 @@ labctl cases similar --run-id ID      # 查找相似案例
 | 阶段 4 | 1 周 | 独立 |
 | **总计** | **5-7 周** | - |
 
+## 默认配置和初始化
+
+### 默认设备池配置
+
+系统初始化时创建三个默认设备池：
+
+```python
+DEFAULT_POOLS = [
+    {"name": "stable_pool", "purpose": "stable", "reserved_ratio": 0.1, "max_parallel": 5},
+    {"name": "stress_pool", "purpose": "stress", "reserved_ratio": 0.2, "max_parallel": 3},
+    {"name": "emergency_pool", "purpose": "emergency", "reserved_ratio": 0.5, "max_parallel": 2},
+]
+```
+
+### 设备初始分配策略
+
+迁移时现有设备默认分配到 `stable_pool`，用户可通过 CLI/API 重新分配。
+
+### 规则定义文件位置
+
+规则定义 YAML 文件存放在 `app/rules/definitions/*.yaml`，默认包含：
+- `precheck_rules.yaml`：前置检查阶段规则
+- `apply_rules.yaml`：升级执行阶段规则
+- `reboot_rules.yaml`：重启等待阶段规则
+- `post_validate_rules.yaml`：后置验证阶段规则
+
+## 回滚策略
+
+### 版本标记
+
+每个阶段完成后创建 git tag：
+- `v1.0-pool`：阶段 1 完成
+- `v1.0-drill`：阶段 2 完成
+- `v1.0-diagnostic`：阶段 3 完成
+- `v1.0-case`：阶段 4 完成
+
+### 数据库迁移回滚
+
+每个 Alembic 迁移脚本包含 `downgrade()` 方法，支持回滚到上一版本。
+
+### 功能开关
+
+使用配置项控制新功能启用，便于问题排查：
+
+```python
+# app/config.py
+ENABLE_DEVICE_POOL = True      # 设备池功能开关
+ENABLE_DRILL_ENGINE = True     # 演练引擎开关
+ENABLE_DIAGNOSTIC = True       # 诊断功能开关
+ENABLE_CASE_RECALL = True      # 案例召回开关
+```
+
 ## 风险评估
 
 | 风险 | 影响 | 缓解措施 |
