@@ -2475,22 +2475,1737 @@ git commit -m "feat: extend SchedulerService with priority scheduling and pool-b
 
 ---
 
-## Remaining Tasks Summary
+## Task 7: Implement PreemptionService
 
-Due to length constraints, the remaining tasks follow the same TDD pattern:
+**Files:**
+- Create: `app/services/preemption_service.py`
+- Create: `tests/test_services/test_preemption_service.py`
 
-- **Task 7**: Implement PreemptionService (抢占服务)
-- **Task 8**: Create Pools API endpoints (`/api/pools`)
-- **Task 9**: Create Pool CLI commands (`labctl pool`)
-- **Task 10**: Create Pools Web page
-- **Task 11**: Database migration (Alembic)
-- **Task 12**: Integration tests and documentation
+- [ ] **Step 1: Write the failing test for PreemptionService**
 
-These tasks follow the same structure:
-1. Write failing test
-2. Run test to verify failure
-3. Implement minimal code
-4. Run test to verify pass
-5. Commit
+```python
+# tests/test_services/test_preemption_service.py
+"""抢占服务测试。"""
 
-Each task builds on the previous ones, ensuring type consistency and complete implementation.
+import pytest
+from datetime import datetime, timezone, timedelta
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.database import Base
+from app.models.device import Device, DevicePool, DeviceStatus, DeviceLease
+from app.models.run import RunSession, UpgradePlan
+from app.models.enums import PoolPurpose, RunPriority, RunStatus, LeaseStatus
+from app.services.preemption_service import PreemptionService
+from app.services.pool_service import PoolService
+
+
+@pytest.fixture
+def db_engine():
+    """创建测试数据库引擎。"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    yield engine
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db_session(db_engine):
+    """创建测试数据库会话。"""
+    Session = sessionmaker(bind=db_engine)
+    session = Session()
+    yield session
+    session.close()
+
+
+class TestPreemptionService:
+    """抢占服务测试。"""
+
+    def test_find_preemptible_runs(self, db_session):
+        """测试查找可抢占的任务。"""
+        # 创建设备池和设备
+        pool_service = PoolService(db_session)
+        pool = pool_service.create_pool(name="preempt_pool", purpose=PoolPurpose.STABLE)
+
+        device = Device(serial="PREEMPT001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        # 创建升级计划
+        plan = UpgradePlan(name="Preempt Test Plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        # 创建被抢占的任务
+        normal_run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.NORMAL,
+            status=RunStatus.RUNNING,
+            preemptible=True,
+        )
+        db_session.add(normal_run)
+        db_session.commit()
+
+        # 创建租约
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=normal_run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=True,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        # 查找可抢占任务
+        service = PreemptionService(db_session)
+        preemptible = service.find_preemptible_runs(pool.id)
+
+        assert len(preemptible) == 1
+        assert preemptible[0].id == normal_run.id
+
+    def test_find_preemptible_runs_excludes_non_preemptible(self, db_session):
+        """测试不可抢占的任务不会被选中。"""
+        pool_service = PoolService(db_session)
+        pool = pool_service.create_pool(name="no_preempt_pool", purpose=PoolPurpose.STABLE)
+
+        device = Device(serial="NOPREEMPT001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        plan = UpgradePlan(name="No Preempt Test Plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        # 创建不可抢占的任务
+        run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.NORMAL,
+            status=RunStatus.RUNNING,
+            preemptible=False,  # 不可抢占
+        )
+        db_session.add(run)
+        db_session.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=False,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        service = PreemptionService(db_session)
+        preemptible = service.find_preemptible_runs(pool.id)
+
+        assert len(preemptible) == 0
+
+    def test_preempt_run_success(self, db_session):
+        """测试成功抢占任务。"""
+        pool_service = PoolService(db_session)
+        pool = pool_service.create_pool(name="success_pool", purpose=PoolPurpose.STABLE)
+
+        device = Device(serial="SUCCESS001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        plan = UpgradePlan(name="Success Preempt Plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        # 被抢占的任务
+        victim_run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.NORMAL,
+            status=RunStatus.RUNNING,
+            preemptible=True,
+        )
+        db_session.add(victim_run)
+        db_session.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=victim_run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=True,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        # 抢占者任务
+        emergency_run = RunSession(
+            plan_id=plan.id,
+            priority=RunPriority.EMERGENCY,
+            status=RunStatus.QUEUED,
+        )
+        db_session.add(emergency_run)
+        db_session.commit()
+
+        service = PreemptionService(db_session)
+        result = service.preempt_run(victim_run.id, emergency_run.id)
+
+        assert result is True
+
+        # 验证被抢占任务状态
+        db_session.refresh(victim_run)
+        assert victim_run.status == RunStatus.PREEMPTED
+
+        # 验证租约状态
+        db_session.refresh(lease)
+        assert lease.lease_status == LeaseStatus.PREEMPTED
+        assert lease.preempted_by_run_id == emergency_run.id
+
+        # 验证设备状态
+        db_session.refresh(device)
+        assert device.status == DeviceStatus.IDLE
+
+    def test_preempt_run_only_normal_priority(self, db_session):
+        """测试只能抢占 normal 优先级任务。"""
+        pool_service = PoolService(db_session)
+        pool = pool_service.create_pool(name="priority_pool", purpose=PoolPurpose.STABLE)
+
+        device = Device(serial="PRIORITY001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        plan = UpgradePlan(name="Priority Preempt Plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        # high 优先级任务
+        high_run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.HIGH,
+            status=RunStatus.RUNNING,
+            preemptible=True,
+        )
+        db_session.add(high_run)
+        db_session.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=high_run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=True,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        emergency_run = RunSession(
+            plan_id=plan.id,
+            priority=RunPriority.EMERGENCY,
+            status=RunStatus.QUEUED,
+        )
+        db_session.add(emergency_run)
+        db_session.commit()
+
+        service = PreemptionService(db_session)
+        # 默认配置不允许抢占 high 优先级
+        preemptible = service.find_preemptible_runs(pool.id, allow_preempt_high=False)
+        assert len(preemptible) == 0
+
+    def test_check_and_execute_preemption(self, db_session):
+        """测试检查并执行抢占流程。"""
+        pool_service = PoolService(db_session)
+        pool = pool_service.create_pool(name="check_pool", purpose=PoolPurpose.STABLE, max_parallel=1)
+
+        device = Device(serial="CHECK001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        plan = UpgradePlan(name="Check Preempt Plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        # 正在运行的任务
+        running_run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.NORMAL,
+            status=RunStatus.RUNNING,
+            preemptible=True,
+            pool_id=pool.id,
+        )
+        db_session.add(running_run)
+        db_session.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=running_run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=True,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        # emergency 任务等待调度
+        emergency_run = RunSession(
+            plan_id=plan.id,
+            priority=RunPriority.EMERGENCY,
+            status=RunStatus.QUEUED,
+            pool_id=pool.id,
+        )
+        db_session.add(emergency_run)
+        db_session.commit()
+
+        service = PreemptionService(db_session)
+        result = service.check_and_execute_preemption(emergency_run.id)
+
+        assert result is True
+        db_session.refresh(running_run)
+        assert running_run.status == RunStatus.PREEMPTED
+        db_session.refresh(device)
+        assert device.status == DeviceStatus.IDLE
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_services/test_preemption_service.py -v`
+Expected: FAIL with "ModuleNotFoundError: No module named 'app.services.preemption_service'"
+
+- [ ] **Step 3: Write the implementation**
+
+```python
+# app/services/preemption_service.py
+"""应急抢占服务。"""
+
+from datetime import datetime, timezone
+from typing import Optional, List
+
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+
+from app.models.device import Device, DeviceStatus, DeviceLease
+from app.models.run import RunSession, RunStatus
+from app.models.enums import RunPriority, LeaseStatus
+
+
+class PreemptionService:
+    """应急抢占服务。"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def find_preemptible_runs(
+        self,
+        pool_id: int,
+        allow_preempt_high: bool = False,
+    ) -> List[RunSession]:
+        """查找可抢占的任务。
+
+        Args:
+            pool_id: 设备池 ID
+            allow_preempt_high: 是否允许抢占 high 优先级任务
+
+        Returns:
+            可抢占的任务列表，按优先级和运行时间排序
+        """
+        # 查找该池内运行中且可抢占的任务
+        query = self.db.query(RunSession).join(
+            Device, RunSession.device_id == Device.id
+        ).filter(
+            Device.pool_id == pool_id,
+            RunSession.status.in_([RunStatus.RESERVED, RunStatus.RUNNING]),
+            RunSession.preemptible == True,
+        )
+
+        if not allow_preempt_high:
+            query = query.filter(RunSession.priority == RunPriority.NORMAL)
+
+        runs = query.all()
+
+        # 按优先级排序（NORMAL 优先）和运行时间（运行时间短的优先）
+        priority_order = {
+            RunPriority.HIGH: 0,
+            RunPriority.NORMAL: 1,
+        }
+
+        runs.sort(key=lambda r: (
+            priority_order.get(r.priority, 99),
+            r.started_at or r.created_at,
+        ))
+
+        return runs
+
+    def preempt_run(
+        self,
+        victim_run_id: int,
+        preemptor_run_id: int,
+    ) -> bool:
+        """抢占指定任务。
+
+        Args:
+            victim_run_id: 被抢占的任务 ID
+            preemptor_run_id: 抢占者的任务 ID
+
+        Returns:
+            是否成功抢占
+        """
+        victim_run = self.db.query(RunSession).filter_by(id=victim_run_id).first()
+        if not victim_run:
+            return False
+
+        # 检查任务状态是否可抢占
+        if victim_run.status not in [RunStatus.RESERVED, RunStatus.RUNNING]:
+            return False
+
+        if not victim_run.preemptible:
+            return False
+
+        # 获取租约
+        lease = self.db.query(DeviceLease).filter(
+            DeviceLease.run_id == victim_run_id,
+            DeviceLease.lease_status == LeaseStatus.ACTIVE,
+        ).first()
+
+        if not lease:
+            return False
+
+        # 更新租约状态
+        lease.lease_status = LeaseStatus.PREEMPTED
+        lease.preempted_at = datetime.now(timezone.utc)
+        lease.preempted_by_run_id = preemptor_run_id
+
+        # 更新被抢占任务状态
+        victim_run.status = RunStatus.PREEMPTED
+        victim_run.ended_at = datetime.now(timezone.utc)
+
+        # 释放设备
+        device = self.db.query(Device).filter_by(id=victim_run.device_id).first()
+        if device:
+            device.status = DeviceStatus.IDLE
+            device.current_run_id = None
+
+        self.db.commit()
+        return True
+
+    def check_and_execute_preemption(
+        self,
+        emergency_run_id: int,
+        allow_preempt_high: bool = False,
+    ) -> bool:
+        """检查并执行抢占。
+
+        检查 emergency 任务是否需要抢占，如果需要则执行抢占。
+
+        Args:
+            emergency_run_id: emergency 任务 ID
+            allow_preempt_high: 是否允许抢占 high 优先级任务
+
+        Returns:
+            是否成功抢占
+        """
+        emergency_run = self.db.query(RunSession).filter_by(id=emergency_run_id).first()
+        if not emergency_run:
+            return False
+
+        # 只有 emergency 任务才能抢占
+        if emergency_run.priority != RunPriority.EMERGENCY:
+            return False
+
+        # 检查是否有可用的设备
+        if emergency_run.pool_id is None:
+            return False
+
+        # 检查池内是否有可用设备
+        available_device = self.db.query(Device).filter(
+            Device.pool_id == emergency_run.pool_id,
+            Device.status == DeviceStatus.IDLE,
+        ).first()
+
+        if available_device:
+            # 有可用设备，不需要抢占
+            return False
+
+        # 查找可抢占的任务
+        preemptible_runs = self.find_preemptible_runs(
+            emergency_run.pool_id,
+            allow_preempt_high=allow_preempt_high,
+        )
+
+        if not preemptible_runs:
+            return False
+
+        # 抢占第一个可抢占的任务
+        victim = preemptible_runs[0]
+        return self.preempt_run(victim.id, emergency_run_id)
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_services/test_preemption_service.py -v`
+Expected: PASS (all tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+cd E:/git_repositories/AegisOTA
+git add app/services/preemption_service.py tests/test_services/test_preemption_service.py
+git commit -m "feat: implement PreemptionService for emergency task preemption"
+```
+
+---
+
+## Task 8: Create Pools API Endpoints
+
+**Files:**
+- Create: `app/api/pools.py`
+- Create: `tests/test_api/test_pools.py`
+
+- [ ] **Step 1: Write the failing test for Pools API**
+
+```python
+# tests/test_api/test_pools.py
+"""设备池 API 测试。"""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.database import Base, get_db
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+
+@pytest.fixture
+def test_db():
+    """创建测试数据库。"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield session
+    session.close()
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def client(test_db):
+    """创建测试客户端。"""
+    return TestClient(app)
+
+
+class TestPoolsAPI:
+    """设备池 API 测试。"""
+
+    def test_list_pools_empty(self, client):
+        """测试空池列表。"""
+        response = client.get("/api/pools")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_create_pool(self, client):
+        """测试创建设备池。"""
+        response = client.post("/api/pools", json={
+            "name": "test_pool",
+            "purpose": "stable",
+            "reserved_ratio": 0.2,
+            "max_parallel": 5,
+        })
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "test_pool"
+        assert data["purpose"] == "stable"
+        assert data["reserved_ratio"] == 0.2
+
+    def test_create_pool_duplicate_name(self, client):
+        """测试创建重复名称设备池。"""
+        client.post("/api/pools", json={
+            "name": "duplicate",
+            "purpose": "stable",
+        })
+        response = client.post("/api/pools", json={
+            "name": "duplicate",
+            "purpose": "stress",
+        })
+        assert response.status_code == 400
+
+    def test_get_pool_by_id(self, client):
+        """测试获取设备池详情。"""
+        create_response = client.post("/api/pools", json={
+            "name": "detail_pool",
+            "purpose": "stable",
+        })
+        pool_id = create_response.json()["id"]
+
+        response = client.get(f"/api/pools/{pool_id}")
+        assert response.status_code == 200
+        assert response.json()["name"] == "detail_pool"
+
+    def test_get_pool_not_found(self, client):
+        """测试获取不存在的设备池。"""
+        response = client.get("/api/pools/9999")
+        assert response.status_code == 404
+
+    def test_update_pool(self, client):
+        """测试更新设备池。"""
+        create_response = client.post("/api/pools", json={
+            "name": "update_pool",
+            "purpose": "stable",
+        })
+        pool_id = create_response.json()["id"]
+
+        response = client.put(f"/api/pools/{pool_id}", json={
+            "reserved_ratio": 0.3,
+            "max_parallel": 10,
+        })
+        assert response.status_code == 200
+        assert response.json()["reserved_ratio"] == 0.3
+        assert response.json()["max_parallel"] == 10
+
+    def test_delete_pool(self, client):
+        """测试删除设备池。"""
+        create_response = client.post("/api/pools", json={
+            "name": "delete_pool",
+            "purpose": "stable",
+        })
+        pool_id = create_response.json()["id"]
+
+        response = client.delete(f"/api/pools/{pool_id}")
+        assert response.status_code == 200
+
+        # 确认已删除
+        get_response = client.get(f"/api/pools/{pool_id}")
+        assert get_response.status_code == 404
+
+    def test_assign_device_to_pool(self, client, test_db):
+        """测试分配设备到池。"""
+        from app.models.device import Device
+
+        # 创建设备池
+        pool_response = client.post("/api/pools", json={
+            "name": "assign_pool",
+            "purpose": "stable",
+        })
+        pool_id = pool_response.json()["id"]
+
+        # 创建设备
+        device = Device(serial="ASSIGN_API001")
+        test_db.add(device)
+        test_db.commit()
+
+        response = client.post(f"/api/pools/{pool_id}/assign", json={
+            "device_id": device.id,
+        })
+        assert response.status_code == 200
+        assert response.json()["pool_id"] == pool_id
+
+    def test_get_pool_devices(self, client, test_db):
+        """测试获取池内设备列表。"""
+        from app.models.device import Device
+
+        # 创建设备池
+        pool_response = client.post("/api/pools", json={
+            "name": "devices_pool",
+            "purpose": "stable",
+        })
+        pool_id = pool_response.json()["id"]
+
+        # 创建设备并分配到池
+        for i in range(3):
+            device = Device(serial=f"DEVICES{i:03d}", pool_id=pool_id)
+            test_db.add(device)
+        test_db.commit()
+
+        response = client.get(f"/api/pools/{pool_id}/devices")
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+    def test_get_pool_capacity(self, client, test_db):
+        """测试获取池容量。"""
+        from app.models.device import Device, DeviceStatus
+
+        pool_response = client.post("/api/pools", json={
+            "name": "capacity_pool",
+            "purpose": "stable",
+            "max_parallel": 10,
+        })
+        pool_id = pool_response.json()["id"]
+
+        # 添加设备
+        for i in range(5):
+            device = Device(
+                serial=f"CAP_API{i:03d}",
+                pool_id=pool_id,
+                status=DeviceStatus.IDLE,
+            )
+            test_db.add(device)
+        for i in range(3):
+            device = Device(
+                serial=f"CAP_BUSY{i:03d}",
+                pool_id=pool_id,
+                status=DeviceStatus.BUSY,
+            )
+            test_db.add(device)
+        test_db.commit()
+
+        response = client.get(f"/api/pools/{pool_id}/capacity")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 8
+        assert data["available"] == 5
+        assert data["busy"] == 3
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_api/test_pools.py -v`
+Expected: FAIL with "404 Not Found" (no route)
+
+- [ ] **Step 3: Write the implementation**
+
+```python
+# app/api/pools.py
+"""设备池 API 路由。"""
+
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models.device import Device, DevicePool, DeviceStatus
+from app.models.enums import PoolPurpose
+from app.services.pool_service import PoolService
+
+
+router = APIRouter(prefix="/api/pools", tags=["pools"])
+
+
+class PoolCreate(BaseModel):
+    """设备池创建请求。"""
+    name: str
+    purpose: str
+    reserved_ratio: float = 0.2
+    max_parallel: int = 5
+    tag_selector: Optional[dict] = None
+    enabled: bool = True
+
+
+class PoolUpdate(BaseModel):
+    """设备池更新请求。"""
+    reserved_ratio: Optional[float] = None
+    max_parallel: Optional[int] = None
+    tag_selector: Optional[dict] = None
+    enabled: Optional[bool] = None
+
+
+class DeviceAssign(BaseModel):
+    """设备分配请求。"""
+    device_id: int
+
+
+class PoolResponse(BaseModel):
+    """设备池响应。"""
+    id: int
+    name: str
+    purpose: str
+    reserved_ratio: float
+    max_parallel: int
+    tag_selector: Optional[dict] = None
+    enabled: bool
+
+    class Config:
+        from_attributes = True
+
+
+class DeviceResponse(BaseModel):
+    """设备响应。"""
+    id: int
+    serial: str
+    status: str
+    pool_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CapacityResponse(BaseModel):
+    """容量响应。"""
+    total: int
+    available: int
+    busy: int
+    offline: int
+    quarantined: int
+    max_parallel: int
+    reserved: int
+    usable: int
+
+
+@router.get("", response_model=List[PoolResponse])
+async def list_pools(
+    purpose: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """获取设备池列表。"""
+    service = PoolService(db)
+    purpose_enum = PoolPurpose(purpose) if purpose else None
+    pools = service.list_pools(purpose=purpose_enum)
+
+    return [
+        PoolResponse(
+            id=p.id,
+            name=p.name,
+            purpose=p.purpose.value if hasattr(p.purpose, 'value') else str(p.purpose),
+            reserved_ratio=p.reserved_ratio,
+            max_parallel=p.max_parallel,
+            tag_selector=p.get_tag_selector(),
+            enabled=p.enabled,
+        )
+        for p in pools
+    ]
+
+
+@router.post("", response_model=PoolResponse)
+async def create_pool(
+    request: PoolCreate,
+    db: Session = Depends(get_db),
+):
+    """创建设备池。"""
+    service = PoolService(db)
+
+    try:
+        purpose = PoolPurpose(request.purpose)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid purpose '{request.purpose}'. Valid values: stable, stress, emergency"
+        )
+
+    try:
+        pool = service.create_pool(
+            name=request.name,
+            purpose=purpose,
+            reserved_ratio=request.reserved_ratio,
+            max_parallel=request.max_parallel,
+            tag_selector=request.tag_selector,
+            enabled=request.enabled,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return PoolResponse(
+        id=pool.id,
+        name=pool.name,
+        purpose=pool.purpose.value,
+        reserved_ratio=pool.reserved_ratio,
+        max_parallel=pool.max_parallel,
+        tag_selector=pool.get_tag_selector(),
+        enabled=pool.enabled,
+    )
+
+
+@router.get("/{pool_id}", response_model=PoolResponse)
+async def get_pool(
+    pool_id: int,
+    db: Session = Depends(get_db),
+):
+    """获取设备池详情。"""
+    service = PoolService(db)
+    pool = service.get_pool_by_id(pool_id)
+
+    if not pool:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    return PoolResponse(
+        id=pool.id,
+        name=pool.name,
+        purpose=pool.purpose.value,
+        reserved_ratio=pool.reserved_ratio,
+        max_parallel=pool.max_parallel,
+        tag_selector=pool.get_tag_selector(),
+        enabled=pool.enabled,
+    )
+
+
+@router.put("/{pool_id}", response_model=PoolResponse)
+async def update_pool(
+    pool_id: int,
+    request: PoolUpdate,
+    db: Session = Depends(get_db),
+):
+    """更新设备池配置。"""
+    service = PoolService(db)
+
+    update_data = {}
+    if request.reserved_ratio is not None:
+        update_data["reserved_ratio"] = request.reserved_ratio
+    if request.max_parallel is not None:
+        update_data["max_parallel"] = request.max_parallel
+    if request.tag_selector is not None:
+        update_data["tag_selector"] = request.tag_selector
+    if request.enabled is not None:
+        update_data["enabled"] = request.enabled
+
+    pool = service.update_pool(pool_id, **update_data)
+
+    if not pool:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    return PoolResponse(
+        id=pool.id,
+        name=pool.name,
+        purpose=pool.purpose.value,
+        reserved_ratio=pool.reserved_ratio,
+        max_parallel=pool.max_parallel,
+        tag_selector=pool.get_tag_selector(),
+        enabled=pool.enabled,
+    )
+
+
+@router.delete("/{pool_id}")
+async def delete_pool(
+    pool_id: int,
+    db: Session = Depends(get_db),
+):
+    """删除设备池。"""
+    service = PoolService(db)
+    success = service.delete_pool(pool_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    return {"status": "deleted", "id": pool_id}
+
+
+@router.post("/{pool_id}/assign", response_model=DeviceResponse)
+async def assign_device(
+    pool_id: int,
+    request: DeviceAssign,
+    db: Session = Depends(get_db),
+):
+    """分配设备到池。"""
+    service = PoolService(db)
+    device = service.assign_device_to_pool(request.device_id, pool_id)
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device or pool not found")
+
+    return DeviceResponse(
+        id=device.id,
+        serial=device.serial,
+        status=device.status.value if hasattr(device.status, 'value') else str(device.status),
+        pool_id=device.pool_id,
+    )
+
+
+@router.get("/{pool_id}/devices", response_model=List[DeviceResponse])
+async def get_pool_devices(
+    pool_id: int,
+    db: Session = Depends(get_db),
+):
+    """获取池内设备列表。"""
+    devices = db.query(Device).filter_by(pool_id=pool_id).all()
+
+    return [
+        DeviceResponse(
+            id=d.id,
+            serial=d.serial,
+            status=d.status.value if hasattr(d.status, 'value') else str(d.status),
+            pool_id=d.pool_id,
+        )
+        for d in devices
+    ]
+
+
+@router.get("/{pool_id}/capacity", response_model=CapacityResponse)
+async def get_pool_capacity(
+    pool_id: int,
+    db: Session = Depends(get_db),
+):
+    """获取池容量。"""
+    service = PoolService(db)
+    capacity = service.get_pool_capacity(pool_id)
+
+    if not capacity:
+        raise HTTPException(status_code=404, detail="Pool not found")
+
+    return CapacityResponse(**capacity)
+```
+
+- [ ] **Step 4: Register router in main.py**
+
+Update `app/main.py` to include the pools router:
+
+```python
+# Add import at top
+from app.api import devices, reports, runs, web, settings, pools
+
+# Add router registration (around line 117)
+app.include_router(pools.router)
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_api/test_pools.py -v`
+Expected: PASS
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd E:/git_repositories/AegisOTA
+git add app/api/pools.py tests/test_api/test_pools.py app/main.py
+git commit -m "feat: add /api/pools endpoints for device pool management"
+```
+
+---
+
+## Task 9: Create Pool CLI Commands
+
+**Files:**
+- Create: `app/cli/pool.py`
+- Create: `tests/test_cli/test_pool.py`
+
+- [ ] **Step 1: Write the failing test for Pool CLI**
+
+```python
+# tests/test_cli/test_pool.py
+"""Pool CLI 测试。"""
+
+import pytest
+from typer.testing import CliRunner
+
+from app.cli.main import app
+from app.database import Base, get_db
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+
+@pytest.fixture
+def test_db():
+    """创建测试数据库。"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield session
+    session.close()
+
+
+runner = CliRunner()
+
+
+class TestPoolCLI:
+    """Pool CLI 测试。"""
+
+    def test_pool_list_empty(self, test_db):
+        """测试空池列表。"""
+        result = runner.invoke(app, ["pool", "list"])
+        assert result.exit_code == 0
+        assert "No pools" in result.output or "[]" in result.output
+
+    def test_pool_create(self, test_db):
+        """测试创建设备池。"""
+        result = runner.invoke(app, [
+            "pool", "create",
+            "--name", "cli_pool",
+            "--purpose", "stable",
+        ])
+        assert result.exit_code == 0
+        assert "cli_pool" in result.output
+
+    def test_pool_show(self, test_db):
+        """测试显示设备池详情。"""
+        # 先创建
+        runner.invoke(app, [
+            "pool", "create",
+            "--name", "show_pool",
+            "--purpose", "stable",
+        ])
+
+        result = runner.invoke(app, ["pool", "show", "--name", "show_pool"])
+        assert result.exit_code == 0
+        assert "show_pool" in result.output
+
+    def test_pool_update(self, test_db):
+        """测试更新设备池。"""
+        runner.invoke(app, [
+            "pool", "create",
+            "--name", "update_pool",
+            "--purpose", "stable",
+        ])
+
+        result = runner.invoke(app, [
+            "pool", "update",
+            "--name", "update_pool",
+            "--reserved-ratio", "0.3",
+        ])
+        assert result.exit_code == 0
+
+    def test_pool_init_defaults(self, test_db):
+        """测试初始化默认池。"""
+        result = runner.invoke(app, ["pool", "init"])
+        assert result.exit_code == 0
+        assert "stable_pool" in result.output
+        assert "stress_pool" in result.output
+        assert "emergency_pool" in result.output
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_cli/test_pool.py -v`
+Expected: FAIL with "No such command 'pool'"
+
+- [ ] **Step 3: Write the implementation**
+
+```python
+# app/cli/pool.py
+"""设备池 CLI 命令。"""
+
+import typer
+from rich.console import Console
+from rich.table import Table
+
+from app.database import SessionLocal
+from app.models.enums import PoolPurpose
+from app.services.pool_service import PoolService
+
+app = typer.Typer(name="pool", help="设备池管理命令")
+console = Console()
+
+
+@app.command("list")
+def list_pools():
+    """列出所有设备池。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+        pools = service.list_pools()
+
+        if not pools:
+            console.print("[yellow]No pools found. Run 'pool init' to create default pools.[/yellow]")
+            return
+
+        table = Table(title="Device Pools")
+        table.add_column("ID", style="cyan")
+        table.add_column("Name", style="green")
+        table.add_column("Purpose", style="blue")
+        table.add_column("Reserved", style="yellow")
+        table.add_column("Max Parallel", style="magenta")
+        table.add_column("Enabled", style="white")
+
+        for pool in pools:
+            table.add_row(
+                str(pool.id),
+                pool.name,
+                pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
+                f"{pool.reserved_ratio:.0%}",
+                str(pool.max_parallel),
+                "✓" if pool.enabled else "✗",
+            )
+
+        console.print(table)
+    finally:
+        db.close()
+
+
+@app.command("create")
+def create_pool(
+    name: str = typer.Option(..., "--name", "-n", help="设备池名称"),
+    purpose: str = typer.Option("stable", "--purpose", "-p", help="设备池用途: stable, stress, emergency"),
+    reserved_ratio: float = typer.Option(0.2, "--reserved-ratio", "-r", help="保留比例"),
+    max_parallel: int = typer.Option(5, "--max-parallel", "-m", help="最大并行数"),
+):
+    """创建设备池。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+        try:
+            purpose_enum = PoolPurpose(purpose)
+        except ValueError:
+            console.print(f"[red]Invalid purpose '{purpose}'. Valid values: stable, stress, emergency[/red]")
+            raise typer.Exit(1)
+
+        try:
+            pool = service.create_pool(
+                name=name,
+                purpose=purpose_enum,
+                reserved_ratio=reserved_ratio,
+                max_parallel=max_parallel,
+            )
+            console.print(f"[green]Created pool '{pool.name}' (ID: {pool.id})[/green]")
+        except ValueError as e:
+            console.print(f"[red]Error: {e}[/red]")
+            raise typer.Exit(1)
+    finally:
+        db.close()
+
+
+@app.command("show")
+def show_pool(
+    name: str = typer.Option(None, "--name", "-n", help="设备池名称"),
+    pool_id: int = typer.Option(None, "--id", help="设备池 ID"),
+):
+    """显示设备池详情。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+
+        if pool_id:
+            pool = service.get_pool_by_id(pool_id)
+        elif name:
+            pool = service.get_pool_by_name(name)
+        else:
+            console.print("[red]Please specify --name or --id[/red]")
+            raise typer.Exit(1)
+
+        if not pool:
+            console.print("[red]Pool not found[/red]")
+            raise typer.Exit(1)
+
+        # 显示详情
+        capacity = service.get_pool_capacity(pool.id)
+
+        console.print(f"\n[bold cyan]Pool: {pool.name}[/bold cyan]")
+        console.print(f"  ID: {pool.id}")
+        console.print(f"  Purpose: {pool.purpose.value}")
+        console.print(f"  Reserved Ratio: {pool.reserved_ratio:.0%}")
+        console.print(f"  Max Parallel: {pool.max_parallel}")
+        console.print(f"  Enabled: {'Yes' if pool.enabled else 'No'}")
+
+        console.print(f"\n[bold]Capacity:[/bold]")
+        console.print(f"  Total Devices: {capacity['total']}")
+        console.print(f"  Available: {capacity['available']}")
+        console.print(f"  Busy: {capacity['busy']}")
+        console.print(f"  Reserved: {capacity['reserved']}")
+    finally:
+        db.close()
+
+
+@app.command("update")
+def update_pool(
+    name: str = typer.Option(None, "--name", "-n", help="设备池名称"),
+    pool_id: int = typer.Option(None, "--id", help="设备池 ID"),
+    reserved_ratio: float = typer.Option(None, "--reserved-ratio", "-r", help="保留比例"),
+    max_parallel: int = typer.Option(None, "--max-parallel", "-m", help="最大并行数"),
+    enabled: bool = typer.Option(None, "--enabled/--disabled", help="启用/禁用"),
+):
+    """更新设备池配置。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+
+        if pool_id:
+            target_id = pool_id
+        elif name:
+            pool = service.get_pool_by_name(name)
+            if not pool:
+                console.print("[red]Pool not found[/red]")
+                raise typer.Exit(1)
+            target_id = pool.id
+        else:
+            console.print("[red]Please specify --name or --id[/red]")
+            raise typer.Exit(1)
+
+        update_data = {}
+        if reserved_ratio is not None:
+            update_data["reserved_ratio"] = reserved_ratio
+        if max_parallel is not None:
+            update_data["max_parallel"] = max_parallel
+        if enabled is not None:
+            update_data["enabled"] = enabled
+
+        if not update_data:
+            console.print("[yellow]No updates specified[/yellow]")
+            return
+
+        pool = service.update_pool(target_id, **update_data)
+        console.print(f"[green]Updated pool '{pool.name}'[/green]")
+    finally:
+        db.close()
+
+
+@app.command("init")
+def init_pools():
+    """初始化默认设备池。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+        pools = service.create_default_pools()
+
+        console.print("[green]Created default pools:[/green]")
+        for pool in pools:
+            console.print(f"  - {pool.name} ({pool.purpose.value})")
+    finally:
+        db.close()
+
+
+@app.command("assign")
+def assign_device(
+    device_id: int = typer.Option(..., "--device-id", "-d", help="设备 ID"),
+    pool_name: str = typer.Option(..., "--pool-name", "-p", help="设备池名称"),
+):
+    """分配设备到池。"""
+    db = SessionLocal()
+    try:
+        service = PoolService(db)
+        pool = service.get_pool_by_name(pool_name)
+
+        if not pool:
+            console.print(f"[red]Pool '{pool_name}' not found[/red]")
+            raise typer.Exit(1)
+
+        device = service.assign_device_to_pool(device_id, pool.id)
+
+        if not device:
+            console.print(f"[red]Device {device_id} not found[/red]")
+            raise typer.Exit(1)
+
+        console.print(f"[green]Assigned device {device_id} to pool '{pool_name}'[/green]")
+    finally:
+        db.close()
+```
+
+- [ ] **Step 4: Register CLI in main.py**
+
+Update `app/cli/main.py`:
+
+```python
+# Add import
+from app.cli.pool import app as pool_app
+
+# Register (around line 23)
+app.add_typer(pool_app, name="pool", help="设备池管理")
+```
+
+- [ ] **Step 5: Run test to verify it passes**
+
+Run: `cd E:/git_repositories/AegisOTA && python -m pytest tests/test_cli/test_pool.py -v`
+Expected: PASS
+
+- [ ] **Step 6: Commit**
+
+```bash
+cd E:/git_repositories/AegisOTA
+git add app/cli/pool.py tests/test_cli/test_pool.py app/cli/main.py
+git commit -m "feat: add labctl pool CLI commands"
+```
+
+---
+
+## Task 10: Create Pools Web Page
+
+**Files:**
+- Create: `app/templates/pools.html`
+- Modify: `app/api/web.py`
+
+- [ ] **Step 1: Create the pools template**
+
+```html
+<!-- app/templates/pools.html -->
+{% extends "base.html" %}
+
+{% block title %}设备池管理 - AegisOTA{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <span>设备池管理</span>
+            <button class="btn btn-primary" onclick="showCreateModal()">创建设备池</button>
+        </div>
+
+        <div id="pools-list">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>用途</th>
+                        <th>保留比例</th>
+                        <th>最大并行</th>
+                        <th>设备数</th>
+                        <th>可用</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pool in pools %}
+                    <tr>
+                        <td>{{ pool.id }}</td>
+                        <td><strong>{{ pool.name }}</strong></td>
+                        <td>
+                            <span class="badge badge-{{ 'primary' if pool.purpose == 'stable' else 'warning' if pool.purpose == 'stress' else 'danger' }}">
+                                {{ pool.purpose }}
+                            </span>
+                        </td>
+                        <td>{{ (pool.reserved_ratio * 100)|int }}%</td>
+                        <td>{{ pool.max_parallel }}</td>
+                        <td>{{ pool.total_devices }}</td>
+                        <td>{{ pool.available_devices }}</td>
+                        <td>
+                            <span class="status-badge status-{{ 'active' if pool.enabled else 'inactive' }}">
+                                {{ '启用' if pool.enabled else '禁用' }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="showPoolDetail({{ pool.id }})">详情</button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePool({{ pool.id }})">删除</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function showCreateModal() {
+    // TODO: 实现创建模态框
+    alert('创建设备池功能开发中');
+}
+
+function showPoolDetail(poolId) {
+    window.location.href = '/pools/' + poolId;
+}
+
+function deletePool(poolId) {
+    if (confirm('确定要删除这个设备池吗？')) {
+        fetch('/api/pools/' + poolId, {
+            method: 'DELETE',
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
+```
+
+- [ ] **Step 2: Add web route for pools page**
+
+Update `app/api/web.py` to add pools route:
+
+```python
+# Add import at top
+from app.services.pool_service import PoolService
+
+# Add route
+@router.get("/pools", response_class=HTMLResponse)
+async def pools_page(request: Request, db: Session = Depends(get_db)):
+    """设备池管理页面。"""
+    service = PoolService(db)
+    pools = service.list_pools()
+
+    # 添加设备统计
+    pools_data = []
+    for pool in pools:
+        capacity = service.get_pool_capacity(pool.id)
+        pools_data.append({
+            "id": pool.id,
+            "name": pool.name,
+            "purpose": pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
+            "reserved_ratio": pool.reserved_ratio,
+            "max_parallel": pool.max_parallel,
+            "enabled": pool.enabled,
+            "total_devices": capacity["total"],
+            "available_devices": capacity["available"],
+        })
+
+    return templates.TemplateResponse(
+        "pools.html",
+        {"request": request, "pools": pools_data}
+    )
+```
+
+- [ ] **Step 3: Add navigation link**
+
+Update `app/templates/base.html` to add pools link in navigation:
+
+```html
+<!-- Add in navigation -->
+<a href="/pools" class="nav-link">设备池</a>
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd E:/git_repositories/AegisOTA
+git add app/templates/pools.html app/api/web.py app/templates/base.html
+git commit -m "feat: add pools management web page"
+```
+
+---
+
+## Task 11: Database Migration
+
+**Files:**
+- Create: Alembic migration script
+
+- [ ] **Step 1: Generate migration**
+
+Run:
+```bash
+cd E:/git_repositories/AegisOTA
+alembic revision --autogenerate -m "add device pools and extend models"
+```
+
+- [ ] **Step 2: Review and edit migration**
+
+Check generated migration file and ensure:
+1. `device_pools` table is created
+2. `devices` table gets `pool_id` and `sync_failure_count` columns
+3. `run_sessions` table gets `priority`, `pool_id`, `preemptible`, `drill_id` columns
+4. `device_leases` table gets `preemptible`, `preempted_at`, `preempted_by_run_id` columns
+
+- [ ] **Step 3: Test migration**
+
+Run:
+```bash
+alembic upgrade head
+alembic downgrade -1
+alembic upgrade head
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add migrations/versions/*.py
+git commit -m "feat: add alembic migration for device pools"
+```
+
+---
+
+## Task 12: Integration Tests and Documentation
+
+**Files:**
+- Create: `tests/test_integration/test_pool_workflow.py`
+- Update: `CLAUDE.md`
+- Update: `README.md`
+
+- [ ] **Step 1: Write integration test**
+
+```python
+# tests/test_integration/test_pool_workflow.py
+"""设备池工作流集成测试。"""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+from app.database import Base, get_db, SessionLocal
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+
+@pytest.fixture
+def test_db():
+    """创建测试数据库。"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def client(test_db):
+    return TestClient(app)
+
+
+class TestPoolWorkflow:
+    """设备池完整工作流测试。"""
+
+    def test_full_pool_workflow(self, client, test_db):
+        """测试完整的设备池工作流。"""
+        from app.models.device import Device, DeviceStatus
+        from app.models.run import UpgradePlan
+        from app.models.enums import RunPriority
+
+        # 1. 创建默认设备池
+        response = client.post("/api/pools", json={
+            "name": "workflow_pool",
+            "purpose": "stable",
+            "reserved_ratio": 0.2,
+            "max_parallel": 5,
+        })
+        assert response.status_code == 200
+        pool_id = response.json()["id"]
+
+        # 2. 创建设备并分配到池
+        device = Device(serial="WORKFLOW001", status=DeviceStatus.IDLE, pool_id=pool_id)
+        test_db.add(device)
+        test_db.commit()
+
+        # 3. 验证池容量
+        response = client.get(f"/api/pools/{pool_id}/capacity")
+        assert response.status_code == 200
+        assert response.json()["available"] == 1
+
+        # 4. 创建升级计划
+        plan = UpgradePlan(name="Workflow Test Plan", default_pool_id=pool_id)
+        test_db.add(plan)
+        test_db.commit()
+
+        # 5. 创建任务并分配设备
+        # (需要 run API 支持)
+
+        print("Pool workflow test passed!")
+
+
+class TestPriorityPreemptionWorkflow:
+    """优先级抢占工作流测试。"""
+
+    def test_emergency_preemption(self, test_db):
+        """测试 emergency 任务抢占流程。"""
+        from app.models.device import Device, DevicePool, DeviceStatus, DeviceLease
+        from app.models.run import RunSession, UpgradePlan
+        from app.models.enums import PoolPurpose, RunPriority, RunStatus, LeaseStatus
+        from app.services.pool_service import PoolService
+        from app.services.preemption_service import PreemptionService
+
+        # 1. 创建设备池和设备
+        pool_service = PoolService(test_db)
+        pool = pool_service.create_pool(name="preempt_workflow", purpose=PoolPurpose.STABLE, max_parallel=1)
+
+        device = Device(serial="PREEMPT_W001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        test_db.add(device)
+        test_db.commit()
+
+        # 2. 创建升级计划
+        plan = UpgradePlan(name="Preempt Workflow Plan")
+        test_db.add(plan)
+        test_db.commit()
+
+        # 3. 创建正在运行的 normal 任务
+        normal_run = RunSession(
+            plan_id=plan.id,
+            device_id=device.id,
+            priority=RunPriority.NORMAL,
+            status=RunStatus.RUNNING,
+            preemptible=True,
+            pool_id=pool.id,
+        )
+        test_db.add(normal_run)
+        test_db.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            run_id=normal_run.id,
+            lease_status=LeaseStatus.ACTIVE,
+            preemptible=True,
+        )
+        test_db.add(lease)
+        test_db.commit()
+
+        # 4. 创建 emergency 任务
+        emergency_run = RunSession(
+            plan_id=plan.id,
+            priority=RunPriority.EMERGENCY,
+            status=RunStatus.QUEUED,
+            pool_id=pool.id,
+        )
+        test_db.add(emergency_run)
+        test_db.commit()
+
+        # 5. 执行抢占
+        preemption_service = PreemptionService(test_db)
+        result = preemption_service.check_and_execute_preemption(emergency_run.id)
+
+        assert result is True
+
+        # 6. 验证状态
+        test_db.refresh(normal_run)
+        test_db.refresh(device)
+
+        assert normal_run.status == RunStatus.PREEMPTED
+        assert device.status == DeviceStatus.IDLE
+
+        print("Emergency preemption workflow test passed!")
+```
+
+- [ ] **Step 2: Run integration tests**
+
+Run:
+```bash
+cd E:/git_repositories/AegisOTA
+python -m pytest tests/test_integration/test_pool_workflow.py -v
+```
+
+- [ ] **Step 3: Update documentation**
+
+Update `CLAUDE.md` with new features:
+
+```markdown
+## 设备池管理
+
+### 核心概念
+
+- **DevicePool**: 设备池，用于管理和隔离设备资源
+- **PoolPurpose**: 设备池用途 (stable/stress/emergency)
+- **RunPriority**: 任务优先级 (normal/high/emergency)
+- **Preemption**: 应急抢占，emergency 任务可以抢占 normal 任务
+
+### API 端点
+
+- `GET /api/pools` - 获取设备池列表
+- `POST /api/pools` - 创建设备池
+- `GET /api/pools/{id}` - 获取设备池详情
+- `PUT /api/pools/{id}` - 更新设备池配置
+- `DELETE /api/pools/{id}` - 删除设备池
+- `POST /api/pools/{id}/assign` - 分配设备到池
+- `GET /api/pools/{id}/devices` - 获取池内设备
+- `GET /api/pools/{id}/capacity` - 获取池容量
+
+### CLI 命令
+
+```bash
+labctl pool list                    # 列出设备池
+labctl pool create --name NAME      # 创建设备池
+labctl pool show --name NAME        # 显示设备池详情
+labctl pool update --name NAME      # 更新设备池配置
+labctl pool init                    # 初始化默认设备池
+labctl pool assign --device-id ID --pool-name NAME  # 分配设备
+```
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd E:/git_repositories/AegisOTA
+git add tests/test_integration/test_pool_workflow.py CLAUDE.md
+git commit -m "feat: add integration tests and update documentation for device pools"
+```
+
+---
+
+## Summary
+
+This plan implements Phase 1: Device Pool Foundation with the following components:
+
+1. **Enums** - PoolPurpose, RunPriority, extended DeviceStatus and RunStatus
+2. **Data Models** - DevicePool, extended Device and RunSession
+3. **Services** - PoolService, PreemptionService, extended SchedulerService
+4. **API** - REST endpoints for pool management
+5. **CLI** - `labctl pool` commands
+6. **Web UI** - Pools management page
+7. **Migration** - Database schema changes
+8. **Integration Tests** - End-to-end workflow tests
+
+Each task follows TDD principles with complete test code and implementation code.
