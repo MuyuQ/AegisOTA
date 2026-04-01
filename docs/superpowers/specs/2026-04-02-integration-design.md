@@ -422,6 +422,91 @@ labctl cases similar --run-id ID      # 查找相似案例
 | 阶段 4 | 1 周 | 独立 |
 | **总计** | **5-7 周** | - |
 
+## 核心业务逻辑
+
+### 任务分配设备池逻辑
+
+任务创建时通过以下规则选择目标设备池：
+
+1. **显式指定**：创建任务时通过 `pool_id` 参数显式指定
+2. **模板默认**：UpgradePlan 增加 `default_pool_id` 字段，使用模板默认池
+3. **自动匹配**：通过 `device_selector` 标签匹配设备池的 `tag_selector`
+
+```python
+class UpgradePlan(Base):
+    # 现有字段保持不变
+    default_pool_id: Optional[int]  # 新增：默认设备池
+```
+
+### 设备健康评分计算
+
+健康评分范围 0-100，计算规则：
+
+```python
+def calculate_health_score(device: Device) -> int:
+    """健康评分 = 基础分 - 各项扣分"""
+    score = 100
+
+    # 电池扣分
+    if device.battery_level is not None:
+        if device.battery_level < 10:
+            score -= 50
+        elif device.battery_level < 20:
+            score -= 30
+        elif device.battery_level < 30:
+            score -= 10
+
+    # 同步失败扣分
+    if device.sync_failure_count > 0:
+        score -= min(device.sync_failure_count * 10, 50)
+
+    # 离线扣分
+    if device.status == DeviceStatus.OFFLINE:
+        score = 0
+
+    return max(score, 0)
+```
+
+**健康分阈值**：
+- `>= 70`：设备可用
+- `50-69`：设备可用但优先级降低
+- `< 50`：设备不可用，等待恢复
+
+### 抢占条件和规则
+
+**抢占条件**：
+- emergency 任务可以抢占 normal 任务
+- emergency 任务可以抢占 high 任务（可选，通过配置控制）
+- 抢占仅限同一设备池内
+- 被抢占任务必须在 `reserved` 或 `running` 状态
+
+**抢占优先级**：
+1. 同池内优先抢占 `preemptible=True` 的任务
+2. 优先抢占 `priority=normal` 的任务
+3. 优先抢占运行时间较短的任务（减少损失）
+
+**抢占流程**：
+1. 调度器发现 emergency 任务无法获得设备
+2. 查找可抢占任务（同池、低优先级、preemptible）
+3. 发送抢占信号给被抢占任务的 worker
+4. 被抢占任务进入 `preempted` 状态，释放设备
+5. emergency 任务获得设备，开始执行
+
+### 诊断触发时机
+
+**自动诊断**（可通过配置控制）：
+- 任务失败后自动触发诊断
+- 配置项：`AUTO_DIAGNOSE_ON_FAILURE = True`
+
+**手动诊断**：
+```bash
+labctl run diagnose --id RUN_ID
+```
+
+**诊断前置条件**：
+- 任务必须处于终态（passed/failed/aborted/preempted）
+- 任务必须有产物（日志文件）
+
 ## 默认配置和初始化
 
 ### 默认设备池配置
