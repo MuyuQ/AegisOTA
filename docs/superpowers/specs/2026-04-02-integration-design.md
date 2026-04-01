@@ -557,6 +557,36 @@ ENABLE_DEVICE_POOL = True      # 设备池功能开关
 ENABLE_DRILL_ENGINE = True     # 演练引擎开关
 ENABLE_DIAGNOSTIC = True       # 诊断功能开关
 ENABLE_CASE_RECALL = True      # 案例召回开关
+AUTO_DIAGNOSE_ON_FAILURE = True # 任务失败自动诊断
+```
+
+### 性能相关配置
+
+```python
+# app/config.py 性能相关配置
+
+# 设备池配置
+MAX_DEVICES_PER_POOL = 100        # 单池最大设备数
+DEFAULT_POOL_RESERVED_RATIO = 0.2 # 默认应急保留比例
+
+# 调度配置
+SCHEDULER_INTERVAL_SEC = 5        # 调度器间隔（秒）
+MAX_QUEUED_RUNS = 1000            # 最大排队任务数
+PREEMPTION_CHECK_INTERVAL = 10    # 抢占检查间隔（秒）
+
+# 诊断配置
+DIAGNOSTIC_TIMEOUT_SEC = 300      # 诊断超时时间（秒）
+MAX_EVENTS_PER_RUN = 10000        # 单任务最大事件数
+RULE_MATCH_TOP_N = 5              # 返回前 N 个匹配规则
+
+# 案例召回配置
+CASE_INDEX_BATCH_SIZE = 100       # 案例索引批处理大小
+SIMILARITY_THRESHOLD = 0.7        # 相似度阈值（0-1）
+MAX_SIMILAR_CASES = 10            # 最大返回相似案例数
+
+# 性能监控
+ENABLE_METRICS = True             # 启用性能指标收集
+METRICS_EXPORT_INTERVAL = 60      # 指标导出间隔（秒）
 ```
 
 ## 风险评估
