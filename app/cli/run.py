@@ -11,6 +11,7 @@ from rich.table import Table
 
 from app.database import SessionLocal, init_db
 from app.models import RunSession, RunStatus, UpgradePlan, Device, DeviceStatus
+from app.services.run_service import RunService
 
 app = typer.Typer(help="任务管理命令")
 console = Console()
@@ -31,14 +32,16 @@ def submit_run(
     db = SessionLocal()
 
     try:
+        service = RunService(db)
+
         # 检查升级计划是否存在
-        plan = db.query(UpgradePlan).filter(UpgradePlan.id == plan_id).first()
+        plan = service.get_upgrade_plan(plan_id)
         if not plan:
             typer.echo(f"升级计划不存在: {plan_id}", err=True)
             raise typer.Exit(1)
 
         # 查找可用设备
-        device = None
+        device_id = None
         if device_serial:
             device = db.query(Device).filter(Device.serial == device_serial).first()
             if not device:
@@ -47,32 +50,31 @@ def submit_run(
             if not device.is_available():
                 typer.echo(f"设备 {device_serial} 当前不可用，状态: {device.status.value}")
                 raise typer.Exit(1)
+            device_id = device.id
         else:
             # 自动分配空闲设备
             device = db.query(Device).filter(Device.status == DeviceStatus.IDLE).first()
             if not device:
                 typer.echo("没有可用设备", err=True)
                 raise typer.Exit(1)
+            device_id = device.id
 
-        # 创建任务会话
-        run_session = RunSession(
+        # 使用 RunService 创建任务
+        run_session = service.create_run_session(
             plan_id=plan.id,
-            device_id=device.id,
-            status=RunStatus.QUEUED,
+            device_id=device_id,
         )
-        db.add(run_session)
 
-        # 更新设备状态
+        # 更新设备状态（服务层不处理这个，需要手动处理）
+        device = db.query(Device).filter(Device.id == device_id).first()
         device.status = DeviceStatus.BUSY
-
         db.commit()
-        db.refresh(run_session)
 
         typer.echo(f"任务已创建:")
         typer.echo(f"  任务 ID: {run_session.id}")
         typer.echo(f"  升级计划: {plan.name}")
         typer.echo(f"  设备: {device.serial}")
-        typer.echo(f"  状态: {run_session.status.value}")
+        typer.echo(f"  状态: {run_session.status.value if hasattr(run_session.status, 'value') else run_session.status}")
 
     finally:
         db.close()
@@ -167,23 +169,19 @@ def abort_run(
     db = SessionLocal()
 
     try:
-        run = db.query(RunSession).filter(RunSession.id == run_id).first()
+        service = RunService(db)
+
+        # 使用 RunService 中止任务
+        run = service.abort_run_session(run_id, reason="用户手动中止")
 
         if not run:
-            typer.echo(f"任务不存在: {run_id}", err=True)
+            typer.echo(f"任务不存在或无法中止: {run_id}", err=True)
             raise typer.Exit(1)
 
-        if run.is_terminal_state():
-            typer.echo(f"任务 {run_id} 已处于终态: {run.status.value}")
-            raise typer.Exit(1)
-
-        run.status = RunStatus.ABORTED
-
-        # 释放设备
+        # 释放设备（服务层不处理这个，需要手动处理）
         if run.device:
             run.device.status = DeviceStatus.IDLE
-
-        db.commit()
+            db.commit()
 
         typer.echo(f"任务 {run_id} 已中止")
 

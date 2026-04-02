@@ -11,6 +11,8 @@ from rich.table import Table
 
 from app.database import SessionLocal, init_db
 from app.models import Device, DeviceStatus
+from app.services.device_service import DeviceService
+from app.executors.mock_executor import MockExecutor
 
 app = typer.Typer(help="设备管理命令")
 console = Console()
@@ -26,22 +28,15 @@ def sync_devices():
     db = SessionLocal()
 
     try:
-        # 模拟 ADB 设备扫描（实际实现需要调用 ADB 命令）
         typer.echo("正在扫描 ADB 设备...")
 
-        # 这里是占位实现，实际需要通过 subprocess 调用 adb devices
-        # from app.executors.command_runner import CommandRunner
-        # runner = CommandRunner()
-        # result = runner.run("adb devices -l")
+        # 使用 DeviceService 进行同步
+        service = DeviceService(db, runner=MockExecutor.default_device_responses())
+        devices = service.sync_devices()
 
-        # 获取现有设备
-        existing_devices = {d.serial: d for d in db.query(Device).all()}
+        typer.echo(f"设备扫描完成，已同步 {len(devices)} 台设备")
 
-        # 显示扫描结果（模拟）
-        typer.echo("设备扫描完成（当前为模拟模式）")
-
-        # 显示当前数据库中的设备状态
-        devices = db.query(Device).all()
+        # 显示当前设备状态
         if devices:
             table = Table(title="设备状态")
             table.add_column("序列号", style="cyan")
@@ -170,19 +165,13 @@ def quarantine_device(
     db = SessionLocal()
 
     try:
-        device = db.query(Device).filter(Device.serial == serial).first()
+        # 使用 DeviceService 进行隔离
+        service = DeviceService(db)
+        device = service.quarantine_device(serial, reason)
 
         if not device:
             typer.echo(f"设备不存在: {serial}", err=True)
             raise typer.Exit(1)
-
-        if device.status == DeviceStatus.QUARANTINED:
-            typer.echo(f"设备 {serial} 已经处于隔离状态")
-            return
-
-        device.status = DeviceStatus.QUARANTINED
-        device.quarantine_reason = reason
-        db.commit()
 
         typer.echo(f"设备 {serial} 已隔离，原因: {reason}")
 
@@ -202,21 +191,16 @@ def recover_device(
     db = SessionLocal()
 
     try:
-        device = db.query(Device).filter(Device.serial == serial).first()
+        # 使用 DeviceService 进行恢复
+        service = DeviceService(db)
+        device = service.recover_device(serial)
 
         if not device:
             typer.echo(f"设备不存在: {serial}", err=True)
             raise typer.Exit(1)
 
-        if device.status != DeviceStatus.QUARANTINED:
-            typer.echo(f"设备 {serial} 未处于隔离状态，当前状态: {device.status.value}")
-            raise typer.Exit(1)
-
-        device.status = DeviceStatus.IDLE
-        device.quarantine_reason = None
-        db.commit()
-
-        typer.echo(f"设备 {serial} 已恢复为空闲状态")
+        status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
+        typer.echo(f"设备 {serial} 已恢复，当前状态: {status_value}")
 
     finally:
         db.close()
