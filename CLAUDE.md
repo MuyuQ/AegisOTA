@@ -56,22 +56,48 @@ artifacts/         # Execution outputs (logs, reports)
 
 | Model | Description |
 |-------|-------------|
-| `Device` | Device inventory with status, health, tags |
+| `Device` | Device inventory with status, health, tags, pool assignment |
+| `DevicePool` | Device pool for resource management and isolation |
 | `DeviceLease` | Device reservation for exclusive task access |
-| `UpgradePlan` | Task templates with upgrade type, fault profiles |
+| `UpgradePlan` | Task templates with upgrade type, fault profiles, default pool |
 | `FaultProfile` | Exception injection configurations |
-| `RunSession` | Task execution sessions |
+| `RunSession` | Task execution sessions with priority and pool assignment |
 | `RunStep` | Individual step execution records |
 | `Artifact` | Logs, screenshots, evidence files |
 | `Report` | Generated reports with failure attribution |
 
+## Device Pool Management
+
+### Core Concepts
+
+- **DevicePool**: 设备池，用于管理和隔离设备资源
+- **PoolPurpose**: 设备池用途 (stable/stress/emergency)
+- **RunPriority**: 任务优先级 (normal/high/emergency)
+- **Preemption**: 应急抢占，emergency 任务可以抢占 normal 任务
+
+### API Endpoints
+
+- `GET /api/pools` - 获取设备池列表
+- `POST /api/pools` - 创建设备池
+- `GET /api/pools/{id}` - 获取设备池详情
+- `PUT /api/pools/{id}` - 更新设备池配置
+- `DELETE /api/pools/{id}` - 删除设备池
+- `POST /api/pools/{id}/assign` - 分配设备到池
+- `GET /api/pools/{id}/devices` - 获取池内设备
+- `GET /api/pools/{id}/capacity` - 获取池容量
+
 ## State Machines
 
 ### Task States
-`queued -> reserved -> running -> validating -> passed/failed/aborted/quarantined`
+`queued -> allocating -> reserved -> running -> validating -> passed/failed/aborted/preempted`
 
 ### Device States
-`idle, busy, offline, quarantined, recovering`
+`idle, reserved, busy, offline, quarantined, recovering`
+
+### Priority Levels
+- `normal` - Standard tasks, can be preempted by emergency tasks
+- `high` - High priority tasks
+- `emergency` - Critical tasks that can preempt normal tasks
 
 ### Execution Stages
 `precheck -> push_package -> apply_update -> reboot_wait -> post_validate`
@@ -90,23 +116,52 @@ artifacts/         # Execution outputs (logs, reports)
 
 ## API Endpoints
 
+### Task Management
 - `POST /api/runs` - Create upgrade task
 - `GET /api/runs/{id}` - Query task details and stage status
 - `POST /api/runs/{id}/abort` - Terminate task
+
+### Device Management
 - `GET /api/devices` - List devices with status, tags, health
 - `POST /api/devices/{id}/quarantine` - Isolate abnormal device
 - `POST /api/devices/{id}/recover` - Recover quarantined device
+
+### Device Pool Management
+- `GET /api/pools` - List device pools
+- `POST /api/pools` - Create device pool
+- `GET /api/pools/{id}` - Get pool details
+- `PUT /api/pools/{id}` - Update pool configuration
+- `DELETE /api/pools/{id}` - Delete pool
+- `POST /api/pools/{id}/assign` - Assign device to pool
+- `GET /api/pools/{id}/devices` - Get devices in pool
+- `GET /api/pools/{id}/capacity` - Get pool capacity
+
+### Reports
 - `GET /api/reports/{id}` - Return report summary and evidence chain
 
 ## CLI Commands
 
+### Device Management
 - `labctl device sync` - Scan and update online devices
 - `labctl device list` - List devices
+- `labctl device recover` - Handle failed device recovery
+
+### Task Management
 - `labctl run submit` - Submit upgrade task
 - `labctl run execute` - Execute task on specific device (worker mode)
 - `labctl run abort` - Abort running task
+- `labctl run list` - List tasks
+
+### Device Pool Management
+- `labctl pool list` - List device pools
+- `labctl pool create --name NAME --purpose PURPOSE` - Create device pool
+- `labctl pool show --name NAME` - Show pool details
+- `labctl pool update --name NAME [options]` - Update pool configuration
+- `labctl pool init` - Initialize default pools (stable, stress, emergency)
+- `labctl pool assign --device-id ID --pool-name NAME` - Assign device to pool
+
+### Reports
 - `labctl report export` - Export Markdown/HTML report
-- `labctl device recover` - Handle failed device recovery
 
 ## Fault Injection Plugin Interface
 
