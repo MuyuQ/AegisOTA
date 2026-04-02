@@ -1,7 +1,7 @@
 """Mock 命令执行器（用于测试）。"""
 
 import re
-from typing import Optional, Dict, Tuple, List, Any
+from typing import Optional, Dict, Tuple, List, Any, Union
 from app.executors.command_runner import CommandRunner, CommandResult
 
 
@@ -38,20 +38,26 @@ class MockExecutor(CommandRunner):
 
     def run(
         self,
-        command: str,
+        command: Union[str, List[str]],
         timeout: Optional[int] = None,
         cwd: Optional[str] = None,
         env: Optional[dict] = None,
     ) -> CommandResult:
         """执行 Mock 命令。"""
-        self.executed_commands.append(command)
+        # 支持字符串和列表格式的命令
+        if isinstance(command, list):
+            command_str = " ".join(command)
+        else:
+            command_str = command
+
+        self.executed_commands.append(command_str)
 
         # 检查是否有预设响应（支持子串匹配）
         for cmd_pattern, (exit_code, stdout, stderr) in self.responses.items():
             # 检查是否完全匹配或包含该模式
-            if command == cmd_pattern or cmd_pattern in command:
+            if command_str == cmd_pattern or cmd_pattern in command_str:
                 return CommandResult(
-                    command=command,
+                    command=command_str,
                     exit_code=exit_code,
                     stdout=stdout,
                     stderr=stderr,
@@ -60,7 +66,7 @@ class MockExecutor(CommandRunner):
 
         # 返回默认响应
         return CommandResult(
-            command=command,
+            command=command_str,
             exit_code=self.default_exit_code,
             stdout=self.default_stdout,
             stderr=self.default_stderr,

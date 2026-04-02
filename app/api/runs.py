@@ -115,7 +115,11 @@ async def list_runs(
         try:
             run_status = RunStatus(status)
         except ValueError:
-            pass
+            valid_values = [s.value for s in RunStatus]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status '{status}'. Valid values: {valid_values}"
+            )
 
     runs = service.list_runs(status=run_status, limit=limit)
 
@@ -180,6 +184,13 @@ async def create_run_form(
     request: Request,
     plan_id: int = Form(...),
     device_serial: Optional[str] = Form(None),
+    # 新增参数
+    monkey_enabled: bool = Form(False),
+    monkey_event_count: Optional[int] = Form(None),
+    monkey_throttle: Optional[int] = Form(None),
+    upgrade_count: int = Form(1),
+    stop_on_failure: bool = Form(True),
+    enable_cycle_test: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     """创建升级任务（表单提交，返回 HTML）。"""
@@ -200,25 +211,55 @@ async def create_run_form(
     if device_serial:
         device = db.query(Device).filter_by(serial=device_serial).first()
 
+    # 构建 run_options
+    run_options = {
+        "monkey_enabled": monkey_enabled,
+        "upgrade_count": upgrade_count,
+        "stop_on_failure": stop_on_failure,
+        "enable_cycle_test": enable_cycle_test,
+    }
+
+    if monkey_enabled:
+        run_options["monkey_params"] = {
+            "event_count": monkey_event_count or 1000,
+            "throttle": monkey_throttle or 50,
+        }
+
     # 创建任务
     if device:
         run = run_service.create_run_session(
             plan_id=plan.id,
             device_id=device.id,
+            run_options=run_options,
+            total_iterations=upgrade_count,
         )
     else:
         # 无设备，排队等待
-        run = RunSession(plan_id=plan.id, status=RunStatus.QUEUED)
+        run = RunSession(plan_id=plan.id, status=RunStatus.QUEUED, total_iterations=upgrade_count)
+        run.set_run_options(run_options)
         db.add(run)
         db.commit()
         db.refresh(run)
 
     status_str = run.status.value if hasattr(run.status, 'value') else str(run.status)
+
+    # 构建成功消息
+    msg_parts = [
+        "任务创建成功！",
+        f"任务 ID: {run.id}",
+        f"状态: {status_str}",
+    ]
+    if upgrade_count > 1:
+        msg_parts.append(f"升级次数: {upgrade_count}")
+    if enable_cycle_test:
+        msg_parts.append("循环升级: 已启用 (A↔B)")
+    if monkey_enabled:
+        event_count = run_options.get("monkey_params", {}).get("event_count", 1000)
+        msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
+
     return HTMLResponse(
         content=f'''<div class="alert alert-success">
-            任务创建成功！<br>
-            任务 ID: {run.id}<br>
-            状态: {status_str}<br>
+            {'<br>'.join(msg_parts)}<br>
             <a href="/runs/{run.id}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看详情</a>
         </div>'''
     )

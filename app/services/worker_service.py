@@ -114,6 +114,10 @@ class WorkerService:
         # 更新状态为运行中
         self.run_service.update_run_status(run_id, RunStatus.RUNNING)
 
+        # 读取任务选项
+        run_options = run.get_run_options()
+        total_iterations = run.total_iterations or 1
+
         # 创建执行上下文
         upgrade_type = plan.upgrade_type
         if hasattr(upgrade_type, 'value'):
@@ -126,6 +130,8 @@ class WorkerService:
             upgrade_type=upgrade_type,
             package_path=plan.package_path,
             target_build=plan.target_build,
+            run_options=run_options,
+            total_iterations=total_iterations,
         )
 
         # 执行任务

@@ -23,21 +23,21 @@ def test_adb_devices_command_format():
     """测试 adb devices 命令格式。"""
     executor = ADBExecutor()
     cmd = executor._build_adb_command("devices")
-    assert cmd == "adb devices"
+    assert cmd == ["adb", "devices"]
 
 
 def test_adb_shell_command_format():
     """测试 adb shell 命令格式。"""
     executor = ADBExecutor()
     cmd = executor._build_adb_command("shell", "getprop", device="ABC123")
-    assert cmd == "adb -s ABC123 shell getprop"
+    assert cmd == ["adb", "-s", "ABC123", "shell", "getprop"]
 
 
 def test_adb_push_command_format():
     """测试 adb push 命令格式。"""
     executor = ADBExecutor()
     cmd = executor._build_adb_command("push", "/local/file", "/remote/path", device="ABC123")
-    assert cmd == "adb -s ABC123 push /local/file /remote/path"
+    assert cmd == ["adb", "-s", "ABC123", "push", "/local/file", "/remote/path"]
 
 
 def test_adb_executor_interface():

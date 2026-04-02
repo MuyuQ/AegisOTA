@@ -3,7 +3,7 @@
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -148,7 +148,7 @@ class PrecheckHandler(StepHandler):
             serial=context.device_serial,
             brand=props.get("ro.product.brand"),
             model=props.get("ro.product.model"),
-            android_version=props.get("ro.build.version.release"),
+            system_version=props.get("ro.build.version.release"),
             battery_level=battery_level,
             build_fingerprint=props.get("ro.build.fingerprint"),
             boot_completed=props.get("sys.boot_completed") == "1",
@@ -170,7 +170,7 @@ class PrecheckHandler(StepHandler):
             data={
                 "device_online": True,
                 "battery_level": battery_level,
-                "android_version": props.get("ro.build.version.release"),
+                "system_version": props.get("ro.build.version.release"),
             },
             duration_ms=int((time.time() - start_time) * 1000),
         )
@@ -382,7 +382,7 @@ class PostValidateHandler(StepHandler):
         validation_data = {
             "current_version": current_version,
             "boot_completed": boot_completed,
-            "validation_time": datetime.utcnow().isoformat(),
+            "validation_time": datetime.now(timezone.utc).isoformat(),
         }
 
         self._save_artifact(

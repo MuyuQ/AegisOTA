@@ -1,6 +1,6 @@
 """设备管理业务逻辑。"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -63,11 +63,11 @@ class DeviceService:
             serial=serial,
             brand=snapshot.get("brand"),
             model=snapshot.get("model"),
-            android_version=snapshot.get("android_version"),
+            system_version=snapshot.get("system_version"),
             build_fingerprint=snapshot.get("build_fingerprint"),
             battery_level=snapshot.get("battery_level"),
             status=DeviceStatus.IDLE,
-            last_seen_at=datetime.utcnow(),
+            last_seen_at=datetime.now(timezone.utc),
         )
 
         return device
@@ -78,10 +78,10 @@ class DeviceService:
 
         device.brand = snapshot.get("brand")
         device.model = snapshot.get("model")
-        device.android_version = snapshot.get("android_version")
+        device.system_version = snapshot.get("system_version")
         device.build_fingerprint = snapshot.get("build_fingerprint")
         device.battery_level = snapshot.get("battery_level")
-        device.last_seen_at = datetime.utcnow()
+        device.last_seen_at = datetime.now(timezone.utc)
 
         # 计算健康分数
         health_score = 100.0
@@ -161,7 +161,7 @@ class DeviceService:
             ).first()
             if lease:
                 lease.lease_status = "released"
-                lease.released_at = datetime.utcnow()
+                lease.released_at = datetime.now(timezone.utc)
 
         device.current_run_id = run_id or device.current_run_id
 

@@ -74,7 +74,7 @@ class VersionChecker:
         props = self.executor.getprop(device=device_serial)
 
         return {
-            "android_version": props.get("ro.build.version.release", ""),
+            "system_version": props.get("ro.build.version.release", ""),
             "build_fingerprint": props.get("ro.build.fingerprint", ""),
             "build_id": props.get("ro.build.id", ""),
             "build_type": props.get("ro.build.type", ""),

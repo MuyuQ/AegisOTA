@@ -1,7 +1,7 @@
 """ADB/Fastboot 命令执行器。"""
 
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 from app.executors.command_runner import CommandRunner, CommandResult, ShellCommandRunner
 
@@ -24,32 +24,33 @@ class ADBExecutor:
         action: str,
         *args: str,
         device: Optional[str] = None,
-    ) -> str:
-        """构建 ADB 命令。"""
+    ) -> List[str]:
+        """构建 ADB 命令，返回列表形式以避免命令注入风险。"""
         parts = [self.adb_path]
         if device:
             parts.extend(["-s", device])
         parts.append(action)
         parts.extend(args)
-        return " ".join(parts)
+        return parts
 
     def _build_fastboot_command(
         self,
         action: str,
         *args: str,
         device: Optional[str] = None,
-    ) -> str:
-        """构建 Fastboot 命令。"""
+    ) -> List[str]:
+        """构建 Fastboot 命令，返回列表形式以避免命令注入风险。"""
         parts = [self.fastboot_path]
         if device:
             parts.extend(["-s", device])
         parts.append(action)
         parts.extend(args)
-        return " ".join(parts)
+        return parts
 
     def devices(self) -> List[Dict[str, str]]:
         """获取设备列表。"""
-        result = self.runner.run(f"{self.adb_path} devices")
+        cmd = [self.adb_path, "devices"]
+        result = self.runner.run(cmd)
 
         if not result.success:
             return []
@@ -222,7 +223,7 @@ class ADBExecutor:
             "serial": device,
             "brand": props.get("ro.product.brand", ""),
             "model": props.get("ro.product.model", ""),
-            "android_version": props.get("ro.build.version.release", ""),
+            "system_version": props.get("ro.build.version.release", ""),
             "build_fingerprint": props.get("ro.build.fingerprint", ""),
             "battery_level": battery_level,
             "boot_completed": props.get("sys.boot_completed", "0") == "1",

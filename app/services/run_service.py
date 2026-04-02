@@ -1,6 +1,6 @@
 """任务管理业务逻辑。"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
 from sqlalchemy.orm import Session
@@ -62,17 +62,24 @@ class RunService:
     def create_run_session(
         self,
         plan_id: int,
-        device_id: int,
+        device_id: Optional[int] = None,
+        run_options: Optional[Dict[str, Any]] = None,
+        total_iterations: int = 1,
     ) -> RunSession:
         """创建任务执行会话。"""
         session = RunSession(
             plan_id=plan_id,
             device_id=device_id,
             status=RunStatus.QUEUED,
+            total_iterations=total_iterations,
         )
+
+        if run_options:
+            session.set_run_options(run_options)
 
         self.db.add(session)
         self.db.commit()
+        self.db.refresh(session)
         return session
 
     def get_run_session(self, run_id: int) -> Optional[RunSession]:
@@ -93,7 +100,7 @@ class RunService:
         session.status = status
 
         if status == RunStatus.RUNNING and not session.started_at:
-            session.started_at = started_at or datetime.utcnow()
+            session.started_at = started_at or datetime.now(timezone.utc)
 
         self.db.commit()
         return session
@@ -113,7 +120,7 @@ class RunService:
 
         session.status = status
         session.result = result
-        session.ended_at = datetime.utcnow()
+        session.ended_at = datetime.now(timezone.utc)
         session.summary = summary
         session.failure_category = failure_category
 
@@ -136,7 +143,7 @@ class RunService:
 
         session.status = RunStatus.ABORTED
         session.result = "aborted"
-        session.ended_at = datetime.utcnow()
+        session.ended_at = datetime.now(timezone.utc)
         session.summary = reason
 
         self.db.commit()
@@ -197,9 +204,9 @@ class RunService:
         step.status = status
 
         if status == "running":
-            step.started_at = datetime.utcnow()
+            step.started_at = datetime.now(timezone.utc)
         elif status in ["success", "failure"]:
-            step.ended_at = datetime.utcnow()
+            step.ended_at = datetime.now(timezone.utc)
 
         if stdout_path:
             step.stdout_path = stdout_path

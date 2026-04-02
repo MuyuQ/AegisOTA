@@ -2,7 +2,7 @@
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 from app.config import get_settings
@@ -98,7 +98,7 @@ class RunExecutor:
 
     def execute(self, context: RunContext) -> RunExecutionResult:
         """执行完整任务流程。"""
-        started_at = datetime.utcnow()
+        started_at = datetime.now(timezone.utc)
         context.started_at = started_at
 
         context.record_event("run_start", f"Starting run {context.run_id}")
@@ -136,7 +136,7 @@ class RunExecutor:
                 f"Step {step_name.value} completed",
             )
 
-        ended_at = datetime.utcnow()
+        ended_at = datetime.now(timezone.utc)
 
         # 保存时间线
         if context.artifact_dir:

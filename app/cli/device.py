@@ -51,19 +51,21 @@ def sync_devices():
             table.add_column("最后在线", style="magenta")
 
             for device in devices:
+                # 获取状态值（处理枚举或字符串）
+                status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
                 status_style = {
                     DeviceStatus.IDLE: "green",
                     DeviceStatus.BUSY: "yellow",
                     DeviceStatus.OFFLINE: "red",
                     DeviceStatus.QUARANTINED: "red",
                     DeviceStatus.RECOVERING: "blue",
-                }.get(device.status, "white")
+                }.get(device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status), "white")
 
                 table.add_row(
                     device.serial,
                     device.brand or "-",
                     device.model or "-",
-                    f"[{status_style}]{device.status.value}[/{status_style}]",
+                    f"[{status_style}]{status_value}[/{status_style}]",
                     str(device.last_seen_at or "-"),
                 )
 
@@ -124,21 +126,23 @@ def list_devices(
         table.add_column("标签", style="white")
 
         for device in devices:
+            # 获取状态值（处理枚举或字符串）
+            status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
             status_style = {
                 DeviceStatus.IDLE: "green",
                 DeviceStatus.BUSY: "yellow",
                 DeviceStatus.OFFLINE: "red",
                 DeviceStatus.QUARANTINED: "red",
                 DeviceStatus.RECOVERING: "blue",
-            }.get(device.status, "white")
+            }.get(device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status), "white")
 
             table.add_row(
                 str(device.id),
                 device.serial,
                 device.brand or "-",
                 device.model or "-",
-                device.android_version or "-",
-                f"[{status_style}]{device.status.value}[/{status_style}]",
+                device.system_version or "-",
+                f"[{status_style}]{status_value}[/{status_style}]",
                 str(device.health_score or "-"),
                 f"{device.battery_level or '-'}%",
                 ",".join(device.get_tags()) or "-",

@@ -1,7 +1,7 @@
 """执行上下文模块。"""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -15,7 +15,7 @@ class DeviceSnapshot:
     serial: str
     brand: Optional[str] = None
     model: Optional[str] = None
-    android_version: Optional[str] = None
+    system_version: Optional[str] = None
     battery_level: Optional[int] = None
     build_fingerprint: Optional[str] = None
     boot_completed: bool = False
@@ -52,6 +52,11 @@ class RunContext:
     started_at: Optional[datetime] = None
     timeline: List[Dict[str, Any]] = field(default_factory=list)
 
+    # 压力测试和 Monkey 配置
+    run_options: Optional[Dict[str, Any]] = None
+    current_iteration: int = 1
+    total_iterations: int = 1
+
     def __post_init__(self):
         """初始化产物目录。"""
         settings = get_settings()
@@ -62,7 +67,7 @@ class RunContext:
     def record_event(self, event_type: str, message: str, extra: Optional[Dict] = None):
         """记录事件。"""
         event = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": event_type,
             "message": message,
         }

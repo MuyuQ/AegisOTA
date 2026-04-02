@@ -48,5 +48,5 @@ def test_version_checker_get_version():
     checker = VersionChecker(executor)
     version_info = checker.get_version_info("ABC123")
 
-    assert version_info["android_version"] == "14"
+    assert version_info["system_version"] == "14"
     assert version_info["build_fingerprint"] == "TEST_FP"

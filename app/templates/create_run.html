@@ -7,6 +7,7 @@
 
 <div class="card" style="max-width: 600px; margin-top: 2rem;">
     <form hx-post="/api/runs/form" hx-swap="innerHTML" hx-target="#result">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_from_request(request) }}">
         <div class="form-group">
             <label class="form-label">升级计划</label>
             <select name="plan_id" class="form-select" required>
@@ -27,11 +28,79 @@
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+        <!-- 压力测试配置 -->
+        <div class="card-header" style="margin-top: 1.5rem;">压力测试选项</div>
+
+        <div class="form-group">
+            <label class="form-label">升级次数</label>
+            <input type="number" name="upgrade_count" value="1" min="1" max="100"
+                   class="form-input" style="width: 100px;">
+            <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.875rem;">设为 1 表示单次升级</span>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                <input type="checkbox" name="stop_on_failure" value="true" checked style="width: 16px; height: 16px;">
+                失败时停止后续迭代
+            </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                <input type="checkbox" name="enable_cycle_test" value="true" id="cycle-toggle"
+                       onchange="toggleCycleOptions()" style="width: 16px; height: 16px;">
+                启用循环升级测试 (A版本 ↔ B版本)
+            </label>
+            <div id="cycle-hint" style="display: none; margin-top: 0.5rem; padding-left: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">
+                循环测试：先升级到目标版本，再回滚到源版本，循环往复。需要升级计划配置源版本和目标版本。
+            </div>
+        </div>
+
+        <!-- Monkey 测试配置 -->
+        <div class="card-header" style="margin-top: 1.5rem;">Monkey 测试选项</div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                <input type="checkbox" name="monkey_enabled" value="true" id="monkey-toggle"
+                       onchange="toggleMonkeyOptions()" style="width: 16px; height: 16px;">
+                启用 Monkey 稳定性测试
+            </label>
+        </div>
+
+        <div id="monkey-options" style="display: none; margin-top: 0.5rem; padding-left: 1.5rem; border-left: 2px solid var(--border-color);">
+            <div class="form-group">
+                <label class="form-label" style="font-size: 0.875rem;">事件数量</label>
+                <input type="number" name="monkey_event_count" value="1000" min="100"
+                       class="form-input" style="width: 120px;">
+                <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.75rem;">默认 1000</span>
+            </div>
+            <div class="form-group" style="margin-top: 0.5rem;">
+                <label class="form-label" style="font-size: 0.875rem;">事件间隔 (ms)</label>
+                <input type="number" name="monkey_throttle" value="50" min="10"
+                       class="form-input" style="width: 120px;">
+                <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.75rem;">默认 50ms</span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">
             创建任务
         </button>
     </form>
 
     <div id="result" style="margin-top: 1rem;"></div>
 </div>
+
+<script>
+function toggleMonkeyOptions() {
+    var checkbox = document.getElementById('monkey-toggle');
+    var options = document.getElementById('monkey-options');
+    options.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function toggleCycleOptions() {
+    var checkbox = document.getElementById('cycle-toggle');
+    var hint = document.getElementById('cycle-hint');
+    hint.style.display = checkbox.checked ? 'block' : 'none';
+}
+</script>
 {% endblock %}

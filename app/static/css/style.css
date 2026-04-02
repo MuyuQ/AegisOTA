@@ -300,3 +300,85 @@ body {
     color: #0369a1;
     border: 1px solid #bae6fd;
 }
+
+/* 健康度颜色 */
+.health-high { color: #22c55e; }
+.health-medium { color: #f59e0b; }
+.health-low { color: #ef4444; }
+
+/* 健康度进度条 */
+.health-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.health-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+.health-bar-fill.high { background-color: #22c55e; }
+.health-bar-fill.medium { background-color: #f59e0b; }
+.health-bar-fill.low { background-color: #ef4444; }
+
+/* 模态框 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+/* 健康度详情项 */
+.health-detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.health-detail-label {
+    color: var(--text-muted);
+}
+.health-detail-value {
+    font-weight: 500;
+}
+.health-detail-value.negative {
+    color: #ef4444;
+}

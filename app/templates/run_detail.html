@@ -44,6 +44,18 @@
             </tr>
             {% endif %}
         </table>
+
+        {% if run.total_iterations > 1 %}
+        <div class="alert alert-warning" style="margin-top: 1rem;">
+            <strong>压力测试：</strong>共 {{ run.total_iterations }} 次迭代，当前第 {{ run.current_iteration }} 次
+        </div>
+        {% endif %}
+
+        {% if run.monkey_enabled %}
+        <div class="alert alert-info" style="margin-top: 1rem;">
+            <strong>Monkey 测试已启用：</strong>{{ run.monkey_event_count }} 事件，间隔 {{ run.monkey_throttle }}ms
+        </div>
+        {% endif %}
     </div>
 
     <div class="card">

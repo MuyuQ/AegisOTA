@@ -4,7 +4,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Union
 
 
 @dataclass
@@ -40,7 +40,7 @@ class CommandRunner(ABC):
     @abstractmethod
     def run(
         self,
-        command: str,
+        command: Union[str, List[str]],
         timeout: Optional[int] = None,
         cwd: Optional[str] = None,
         env: Optional[dict] = None,
@@ -48,7 +48,7 @@ class CommandRunner(ABC):
         """执行命令并返回结果。
 
         Args:
-            command: 要执行的命令
+            command: 要执行的命令（字符串或列表形式）
             timeout: 超时时间（秒）
             cwd: 工作目录
             env: 环境变量
@@ -60,7 +60,7 @@ class CommandRunner(ABC):
 
     def run_with_retry(
         self,
-        command: str,
+        command: Union[str, List[str]],
         max_retries: int = 3,
         retry_delay: int = 1,
         timeout: Optional[int] = None,
@@ -80,18 +80,27 @@ class ShellCommandRunner(CommandRunner):
 
     def run(
         self,
-        command: str,
+        command: Union[str, List[str]],
         timeout: Optional[int] = None,
         cwd: Optional[str] = None,
         env: Optional[dict] = None,
     ) -> CommandResult:
-        """执行 shell 命令。"""
+        """执行 shell 命令。
+
+        当 command 为列表时，直接传递给 subprocess（不使用 shell=True），
+        避免命令注入风险。
+        当 command 为字符串时，使用 shell=True 执行（保持向后兼容）。
+        """
         start_time = time.time()
+
+        # 判断是否使用 shell 模式
+        use_shell = isinstance(command, str)
+        command_display = command if isinstance(command, str) else " ".join(command)
 
         try:
             process = subprocess.run(
                 command,
-                shell=True,
+                shell=use_shell,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
@@ -102,7 +111,7 @@ class ShellCommandRunner(CommandRunner):
             duration_ms = int((time.time() - start_time) * 1000)
 
             return CommandResult(
-                command=command,
+                command=command_display,
                 exit_code=process.returncode,
                 stdout=process.stdout,
                 stderr=process.stderr,
@@ -112,7 +121,7 @@ class ShellCommandRunner(CommandRunner):
         except subprocess.TimeoutExpired:
             duration_ms = int((time.time() - start_time) * 1000)
             return CommandResult(
-                command=command,
+                command=command_display,
                 exit_code=-1,
                 stdout="",
                 stderr=f"Command timed out after {timeout} seconds",
@@ -122,7 +131,7 @@ class ShellCommandRunner(CommandRunner):
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
             return CommandResult(
-                command=command,
+                command=command_display,
                 exit_code=-1,
                 stdout="",
                 stderr=str(e),
