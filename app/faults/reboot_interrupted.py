@@ -94,11 +94,22 @@ class RebootInterruptedFault(FaultPlugin):
             {"interrupt_after_seconds": self.interrupt_after_seconds},
         )
 
-        # 断开 ADB 连接（模拟）
+        # 根据中断类型执行不同操作
         if self.interrupt_type == "disconnect":
-            disconnect_result = self.executor.shell(
-                "exit",  # 模拟断开
-                device=context.device_serial,
+            # 使用 runner 直接执行 adb disconnect 命令
+            disconnect_cmd = ["adb", "disconnect", context.device_serial]
+            disconnect_result = self.executor.runner.run(disconnect_cmd)
+            self.record_event(
+                context,
+                f"ADB 断开连接: {disconnect_result.stdout}",
+            )
+
+        elif self.interrupt_type == "timeout":
+            # timeout 类型：等待超时，不执行额外操作
+            # 只需要等待足够长的时间让系统检测到超时
+            self.record_event(
+                context,
+                "等待超时检测",
             )
 
         return FaultResult(

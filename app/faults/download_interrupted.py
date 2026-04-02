@@ -62,7 +62,7 @@ class DownloadInterruptedFault(FaultPlugin):
         """注入阶段：根据中断点执行不同操作。"""
         self.record_event(context, f"执行下载中断（{self.interrupt_point}）")
 
-        remote_path = "/data/local/tmp/update.zip"
+        remote_path = context.package_path or "/data/local/tmp/update.zip"
 
         if self.interrupt_point == "before_download":
             # 在推送前确保没有现有包
@@ -84,33 +84,44 @@ class DownloadInterruptedFault(FaultPlugin):
             )
 
         elif self.interrupt_point == "during_download":
-            # 在推送过程中模拟网络中断（实际实现需要更复杂的逻辑）
-            # 这里简化为删除部分下载的包
-            rm_result = self.executor.shell(
-                f"rm -f {remote_path}",
+            # 在推送过程中模拟网络中断：创建部分文件
+            # 创建一个小的部分文件模拟下载中断
+            partial_result = self.executor.shell(
+                f"dd if=/dev/zero of={remote_path} bs=1024 count=1024 2>/dev/null",
                 device=context.device_serial,
             )
+
+            self.record_event(context, "创建部分下载文件模拟中断")
 
             return FaultResult(
                 success=True,
                 fault_type=self.fault_type,
-                message="下载过程中中断：已删除部分下载的包",
-                data={"interrupt_point": self.interrupt_point},
+                message="下载过程中中断：已创建部分下载的包（1MB）",
+                data={
+                    "interrupt_point": self.interrupt_point,
+                    "remote_path": remote_path,
+                    "partial_size": "1MB",
+                },
             )
 
         elif self.interrupt_point == "after_download":
-            # 下载完成后损坏包（通过删除部分内容模拟）
-            # 简化处理：直接删除包
-            rm_result = self.executor.shell(
-                f"rm -f {remote_path}",
+            # 下载完成后损坏包：追加垃圾数据破坏 ZIP 结构
+            corrupt_result = self.executor.shell(
+                f"echo 'CORRUPTED_DATA' >> {remote_path}",
                 device=context.device_serial,
             )
+
+            self.record_event(context, "损坏升级包")
 
             return FaultResult(
                 success=True,
                 fault_type=self.fault_type,
                 message="下载后中断：已损坏升级包",
-                data={"interrupt_point": self.interrupt_point},
+                data={
+                    "interrupt_point": self.interrupt_point,
+                    "remote_path": remote_path,
+                    "corruption": "appended garbage data",
+                },
             )
 
         return FaultResult(

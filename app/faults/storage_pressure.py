@@ -180,12 +180,16 @@ class StoragePressureFault(FaultPlugin):
 
         self.record_event(context, "清理存储压力注入")
 
+        # 保存路径用于返回数据
+        removed_file = self._fill_file_path
+
         # 删除填充文件
         rm_result = self.executor.shell(
             f"rm -f {self._fill_file_path}",
             device=context.device_serial,
         )
 
+        # 清理后重置路径
         self._fill_file_path = None
 
         if not rm_result.success:
@@ -203,5 +207,5 @@ class StoragePressureFault(FaultPlugin):
             success=True,
             fault_type=self.fault_type,
             message="存储压力注入已清理",
-            data={"removed_file": self._fill_file_path},
+            data={"removed_file": removed_file},
         )
