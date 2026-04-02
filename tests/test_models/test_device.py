@@ -72,7 +72,7 @@ class TestDeviceCreation:
             system_version="14",
             build_fingerprint="google/panther/panther:14/AP2A.240305.004/11948111:user/release-keys",
             status=DeviceStatus.BUSY,
-            health_score=0.95,
+            health_score=95,
             battery_level=85,
             last_seen_at=datetime.now(timezone.utc),
         )
@@ -83,7 +83,7 @@ class TestDeviceCreation:
         assert device.id is not None
         assert device.brand == "Google"
         assert device.model == "Pixel 7"
-        assert device.health_score == 0.95
+        assert device.health_score == 95
         assert device.get_tags() == ["test", "stable"]
 
     def test_device_unique_serial(self, db_session):
@@ -176,16 +176,16 @@ class TestDeviceDatabaseOperations:
 
     def test_update_device_health(self, db_session):
         """测试更新设备健康信息。"""
-        device = Device(serial="HEALTH001", health_score=0.8, battery_level=50)
+        device = Device(serial="HEALTH001", health_score=80, battery_level=50)
         db_session.add(device)
         db_session.commit()
 
-        device.health_score = 0.5
+        device.health_score = 50
         device.battery_level = 25
         db_session.commit()
 
         db_session.refresh(device)
-        assert device.health_score == 0.5
+        assert device.health_score == 50
         assert device.battery_level == 25
 
     def test_quarantine_device(self, db_session):
@@ -468,7 +468,7 @@ class TestDevicePool:
 
         db_session.refresh(pool)
         assert pool.get_available_count() == 8
-        assert pool.get_capacity() == 10
+        assert pool.max_parallel == 10
 
 
 class TestDeviceExtensions:
@@ -505,7 +505,7 @@ class TestDeviceExtensions:
 
     def test_device_health_score_int(self, db_session):
         """测试健康评分为整数类型。"""
-        device = Device(serial="HEALTH001", health_score=85)
+        device = Device(serial="HEALTH_INT001", health_score=85)
         db_session.add(device)
         db_session.commit()
 

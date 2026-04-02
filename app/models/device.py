@@ -48,7 +48,7 @@ class DevicePool(Base):
 
     # 关系
     devices: Mapped[list["Device"]] = relationship(
-        "Device", back_populates="pool", cascade="all, delete-orphan"
+        "Device", back_populates="pool"
     )
 
     def get_tag_selector(self) -> dict[str, Any]:
@@ -66,13 +66,9 @@ class DevicePool(Base):
 
     def get_available_count(self) -> int:
         """获取池中可用设备数量。"""
-        from app.models.enums import DeviceStatus
         return len([d for d in self.devices if d.status == DeviceStatus.IDLE])
 
-    def get_capacity(self) -> int:
-        """获取池的最大并行容量。"""
-        return self.max_parallel
-
+    
 
 class Device(Base):
     """设备实体。"""
