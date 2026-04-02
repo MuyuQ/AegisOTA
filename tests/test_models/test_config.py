@@ -56,3 +56,32 @@ def test_clear_settings_cache():
 
     # 验证是新实例（缓存已清除）
     assert settings3 is not settings1
+
+
+class TestPoolConfig:
+    """设备池配置测试。"""
+
+    def test_pool_config_defaults(self):
+        """测试设备池配置默认值。"""
+        from app.config import Settings
+
+        settings = Settings()
+
+        assert settings.MAX_DEVICES_PER_POOL == 100
+        assert settings.DEFAULT_POOL_RESERVED_RATIO == 0.2
+        assert settings.SCHEDULER_INTERVAL_SEC == 5
+        assert settings.MAX_QUEUED_RUNS == 1000
+        assert settings.PREEMPTION_CHECK_INTERVAL == 10
+        assert settings.ENABLE_DEVICE_POOL is True
+
+    def test_pool_config_from_env(self, monkeypatch):
+        """测试从环境变量读取配置。"""
+        monkeypatch.setenv("AEGISOTA_MAX_DEVICES_PER_POOL", "200")
+        monkeypatch.setenv("AEGISOTA_ENABLE_DEVICE_POOL", "false")
+
+        from app.config import Settings, clear_settings_cache
+        clear_settings_cache()
+        settings = Settings()
+
+        assert settings.MAX_DEVICES_PER_POOL == 200
+        assert settings.ENABLE_DEVICE_POOL is False

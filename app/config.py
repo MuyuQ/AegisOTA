@@ -30,6 +30,19 @@ class Settings(BaseSettings):
     # 调度配置
     MAX_CONCURRENT_RUNS: int = 5  # 最大并发任务数
     LEASE_DEFAULT_DURATION: int = 3600  # 默认租约时长（秒）
+    SCHEDULER_INTERVAL_SEC: int = 5  # 调度器间隔（秒）
+    MAX_QUEUED_RUNS: int = 1000  # 最大排队任务数
+    PREEMPTION_CHECK_INTERVAL: int = 10  # 抢占检查间隔（秒）
+
+    # 设备池配置
+    ENABLE_DEVICE_POOL: bool = True  # 设备池功能开关
+    MAX_DEVICES_PER_POOL: int = 100  # 单池最大设备数
+    DEFAULT_POOL_RESERVED_RATIO: float = 0.2  # 默认应急保留比例
+
+    # 升级包配置
+    OTA_PACKAGES_DIR: Path = Path("ota_packages")  # 升级包根目录
+    FULL_PACKAGE_SUBDIR: str = "full"  # 全量包子目录
+    INCREMENTAL_PACKAGE_SUBDIR: str = "incremental"  # 差分包子目录
 
     model_config = SettingsConfigDict(
         env_prefix="AEGISOTA_",
@@ -40,6 +53,18 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         # 确保产物目录存在，应用启动时自动创建
         self.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        # 确保升级包目录存在
+        self.OTA_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+        (self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
+        (self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
+
+    def get_full_package_path(self) -> Path:
+        """获取全量包目录路径。"""
+        return self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR
+
+    def get_incremental_package_path(self) -> Path:
+        """获取差分包目录路径。"""
+        return self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR
 
 
 @lru_cache
