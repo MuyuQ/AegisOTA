@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     MAX_DEVICES_PER_POOL: int = 100  # 单池最大设备数
     DEFAULT_POOL_RESERVED_RATIO: float = 0.2  # 默认应急保留比例
 
+    # API Key 认证配置
+    API_KEY_ENABLED: bool = True  # API Key 认证开关
+    API_KEY_HEADER: str = "X-API-Key"  # API Key 请求头名称
+    API_KEYS: list[str] = []  # 有效的 API Keys（环境变量逗号分隔）
+
     # 升级包配置
     OTA_PACKAGES_DIR: Path = Path("ota_packages")  # 升级包根目录
     FULL_PACKAGE_SUBDIR: str = "full"  # 全量包子目录
