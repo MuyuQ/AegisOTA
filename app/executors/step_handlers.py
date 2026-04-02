@@ -1,4 +1,7 @@
-"""任务执行阶段 Handler。"""
+"""任务执行阶段 Handler。
+
+支持幂等性：每个步骤可以检查是否已完成，避免重复执行。
+"""
 
 import time
 from abc import ABC, abstractmethod
@@ -24,6 +27,7 @@ class StepHandlerResult:
     data: Dict[str, Any]
     duration_ms: int
     error: Optional[str] = None
+    skipped: bool = False  # 是否被跳过（幂等性检查通过）
 
     def to_dict(self) -> dict:
         """转换为字典。"""
@@ -34,11 +38,15 @@ class StepHandlerResult:
             "data": self.data,
             "duration_ms": self.duration_ms,
             "error": self.error,
+            "skipped": self.skipped,
         }
 
 
 class StepHandler(ABC):
-    """阶段执行 Handler 抽象基类。"""
+    """阶段执行 Handler 抽象基类。
+
+    支持幂等性：通过 can_resume() 检查步骤是否可跳过。
+    """
 
     step_name: StepName = None
     timeout: int = 300
@@ -56,6 +64,52 @@ class StepHandler(ABC):
     def execute(self, context: RunContext) -> StepHandlerResult:
         """执行阶段逻辑。"""
         pass
+
+    def can_resume(self, context: RunContext) -> bool:
+        """检查步骤是否可以跳过（已成功完成）。
+
+        子类可以重写此方法实现特定的幂等性检查。
+
+        Args:
+            context: 运行上下文，包含之前步骤的结果
+
+        Returns:
+            True 表示可以跳过此步骤，False 表示需要执行
+        """
+        # 默认实现：检查 step_results 中是否有成功的结果
+        step_result = context.step_results.get(self.step_name.value)
+        if step_result and step_result.get("success"):
+            return True
+        return False
+
+    def execute_with_idempotency(
+        self,
+        context: RunContext,
+        enable_idempotency: bool = True,
+    ) -> StepHandlerResult:
+        """执行步骤，支持幂等性检查。
+
+        Args:
+            context: 运行上下文
+            enable_idempotency: 是否启用幂等性检查
+
+        Returns:
+            步骤执行结果
+        """
+        # 幂等性检查
+        if enable_idempotency and self.can_resume(context):
+            prev_result = context.step_results.get(self.step_name.value, {})
+            return StepHandlerResult(
+                success=True,
+                step_name=self.step_name,
+                message=f"步骤已跳过（幂等性检查通过）",
+                data=prev_result.get("data", {}),
+                duration_ms=0,
+                skipped=True,
+            )
+
+        # 执行步骤
+        return self.execute(context)
 
     def _save_artifact(
         self,
@@ -93,6 +147,20 @@ class PrecheckHandler(StepHandler):
     """升级前检查 Handler。"""
 
     step_name = StepName.PRECHECK
+
+    def can_resume(self, context: RunContext) -> bool:
+        """检查预检查是否已完成。"""
+        prev_result = context.step_results.get(self.step_name.value)
+        if prev_result and prev_result.get("success"):
+            # 验证设备仍然在线
+            devices = self.executor.devices()
+            device_online = any(
+                d["serial"] == context.device_serial
+                for d in devices
+            )
+            if device_online:
+                return True
+        return False
 
     def execute(self, context: RunContext) -> StepHandlerResult:
         """执行升级前检查。"""
@@ -180,6 +248,30 @@ class PushPackageHandler(StepHandler):
     """推送升级包 Handler。"""
 
     step_name = StepName.PACKAGE_PREPARE
+
+    def can_resume(self, context: RunContext) -> bool:
+        """检查升级包是否已存在于设备上。"""
+        prev_result = context.step_results.get(self.step_name.value)
+        if not prev_result or not prev_result.get("success"):
+            return False
+
+        # 验证文件是否仍存在
+        remote_path = prev_result.get("data", {}).get("remote_path")
+        if not remote_path:
+            return False
+
+        # 检查文件是否存在
+        check_result = self.executor.shell(
+            f"ls -la {remote_path}",
+            device=context.device_serial,
+        )
+
+        if not check_result.success or "No such file" in check_result.stderr:
+            return False
+
+        # 可选：检查文件大小是否匹配
+        # 这里简化处理，只要文件存在就认为可以跳过
+        return True
 
     def execute(self, context: RunContext) -> StepHandlerResult:
         """推送升级包到设备。"""
@@ -296,6 +388,16 @@ class RebootWaitHandler(StepHandler):
     step_name = StepName.REBOOT_WAIT
     timeout = 120
 
+    def can_resume(self, context: RunContext) -> bool:
+        """检查设备是否已完成启动。"""
+        prev_result = context.step_results.get(self.step_name.value)
+        if prev_result and prev_result.get("success"):
+            # 验证设备仍然在线且启动完成
+            props = self.executor.getprop(device=context.device_serial)
+            if props.get("sys.boot_completed") == "1":
+                return True
+        return False
+
     def execute(self, context: RunContext) -> StepHandlerResult:
         """重启设备并等待启动完成。"""
         start_time = time.time()
@@ -354,6 +456,16 @@ class PostValidateHandler(StepHandler):
     """升级后验证 Handler。"""
 
     step_name = StepName.POST_VALIDATE
+
+    def can_resume(self, context: RunContext) -> bool:
+        """检查验证是否已完成。"""
+        prev_result = context.step_results.get(self.step_name.value)
+        if prev_result and prev_result.get("success"):
+            # 验证设备仍然处于启动完成状态
+            props = self.executor.getprop(device=context.device_serial)
+            if props.get("sys.boot_completed") == "1":
+                return True
+        return False
 
     def execute(self, context: RunContext) -> StepHandlerResult:
         """执行升级后验证。"""
