@@ -1,6 +1,5 @@
 """设备池管理业务逻辑。"""
 
-import json
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
