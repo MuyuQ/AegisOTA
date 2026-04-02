@@ -1,12 +1,22 @@
 """报告生成模块。"""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from app.config import get_settings
 from app.reporting.failure_classifier import FailureCategory
+
+
+# 初始化 Jinja2 环境
+_templates_dir = Path(__file__).parent / "templates"
+_jinja_env = Environment(
+    loader=FileSystemLoader(_templates_dir),
+    autoescape=select_autoescape(["html", "xml"]),
+)
 
 
 @dataclass
@@ -103,54 +113,73 @@ class ReportGenerator:
         timeline: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> str:
-        """生成 HTML 格式报告。"""
+        """生成 HTML 格式报告（使用 Jinja2 模板）。"""
         timeline = timeline or []
-        html_parts = [
-            "<!DOCTYPE html>",
-            "<html>",
-            "<head>",
-            "<meta charset='utf-8'>",
-            "<title>OTA升级报告 - Run #{}</title>".format(run_id),
-            "<style>",
-            "body { font-family: Arial, sans-serif; margin: 20px; }",
-            ".header { background: #f0f0f0; padding: 15px; border-radius: 5px; }",
-            ".status-passed { color: green; }",
-            ".status-failed { color: red; }",
-            ".timeline { margin-top: 20px; }",
-            ".timeline-item { padding: 10px; border-bottom: 1px solid #ddd; }",
-            "</style>",
-            "</head>",
-            "<body>",
-            "<div class='header'>",
-            "<h1>OTA升级报告</h1>",
-            "<p><strong>Run ID:</strong> {}</p>".format(run_id),
-            "<p><strong>计划:</strong> {}</p>".format(plan_name),
-            "<p><strong>设备:</strong> {}</p>".format(device_serial),
-            "<p><strong>状态:</strong> <span class='status-{}'>{}</span></p>".format(
-                status.lower(), status
-            ),
-            "</div>",
-            "<div class='timeline'>",
-            "<h2>执行时间线</h2>",
-        ]
+        template = _jinja_env.get_template("report.html")
 
-        for event in timeline:
-            html_parts.append(
-                "<div class='timeline-item'>"
-                "<span>{}</span> - {}"
-                "</div>".format(
-                    event.get("timestamp", ""),
-                    event.get("message", "")
-                )
-            )
+        # 状态显示映射
+        status_display_map = {
+            "passed": "成功",
+            "success": "成功",
+            "failed": "失败",
+            "failure": "失败",
+            "aborted": "已终止",
+            "running": "运行中",
+            "queued": "排队中",
+        }
 
-        html_parts.extend([
-            "</div>",
-            "</body>",
-            "</html>",
-        ])
+        # 计算执行时长
+        started_at = kwargs.get("started_at")
+        ended_at = kwargs.get("ended_at")
+        duration_seconds = None
+        if started_at and ended_at:
+            if isinstance(started_at, str):
+                started_at = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+            if isinstance(ended_at, str):
+                ended_at = datetime.fromisoformat(ended_at.replace("Z", "+00:00"))
+            duration_seconds = (ended_at - started_at).total_seconds()
 
-        return "\n".join(html_parts)
+        # 格式化时长显示
+        duration_display = None
+        if duration_seconds:
+            minutes, seconds = divmod(int(duration_seconds), 60)
+            if minutes > 0:
+                duration_display = f"{minutes}分{seconds}秒"
+            else:
+                duration_display = f"{seconds}秒"
+
+        # 格式化时间显示
+        started_at_display = None
+        ended_at_display = None
+        if started_at:
+            if isinstance(started_at, str):
+                started_at = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+            started_at_display = started_at.strftime("%Y-%m-%d %H:%M:%S")
+        if ended_at:
+            if isinstance(ended_at, str):
+                ended_at = datetime.fromisoformat(ended_at.replace("Z", "+00:00"))
+            ended_at_display = ended_at.strftime("%Y-%m-%d %H:%M:%S")
+
+        # 渲染模板
+        return template.render(
+            run_id=run_id,
+            plan_name=plan_name,
+            device_serial=device_serial,
+            status=status,
+            status_display=status_display_map.get(status.lower(), status),
+            timeline=timeline,
+            step_results=kwargs.get("step_results", {}),
+            summary=kwargs.get("summary"),
+            failure_category=kwargs.get("failure_category"),
+            failed_step=kwargs.get("failed_step"),
+            started_at=started_at,
+            ended_at=ended_at,
+            started_at_display=started_at_display,
+            ended_at_display=ended_at_display,
+            duration_seconds=duration_seconds,
+            duration_display=duration_display,
+            generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        )
 
     def generate_markdown(
         self,
@@ -219,6 +248,12 @@ class ReportGenerator:
             device_serial=report_data["device_serial"],
             status=report_data["status"],
             timeline=report_data.get("timeline", []),
+            step_results=report_data.get("step_results", {}),
+            summary=report_data.get("summary"),
+            failure_category=report_data.get("failure_category"),
+            failed_step=report_data.get("failed_step"),
+            started_at=report_data.get("started_at"),
+            ended_at=report_data.get("ended_at"),
         )
         html_path = output_dir / "report.html"
         with open(html_path, "w", encoding="utf-8") as f:

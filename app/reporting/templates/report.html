@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTA升级报告 - Run #{{ run_id }}</title>
+    <style>
+        :root {
+            --color-primary: #2563eb;
+            --color-success: #16a34a;
+            --color-error: #dc2626;
+            --color-warning: #ca8a04;
+            --color-bg: #f8fafc;
+            --color-card: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #1e293b;
+            --color-text-muted: #64748b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-bg: #0f172a;
+                --color-card: #1e293b;
+                --color-border: #334155;
+                --color-text: #f1f5f9;
+                --color-text-muted: #94a3b8;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--color-card);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .meta-value {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-passed, .status-success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-failed, .status-failure {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-aborted {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-running {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .status-passed, .status-success {
+                background-color: #166534;
+                color: #dcfce7;
+            }
+
+            .status-failed, .status-failure {
+                background-color: #991b1b;
+                color: #fee2e2;
+            }
+
+            .status-aborted {
+                background-color: #92400e;
+                color: #fef3c7;
+            }
+
+            .status-running {
+                background-color: #1e40af;
+                color: #dbeafe;
+            }
+        }
+
+        .timeline {
+            margin-top: 16px;
+        }
+
+        .timeline h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: var(--color-text);
+        }
+
+        .timeline-item {
+            padding: 12px 16px;
+            border-left: 3px solid var(--color-primary);
+            background: var(--color-bg);
+            margin-bottom: 8px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .timeline-item:hover {
+            background: var(--color-border);
+        }
+
+        .timeline-timestamp {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            font-family: monospace;
+        }
+
+        .timeline-message {
+            font-size: 0.9rem;
+        }
+
+        .timeline-data {
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--color-card);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        .step-results {
+            margin-top: 16px;
+        }
+
+        .step-results h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+        }
+
+        .step-item {
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .step-name {
+            font-weight: 600;
+        }
+
+        .step-duration {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container" role="main">
+        <article class="card">
+            <header class="header">
+                <h1>OTA 升级报告</h1>
+            </header>
+
+            <section aria-labelledby="meta-heading">
+                <h2 id="meta-heading" class="visually-hidden">任务信息</h2>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Run ID</span>
+                        <span class="meta-value">#{{ run_id }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">升级计划</span>
+                        <span class="meta-value">{{ plan_name }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">设备序列号</span>
+                        <span class="meta-value">{{ device_serial }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">状态</span>
+                        <span class="meta-value">
+                            <span class="status-badge status-{{ status.lower() }}">
+                                {{ status_display }}
+                            </span>
+                        </span>
+                    </div>
+                    {% if duration_seconds %}
+                    <div class="meta-item">
+                        <span class="meta-label">执行时长</span>
+                        <span class="meta-value">{{ duration_display }}</span>
+                    </div>
+                    {% endif %}
+                    {% if started_at %}
+                    <div class="meta-item">
+                        <span class="meta-label">开始时间</span>
+                        <span class="meta-value">{{ started_at_display }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ended_at %}
+                    <div class="meta-item">
+                        <span class="meta-label">结束时间</span>
+                        <span class="meta-value">{{ ended_at_display }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            {% if summary %}
+            <section class="card" style="margin-top: 16px;" aria-labelledby="summary-heading">
+                <h2 id="summary-heading">执行摘要</h2>
+                <p>{{ summary }}</p>
+            </section>
+            {% endif %}
+
+            {% if timeline %}
+            <section class="timeline card" aria-labelledby="timeline-heading">
+                <h2 id="timeline-heading">执行时间线</h2>
+                {% for event in timeline %}
+                <div class="timeline-item">
+                    <div class="timeline-timestamp">{{ event.timestamp }}</div>
+                    <div class="timeline-message">{{ event.message }}</div>
+                    {% if event.data %}
+                    <details class="timeline-data">
+                        <summary>详细信息</summary>
+                        <pre>{{ event.data | tojson(indent=2) }}</pre>
+                    </details>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if step_results %}
+            <section class="step-results card" aria-labelledby="steps-heading">
+                <h2 id="steps-heading">步骤执行结果</h2>
+                {% for step_name, step_data in step_results.items() %}
+                <div class="step-item">
+                    <div class="step-header">
+                        <span class="step-name">{{ step_data.step_name or step_name }}</span>
+                        <span class="status-badge status-{{ 'success' if step_data.success else 'failed' }}">
+                            {{ '成功' if step_data.success else '失败' }}
+                        </span>
+                    </div>
+                    {% if step_data.duration_ms %}
+                    <div class="step-duration">耗时: {{ step_data.duration_ms }}ms</div>
+                    {% endif %}
+                    {% if step_data.message %}
+                    <p style="margin-top: 8px; font-size: 0.9rem;">{{ step_data.message }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if failure_category %}
+            <section class="card" aria-labelledby="failure-heading">
+                <h2 id="failure-heading">失败分析</h2>
+                <p><strong>失败分类:</strong> {{ failure_category }}</p>
+                {% if failed_step %}
+                <p><strong>失败步骤:</strong> {{ failed_step }}</p>
+                {% endif %}
+            </section>
+            {% endif %}
+        </article>
+
+        <footer class="footer">
+            <p>Generated by AegisOTA at {{ generated_at }}</p>
+        </footer>
+    </main>
+</body>
+</html>
