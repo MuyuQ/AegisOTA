@@ -65,11 +65,15 @@ class TestRunStatus:
         assert RunStatus.FAILED == "failed"
         assert RunStatus.ABORTED == "aborted"
         assert RunStatus.PREEMPTED == "preempted"
-        assert RunStatus.QUARANTINED == "quarantined"
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(RunStatus) == 10
+        assert len(RunStatus) == 9
+
+    def test_removed_quarantined(self):
+        """测试已移除的 quarantined 状态。"""
+        # RunStatus 不应包含 quarantined
+        assert not hasattr(RunStatus, 'QUARANTINED')
 
 
 class TestLeaseStatus:

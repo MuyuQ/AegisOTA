@@ -71,11 +71,10 @@ class TestRunStatus:
         assert RunStatus.FAILED == "failed"
         assert RunStatus.ABORTED == "aborted"
         assert RunStatus.PREEMPTED == "preempted"
-        assert RunStatus.QUARANTINED == "quarantined"
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(RunStatus) == 10
+        assert len(RunStatus) == 9
 
     def test_status_is_string_enum(self):
         """测试枚举是字符串枚举。"""
@@ -240,8 +239,8 @@ class TestRunSessionCreation:
 
     def test_session_is_terminal_state(self, db_session, sample_device, sample_plan):
         """测试终态判断。"""
-        terminal_states = [RunStatus.PASSED, RunStatus.FAILED, RunStatus.ABORTED, RunStatus.QUARANTINED]
-        non_terminal_states = [RunStatus.QUEUED, RunStatus.RESERVED, RunStatus.RUNNING, RunStatus.VALIDATING]
+        terminal_states = [RunStatus.PASSED, RunStatus.FAILED, RunStatus.ABORTED]
+        non_terminal_states = [RunStatus.QUEUED, RunStatus.ALLOCATING, RunStatus.RESERVED, RunStatus.RUNNING, RunStatus.VALIDATING]
 
         for status in terminal_states:
             session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id, status=status)
@@ -460,21 +459,6 @@ class TestRunSessionFailure:
         assert session.status == RunStatus.FAILED
         assert session.failure_category == FailureCategory.BOOT_FAILURE
         assert session.summary == "设备启动超时"
-
-    def test_session_quarantined(self, db_session, sample_device, sample_plan):
-        """测试隔离会话。"""
-        session = RunSession(
-            device_id=sample_device.id,
-            plan_id=sample_plan.id,
-            status=RunStatus.QUARANTINED,
-            failure_category=FailureCategory.DEVICE_ENV_ISSUE,
-            summary="设备环境异常，已隔离",
-        )
-        db_session.add(session)
-        db_session.commit()
-
-        assert session.status == RunStatus.QUARANTINED
-        assert session.is_terminal_state() is True
 
 
 class TestDeviceLeaseWithRunSession:

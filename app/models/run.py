@@ -208,7 +208,6 @@ class RunSession(Base):
             RunStatus.PASSED,
             RunStatus.FAILED,
             RunStatus.ABORTED,
-            RunStatus.QUARANTINED,
         )
 
     def get_run_options(self) -> dict[str, Any]:
