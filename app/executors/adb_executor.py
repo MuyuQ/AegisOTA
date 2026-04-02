@@ -1,7 +1,7 @@
 """ADB/Fastboot 命令执行器。"""
 
 import re
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any
 
 from app.executors.command_runner import CommandRunner, CommandResult, ShellCommandRunner
 

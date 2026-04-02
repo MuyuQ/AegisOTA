@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from app.database import SessionLocal, init_db
-from app.models import RunSession, RunStatus, Artifact
+from app.models import RunSession, Artifact
 
 app = typer.Typer(help="报告管理命令")
 console = Console()

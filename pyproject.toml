@@ -36,6 +36,8 @@ packages = ["app"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 
 [tool.pytest.ini_options]

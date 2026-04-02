@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 from app.config import get_settings
-from app.executors.command_runner import CommandRunner, ShellCommandRunner
+from app.executors.command_runner import CommandRunner
 from app.executors.adb_executor import ADBExecutor
 from app.executors.mock_executor import MockADBExecutor
 from app.executors.run_context import RunContext

@@ -2,17 +2,15 @@
 
 import time
 import threading
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.executors.command_runner import CommandRunner
-from app.executors.run_executor import RunExecutor, MockRunExecutor, ExecutionResult
+from app.executors.run_executor import RunExecutor, ExecutionResult
 from app.executors.run_context import RunContext
-from app.executors.mock_executor import MockExecutor
-from app.models.device import Device, DeviceStatus
+from app.models.device import Device
 from app.models.run import RunSession, RunStatus, StepName
 from app.models.artifact import Artifact, ArtifactType
 from app.services.scheduler_service import SchedulerService

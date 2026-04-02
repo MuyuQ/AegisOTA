@@ -3,7 +3,7 @@
 定义设备和任务的状态机，确保状态转换符合业务规则。
 """
 
-from typing import Dict, Set, Optional, Type
+from typing import Dict, Set, Optional
 
 from app.models.enums import DeviceStatus, RunStatus
 

@@ -1,7 +1,7 @@
 """Mock 命令执行器（用于测试）。"""
 
 import re
-from typing import Optional, Dict, Tuple, List, Any, Union
+from typing import Optional, Dict, Tuple, List, Union
 from app.executors.command_runner import CommandRunner, CommandResult
 
 

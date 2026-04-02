@@ -3,11 +3,11 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.device import Device, DevicePool, DeviceStatus
+from app.models.device import Device
 from app.models.enums import PoolPurpose
 from app.services.pool_service import PoolService
 
@@ -44,6 +44,8 @@ class DeviceAssign(BaseModel):
 class PoolResponse(BaseModel):
     """设备池响应。"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     purpose: str
@@ -52,20 +54,16 @@ class PoolResponse(BaseModel):
     tag_selector: Optional[dict] = None
     enabled: bool
 
-    class Config:
-        from_attributes = True
-
 
 class DeviceResponse(BaseModel):
     """设备响应。"""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     serial: str
     status: str
     pool_id: Optional[int] = None
-
-    class Config:
-        from_attributes = True
 
 
 class CapacityResponse(BaseModel):

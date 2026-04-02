@@ -10,7 +10,6 @@ from app.models.run import (
     UpgradePlan, RunSession, RunStep,
     RunStatus, UpgradeType, StepName
 )
-from app.models.device import Device, DeviceLease, DeviceStatus
 
 
 class RunService:

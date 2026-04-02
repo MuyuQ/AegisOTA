@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from app.database import SessionLocal, init_db
-from app.models import RunSession, RunStatus, UpgradePlan, Device, DeviceStatus
+from app.models import RunSession, RunStatus, Device, DeviceStatus
 from app.services.run_service import RunService
 
 app = typer.Typer(help="任务管理命令")

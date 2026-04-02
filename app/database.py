@@ -45,7 +45,7 @@ def init_db(db_engine=None):
 
     try:
         # 检查是否已有数据
-        from app.models.device import Device, DevicePool, DeviceStatus
+        from app.models.device import Device, DeviceStatus
         from app.models.run import UpgradePlan, UpgradeType
 
         if db.query(Device).count() == 0:

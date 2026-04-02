@@ -1,23 +1,24 @@
 """设备 API 路由。"""
 
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.device import Device, DeviceStatus
 from app.services.device_service import DeviceService
-from app.executors.mock_executor import MockADBExecutor
 
 router = APIRouter(prefix="/api/devices", tags=["devices"])
 
 
 class DeviceResponse(BaseModel):
     """设备响应模型。"""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     serial: str
@@ -29,9 +30,6 @@ class DeviceResponse(BaseModel):
     health_score: Optional[float] = None
     tags: List[str] = []
     last_seen_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class QuarantineRequest(BaseModel):
@@ -331,7 +329,7 @@ async def get_device_health_detail(
     db: Session = Depends(get_db),
 ):
     """获取设备健康度详情（HTML 片段，用于模态框）。"""
-    from app.models.run import RunSession, RunStatus
+    from app.models.run import RunSession
     from datetime import datetime
 
     device = db.query(Device).filter_by(serial=serial).first()

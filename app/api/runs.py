@@ -1,16 +1,15 @@
 """任务 API 路由。"""
 
-from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.run import RunSession, RunStatus, UpgradePlan, UpgradeType
-from app.models.device import Device, DeviceStatus
+from app.models.run import RunSession, RunStatus, UpgradeType
+from app.models.device import Device
 from app.services.run_service import RunService
 from app.services.scheduler_service import SchedulerService
 
@@ -27,6 +26,8 @@ class CreateRunRequest(BaseModel):
 class RunResponse(BaseModel):
     """任务响应模型。"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     plan_id: int
     device_id: Optional[int] = None
@@ -36,9 +37,6 @@ class RunResponse(BaseModel):
     result: Optional[str] = None
     failure_category: Optional[str] = None
     summary: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class CreatePlanRequest(BaseModel):

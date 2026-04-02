@@ -3,13 +3,11 @@
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
 
 from app.config import get_settings, clear_settings_cache
-from app.database import get_db
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 

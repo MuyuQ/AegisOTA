@@ -1,7 +1,7 @@
 """失败分类模块。"""
 
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 
 from app.models.run import StepName
 

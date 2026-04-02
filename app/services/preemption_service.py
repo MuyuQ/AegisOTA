@@ -1,7 +1,7 @@
 """抢占服务。"""
 
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import case, select
 from sqlalchemy.orm import Session
