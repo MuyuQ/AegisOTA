@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy import case
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.models.device import Device, DeviceLease, DeviceStatus, LeaseStatus
@@ -77,16 +77,22 @@ class PreemptionService:
             if not victim_run:
                 return False
 
+            # 检查任务是否可被抢占
+            if not victim_run.preemptible:
+                return False
+
             # 获取抢占者任务
             preemptor_run = self.db.query(RunSession).filter_by(id=preemptor_run_id).first()
             if not preemptor_run:
                 return False
 
-            # 获取租约
-            lease = self.db.query(DeviceLease).filter_by(
-                run_id=victim_run_id,
-                lease_status=LeaseStatus.ACTIVE,
-            ).first()
+            # 使用 SELECT FOR UPDATE 锁定租约行，防止并发竞态
+            lease = self.db.execute(
+                select(DeviceLease).where(
+                    DeviceLease.run_id == victim_run_id,
+                    DeviceLease.lease_status == LeaseStatus.ACTIVE,
+                ).with_for_update()
+            ).scalar_one_or_none()
 
             if not lease:
                 return False
@@ -102,8 +108,10 @@ class PreemptionService:
             victim_run.status = RunStatus.PREEMPTED
             victim_run.ended_at = datetime.now(timezone.utc)
 
-            # 释放设备
-            device = self.db.query(Device).filter_by(id=device_id).first()
+            # 使用 SELECT FOR UPDATE 锁定设备行，防止并发竞态
+            device = self.db.execute(
+                select(Device).where(Device.id == device_id).with_for_update()
+            ).scalar_one_or_none()
             if device:
                 device.status = DeviceStatus.IDLE
                 device.current_run_id = None
