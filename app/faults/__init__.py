@@ -5,6 +5,10 @@ from app.faults.storage_pressure import StoragePressureFault
 from app.faults.reboot_interrupted import RebootInterruptedFault
 from app.faults.monkey_after_upgrade import MonkeyAfterUpgradeFault
 from app.faults.download_interrupted import DownloadInterruptedFault
+from app.faults.package_corrupted import PackageCorruptedFault
+from app.faults.low_battery import LowBatteryFault
+from app.faults.post_boot_watchdog_failure import PostBootWatchdogFailureFault
+from app.faults.performance_regression import PerformanceRegressionFault
 
 __all__ = [
     "FaultPlugin",
@@ -13,4 +17,8 @@ __all__ = [
     "RebootInterruptedFault",
     "MonkeyAfterUpgradeFault",
     "DownloadInterruptedFault",
+    "PackageCorruptedFault",
+    "LowBatteryFault",
+    "PostBootWatchdogFailureFault",
+    "PerformanceRegressionFault",
 ]
