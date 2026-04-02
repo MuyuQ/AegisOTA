@@ -156,6 +156,9 @@ async def lifespan(app: FastAPI):
     """
     # 启动时初始化数据库
     init_db()
+    # 初始化日志系统
+    from app.utils.logging import setup_logging
+    setup_logging()
     yield
     # 关闭时的清理工作（如需要）
 
