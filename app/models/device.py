@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -189,3 +190,7 @@ class DeviceLease(Base):
             if datetime.now(timezone.utc) > expired:
                 return False
         return True
+
+
+# 复合索引
+Index("ix_device_leases_device_id_lease_status", DeviceLease.device_id, DeviceLease.lease_status)

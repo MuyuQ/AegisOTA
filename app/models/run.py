@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -304,3 +305,7 @@ class RunStep(Base):
             delta = self.ended_at - self.started_at
             return delta.total_seconds()
         return None
+
+
+# 复合索引
+Index("ix_run_steps_run_id_step_name", RunStep.run_id, RunStep.step_name)
