@@ -7,7 +7,7 @@
 
 <div class="card" style="max-width: 600px; margin-top: 2rem;">
     <form hx-post="/api/runs/form" hx-swap="innerHTML" hx-target="#result">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token_from_request(request) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="form-group">
             <label class="form-label">升级计划</label>
             <select name="plan_id" class="form-select" required>

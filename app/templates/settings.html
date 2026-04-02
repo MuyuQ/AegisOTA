@@ -82,7 +82,7 @@
 <div class="card" style="margin-top: 1.5rem;">
     <div class="card-header">执行配置</div>
     <form hx-post="/settings/config" hx-swap="innerHTML" hx-target="#config-result" style="margin-top: 0.5rem;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token_from_request(request) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <table class="table">
             <tr>
                 <td style="width: 200px;">
