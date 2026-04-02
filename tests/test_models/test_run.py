@@ -1,7 +1,7 @@
 """任务模型测试。"""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -63,17 +63,19 @@ class TestRunStatus:
     def test_status_values(self):
         """测试枚举值正确。"""
         assert RunStatus.QUEUED == "queued"
+        assert RunStatus.ALLOCATING == "allocating"
         assert RunStatus.RESERVED == "reserved"
         assert RunStatus.RUNNING == "running"
         assert RunStatus.VALIDATING == "validating"
         assert RunStatus.PASSED == "passed"
         assert RunStatus.FAILED == "failed"
         assert RunStatus.ABORTED == "aborted"
+        assert RunStatus.PREEMPTED == "preempted"
         assert RunStatus.QUARANTINED == "quarantined"
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(RunStatus) == 8
+        assert len(RunStatus) == 10
 
     def test_status_is_string_enum(self):
         """测试枚举是字符串枚举。"""
@@ -190,7 +192,7 @@ class TestRunSessionCreation:
 
     def test_create_session_full(self, db_session, sample_device, sample_plan):
         """测试创建完整运行会话。"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         session = RunSession(
             device_id=sample_device.id,
             plan_id=sample_plan.id,
@@ -206,7 +208,7 @@ class TestRunSessionCreation:
 
     def test_session_duration(self, db_session, sample_device, sample_plan):
         """测试持续时间计算。"""
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         end = start + timedelta(minutes=30)
 
         session = RunSession(
@@ -229,7 +231,7 @@ class TestRunSessionCreation:
             device_id=sample_device.id,
             plan_id=sample_plan.id,
             status=RunStatus.RUNNING,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         db_session.add(session)
         db_session.commit()
@@ -359,7 +361,7 @@ class TestRunStepCreation:
         db_session.add(run)
         db_session.commit()
 
-        start = datetime.utcnow()
+        start = datetime.now(timezone.utc)
         end = start + timedelta(seconds=45)
 
         step = RunStep(

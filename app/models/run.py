@@ -16,23 +16,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.enums import RunPriority, RunStatus
 from app.models.fault import FaultProfile
 
 if TYPE_CHECKING:
     from app.models.artifact import Artifact
-
-
-class RunStatus(str, Enum):
-    """任务运行状态枚举。"""
-
-    QUEUED = "queued"
-    RESERVED = "reserved"
-    RUNNING = "running"
-    VALIDATING = "validating"
-    PASSED = "passed"
-    FAILED = "failed"
-    ABORTED = "aborted"
-    QUARANTINED = "quarantined"
 
 
 class UpgradeType(str, Enum):
@@ -93,6 +81,7 @@ class UpgradePlan(Base):
         String(32), default=UpgradeType.FULL, nullable=False
     )
     package_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    source_build: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     target_build: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
     # 配置关联
@@ -106,6 +95,7 @@ class UpgradePlan(Base):
 
     # 执行配置
     parallelism: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    enable_cycle_test: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     # 创建者
     created_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
@@ -166,6 +156,18 @@ class RunSession(Base):
     )
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # 任务选项（JSON 存储）
+    run_options: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # 压力测试追踪
+    current_iteration: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_iterations: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    # 父任务关联（用于压力测试子任务）
+    parent_run_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("run_sessions.id", ondelete="SET NULL"), nullable=True
+    )
+
     # 时间戳
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -208,6 +210,19 @@ class RunSession(Base):
             RunStatus.ABORTED,
             RunStatus.QUARANTINED,
         )
+
+    def get_run_options(self) -> dict[str, Any]:
+        """获取任务选项配置。"""
+        if not self.run_options:
+            return {}
+        try:
+            return json.loads(self.run_options)
+        except json.JSONDecodeError:
+            return {}
+
+    def set_run_options(self, options: dict[str, Any]) -> None:
+        """设置任务选项配置。"""
+        self.run_options = json.dumps(options) if options else None
 
 
 class RunStep(Base):

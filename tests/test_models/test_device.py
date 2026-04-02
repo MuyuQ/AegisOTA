@@ -1,7 +1,7 @@
 """设备模型测试。"""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -33,6 +33,7 @@ class TestDeviceStatus:
     def test_status_values(self):
         """测试枚举值正确。"""
         assert DeviceStatus.IDLE == "idle"
+        assert DeviceStatus.RESERVED == "reserved"
         assert DeviceStatus.BUSY == "busy"
         assert DeviceStatus.OFFLINE == "offline"
         assert DeviceStatus.QUARANTINED == "quarantined"
@@ -40,7 +41,7 @@ class TestDeviceStatus:
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(DeviceStatus) == 5
+        assert len(DeviceStatus) == 6
 
     def test_status_is_string_enum(self):
         """测试枚举是字符串枚举。"""
@@ -68,12 +69,12 @@ class TestDeviceCreation:
             serial="XYZ789",
             brand="Google",
             model="Pixel 7",
-            android_version="14",
+            system_version="14",
             build_fingerprint="google/panther/panther:14/AP2A.240305.004/11948111:user/release-keys",
             status=DeviceStatus.BUSY,
             health_score=0.95,
             battery_level=85,
-            last_seen_at=datetime.utcnow(),
+            last_seen_at=datetime.now(timezone.utc),
         )
         device.set_tags(["test", "stable"])
         db_session.add(device)
@@ -256,7 +257,7 @@ class TestDeviceLeaseCreation:
         db_session.add(device)
         db_session.commit()
 
-        expired_at = datetime.utcnow() + timedelta(hours=1)
+        expired_at = datetime.now(timezone.utc) + timedelta(hours=1)
         lease = DeviceLease(device_id=device.id, expired_at=expired_at)
         db_session.add(lease)
         db_session.commit()
@@ -288,7 +289,7 @@ class TestDeviceLeaseCreation:
         db_session.commit()
 
         lease.lease_status = LeaseStatus.RELEASED
-        lease.released_at = datetime.utcnow()
+        lease.released_at = datetime.now(timezone.utc)
         db_session.commit()
 
         db_session.refresh(lease)
@@ -317,7 +318,7 @@ class TestDeviceLeaseMethods:
         db_session.add(device)
         db_session.commit()
 
-        expired_at = datetime.utcnow() - timedelta(hours=1)
+        expired_at = datetime.now(timezone.utc) - timedelta(hours=1)
         lease = DeviceLease(device_id=device.id, expired_at=expired_at)
         db_session.add(lease)
         db_session.commit()
@@ -342,7 +343,7 @@ class TestDeviceLeaseMethods:
         db_session.add(device)
         db_session.commit()
 
-        expired_at = datetime.utcnow() + timedelta(hours=1)
+        expired_at = datetime.now(timezone.utc) + timedelta(hours=1)
         lease = DeviceLease(device_id=device.id, expired_at=expired_at)
         db_session.add(lease)
         db_session.commit()
@@ -358,7 +359,8 @@ class TestLeaseStatus:
         assert LeaseStatus.ACTIVE == "active"
         assert LeaseStatus.EXPIRED == "expired"
         assert LeaseStatus.RELEASED == "released"
+        assert LeaseStatus.PREEMPTED == "preempted"
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(LeaseStatus) == 3
+        assert len(LeaseStatus) == 4

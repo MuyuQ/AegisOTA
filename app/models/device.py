@@ -1,8 +1,7 @@
 """设备数据模型。"""
 
 import json
-from datetime import datetime
-from enum import Enum
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import (
@@ -17,24 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
-
-class DeviceStatus(str, Enum):
-    """设备状态枚举。"""
-
-    IDLE = "idle"
-    BUSY = "busy"
-    OFFLINE = "offline"
-    QUARANTINED = "quarantined"
-    RECOVERING = "recovering"
-
-
-class LeaseStatus(str, Enum):
-    """租约状态枚举。"""
-
-    ACTIVE = "active"
-    EXPIRED = "expired"
-    RELEASED = "released"
+from app.models.enums import DeviceStatus, LeaseStatus
 
 
 class Device(Base):
@@ -48,7 +30,7 @@ class Device(Base):
     # 设备信息
     brand: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    android_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    system_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     build_fingerprint: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
     # 状态与健康
@@ -135,6 +117,12 @@ class DeviceLease(Base):
         """检查租约是否有效。"""
         if self.lease_status != LeaseStatus.ACTIVE:
             return False
-        if self.expired_at and datetime.utcnow() > self.expired_at:
-            return False
+        if self.expired_at:
+            # 确保 expired_at 有时区信息进行比较
+            expired = self.expired_at
+            if expired.tzinfo is None:
+                # 如果没有时区信息，假设为 UTC
+                expired = expired.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expired:
+                return False
         return True

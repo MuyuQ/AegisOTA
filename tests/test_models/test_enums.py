@@ -12,14 +12,11 @@ class TestDeviceStatus:
     def test_existing_values(self):
         """测试现有枚举值。"""
         assert DeviceStatus.IDLE == "idle"
+        assert DeviceStatus.RESERVED == "reserved"
         assert DeviceStatus.BUSY == "busy"
         assert DeviceStatus.OFFLINE == "offline"
         assert DeviceStatus.QUARANTINED == "quarantined"
         assert DeviceStatus.RECOVERING == "recovering"
-
-    def test_new_reserved_status(self):
-        """测试新增的 RESERVED 状态。"""
-        assert DeviceStatus.RESERVED == "reserved"
 
     def test_status_count(self):
         """测试枚举值数量。"""
@@ -60,26 +57,19 @@ class TestRunStatus:
     def test_existing_values(self):
         """测试现有枚举值。"""
         assert RunStatus.QUEUED == "queued"
+        assert RunStatus.ALLOCATING == "allocating"
         assert RunStatus.RESERVED == "reserved"
         assert RunStatus.RUNNING == "running"
         assert RunStatus.VALIDATING == "validating"
         assert RunStatus.PASSED == "passed"
         assert RunStatus.FAILED == "failed"
         assert RunStatus.ABORTED == "aborted"
-
-    def test_new_statuses(self):
-        """测试新增状态。"""
-        assert RunStatus.ALLOCATING == "allocating"
         assert RunStatus.PREEMPTED == "preempted"
-
-    def test_removed_quarantined(self):
-        """测试已移除的 quarantined 状态。"""
-        # RunStatus 不应包含 quarantined
-        assert not hasattr(RunStatus, 'QUARANTINED')
+        assert RunStatus.QUARANTINED == "quarantined"
 
     def test_status_count(self):
         """测试枚举值数量。"""
-        assert len(RunStatus) == 9
+        assert len(RunStatus) == 10
 
 
 class TestLeaseStatus:

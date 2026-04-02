@@ -51,3 +51,4 @@ class RunStatus(str, Enum):
     FAILED = "failed"
     ABORTED = "aborted"
     PREEMPTED = "preempted"     # 新增：被抢占
+    QUARANTINED = "quarantined"
