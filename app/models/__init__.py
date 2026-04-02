@@ -1,7 +1,7 @@
 """数据模型模块。"""
 
 from app.models.artifact import Artifact, ArtifactType
-from app.models.device import Device, DeviceLease
+from app.models.device import Device, DeviceLease, DevicePool
 from app.models.enums import DeviceStatus, LeaseStatus, PoolPurpose, RunPriority, RunStatus
 from app.models.fault import FaultProfile, FaultStage, FaultType
 from app.models.run import (
@@ -18,6 +18,7 @@ __all__ = [
     # Device models
     "Device",
     "DeviceLease",
+    "DevicePool",
     "DeviceStatus",
     "LeaseStatus",
     "PoolPurpose",
