@@ -22,6 +22,8 @@ from app.models.fault import FaultProfile
 
 if TYPE_CHECKING:
     from app.models.artifact import Artifact
+    from app.models.device import Device, DeviceLease
+    from app.models.report import Report
 
 
 class UpgradeType(str, Enum):
@@ -209,6 +211,9 @@ class RunSession(Base):
     )
     artifacts: Mapped[list["Artifact"]] = relationship(
         "Artifact", back_populates="run_session", cascade="all, delete-orphan"
+    )
+    reports: Mapped[list["Report"]] = relationship(
+        "Report", back_populates="run_session", cascade="all, delete-orphan"
     )
 
     def get_duration_seconds(self) -> Optional[float]:

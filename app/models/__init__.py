@@ -4,6 +4,7 @@ from app.models.artifact import Artifact, ArtifactType
 from app.models.device import Device, DeviceLease, DevicePool
 from app.models.enums import DeviceStatus, LeaseStatus, PoolPurpose, RunPriority, RunStatus
 from app.models.fault import FaultProfile, FaultStage, FaultType
+from app.models.report import Report, ReportFormat, ReportStatus
 from app.models.run import (
     FailureCategory,
     RunSession,
@@ -39,4 +40,8 @@ __all__ = [
     # Artifact models
     "Artifact",
     "ArtifactType",
+    # Report models
+    "Report",
+    "ReportFormat",
+    "ReportStatus",
 ]

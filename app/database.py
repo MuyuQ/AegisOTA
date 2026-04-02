@@ -35,6 +35,7 @@ def init_db(db_engine=None):
     from app.models.run import RunSession, RunStep, UpgradePlan  # noqa: F401
     from app.models.fault import FaultProfile  # noqa: F401
     from app.models.artifact import Artifact  # noqa: F401
+    from app.models.report import Report  # noqa: F401
 
     Base.metadata.create_all(bind=target_engine)
 
