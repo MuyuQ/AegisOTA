@@ -1,6 +1,6 @@
 """Web 页面路由。"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -14,11 +14,28 @@ from fastapi.templating import Jinja2Templates
 from app.database import get_db
 from app.models.device import Device, DeviceStatus
 from app.models.run import RunSession, RunStatus
+from app.services.pool_service import PoolService
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 # 禁用 Jinja2 缓存以避免版本兼容性问题
 templates.env.cache = None
+
+
+def get_csrf_token(request: Request) -> str:
+    """从请求中获取 CSRF token。"""
+    import secrets
+    token = request.cookies.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+    return token
+
+
+def get_template_context(request: Request, **kwargs) -> dict:
+    """获取模板上下文，包含 CSRF token。"""
+    context = {"request": request, "csrf_token": get_csrf_token(request)}
+    context.update(kwargs)
+    return context
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -36,7 +53,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     ).count()
 
     # 今日任务
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     today_tasks = db.query(RunSession).filter(
         func.date(RunSession.created_at) == today
     ).count()
@@ -71,10 +88,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "dashboard.html",
-        {
-            "stats": stats,
-            "recent_runs": runs_data,
-        }
+        get_template_context(request, stats=stats, recent_runs=runs_data)
     )
 
 
@@ -89,7 +103,7 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
             "serial": d.serial,
             "brand": d.brand or "-",
             "model": d.model or "-",
-            "android_version": d.android_version or "-",
+            "system_version": d.system_version or "-",
             "status": d.status.value if hasattr(d.status, 'value') else d.status,
             "battery_level": d.battery_level or "-",
             "health_score": d.health_score or "-",
@@ -102,7 +116,7 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "devices.html",
-        {"devices": devices_data}
+        get_template_context(request, devices=devices_data)
     )
 
 
@@ -132,7 +146,7 @@ async def runs_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "runs.html",
-        {"runs": runs_data}
+        get_template_context(request, runs=runs_data)
     )
 
 
@@ -147,10 +161,7 @@ async def create_run_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "create_run.html",
-        {
-            "plans": plans,
-            "devices": devices,
-        }
+        get_template_context(request, plans=plans, devices=devices)
     )
 
 
@@ -169,12 +180,17 @@ async def run_detail_page(
         return templates.TemplateResponse(
             request,
             "base.html",
-            {},
+            get_template_context(request),
             status_code=404
         )
 
     # 获取执行步骤
     steps = db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()
+
+    # 获取任务选项
+    run_options = run.get_run_options()
+    monkey_enabled = run_options.get("monkey_enabled", False)
+    monkey_params = run_options.get("monkey_params", {})
 
     run_data = {
         "id": run.id,
@@ -187,6 +203,13 @@ async def run_detail_page(
         "duration": run.get_duration_seconds() or "-",
         "failure_category": run.failure_category.value if hasattr(run.failure_category, 'value') else (run.failure_category or "-"),
         "summary": run.summary or "-",
+        # 新增字段
+        "total_iterations": run.total_iterations or 1,
+        "current_iteration": run.current_iteration or 0,
+        "monkey_enabled": monkey_enabled,
+        "monkey_event_count": monkey_params.get("event_count", 1000) if monkey_enabled else None,
+        "monkey_throttle": monkey_params.get("throttle", 50) if monkey_enabled else None,
+        "stop_on_failure": run_options.get("stop_on_failure", True),
     }
 
     steps_data = [
@@ -204,5 +227,33 @@ async def run_detail_page(
     return templates.TemplateResponse(
         request,
         "run_detail.html",
-        {"run": run_data, "steps": steps_data}
+        get_template_context(request, run=run_data, steps=steps_data)
+    )
+
+
+@router.get("/pools", response_class=HTMLResponse)
+async def pools_page(request: Request, db: Session = Depends(get_db)):
+    """设备池管理页面。"""
+    service = PoolService(db)
+    pools = service.list_pools()
+
+    # 添加设备统计
+    pools_data = []
+    for pool in pools:
+        capacity = service.get_pool_capacity(pool.id)
+        pools_data.append({
+            "id": pool.id,
+            "name": pool.name,
+            "purpose": pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
+            "reserved_ratio": pool.reserved_ratio,
+            "max_parallel": pool.max_parallel,
+            "enabled": pool.enabled,
+            "total_devices": capacity["total"],
+            "available_devices": capacity["available"],
+        })
+
+    return templates.TemplateResponse(
+        request,
+        "pools.html",
+        get_template_context(request, pools=pools_data)
     )

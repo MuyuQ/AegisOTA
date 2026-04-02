@@ -8,14 +8,31 @@
     <script src="https://unpkg.com/htmx.org@1.9.6"></script>
 </head>
 <body>
+    {% if csrf_token is defined %}
+    <!-- CSRF Token 隐藏存储 -->
+    <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+
+    <script>
+        // HTMX CSRF 保护：自动为所有 POST 请求添加 CSRF token
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            if (evt.detail.method === 'POST' || evt.detail.method === 'post') {
+                var csrfToken = document.getElementById('csrf-token').value;
+                evt.detail.parameters['csrf_token'] = csrfToken;
+            }
+        });
+    </script>
+    {% endif %}
+
     <nav class="navbar">
         <div class="container">
             <a href="/" class="navbar-brand">AegisOTA</a>
             <ul class="navbar-nav">
                 <li><a href="/">仪表盘</a></li>
                 <li><a href="/devices">设备管理</a></li>
+                <li><a href="/pools">设备池</a></li>
                 <li><a href="/runs">任务列表</a></li>
                 <li><a href="/runs/create">创建任务</a></li>
+                <li><a href="/settings">系统设置</a></li>
             </ul>
         </div>
     </nav>
