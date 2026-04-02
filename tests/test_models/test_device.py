@@ -364,3 +364,202 @@ class TestLeaseStatus:
     def test_status_count(self):
         """测试枚举值数量。"""
         assert len(LeaseStatus) == 4
+
+
+class TestDevicePool:
+    """DevicePool 模型测试。"""
+
+    def test_create_pool_minimal(self, db_session):
+        """测试创建最小设备池。"""
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="test_pool", purpose=PoolPurpose.STABLE)
+        db_session.add(pool)
+        db_session.commit()
+
+        assert pool.id is not None
+        assert pool.name == "test_pool"
+        assert pool.purpose == PoolPurpose.STABLE
+        assert pool.reserved_ratio == 0.2  # 默认值
+        assert pool.max_parallel == 5      # 默认值
+        assert pool.enabled is True
+
+    def test_create_pool_full(self, db_session):
+        """测试创建完整设备池。"""
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(
+            name="emergency_pool",
+            purpose=PoolPurpose.EMERGENCY,
+            reserved_ratio=0.5,
+            max_parallel=2,
+            enabled=True,
+        )
+        pool.set_tag_selector({"tags": ["critical"]})
+        db_session.add(pool)
+        db_session.commit()
+
+        assert pool.reserved_ratio == 0.5
+        assert pool.max_parallel == 2
+        assert pool.get_tag_selector() == {"tags": ["critical"]}
+
+    def test_pool_unique_name(self, db_session):
+        """测试设备池名称唯一约束。"""
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool1 = DevicePool(name="unique_pool", purpose=PoolPurpose.STABLE)
+        pool2 = DevicePool(name="unique_pool", purpose=PoolPurpose.STRESS)
+        db_session.add(pool1)
+        db_session.commit()
+
+        db_session.add(pool2)
+        with pytest.raises(Exception):
+            db_session.commit()
+
+    def test_pool_device_relationship(self, db_session):
+        """测试设备池与设备的关联。"""
+        from app.models.device import DevicePool, Device
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="device_pool", purpose=PoolPurpose.STABLE)
+        db_session.add(pool)
+        db_session.commit()
+
+        device1 = Device(serial="POOL001", pool_id=pool.id)
+        device2 = Device(serial="POOL002", pool_id=pool.id)
+        db_session.add_all([device1, device2])
+        db_session.commit()
+
+        db_session.refresh(pool)
+        assert len(pool.devices) == 2
+        assert device1.pool == pool
+
+    def test_pool_tag_selector_methods(self, db_session):
+        """测试设备池标签选择器方法。"""
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="tag_pool", purpose=PoolPurpose.STABLE)
+        pool.set_tag_selector({"tags": ["samsung", "stable"], "brand": "Samsung"})
+        db_session.add(pool)
+        db_session.commit()
+
+        assert pool.get_tag_selector() == {"tags": ["samsung", "stable"], "brand": "Samsung"}
+
+    def test_pool_available_capacity(self, db_session):
+        """测试设备池可用容量计算。"""
+        from app.models.device import DevicePool, Device
+        from app.models.enums import PoolPurpose, DeviceStatus
+
+        pool = DevicePool(name="capacity_pool", purpose=PoolPurpose.STABLE, max_parallel=10)
+        db_session.add(pool)
+        db_session.commit()
+
+        # 添加设备
+        devices = [
+            Device(serial=f"CAP{i:03d}", pool_id=pool.id, status=DeviceStatus.IDLE)
+            for i in range(8)
+        ]
+        db_session.add_all(devices)
+        db_session.commit()
+
+        db_session.refresh(pool)
+        assert pool.get_available_count() == 8
+        assert pool.get_capacity() == 10
+
+
+class TestDeviceExtensions:
+    """Device 模型扩展测试。"""
+
+    def test_device_pool_id(self, db_session):
+        """测试设备池 ID 字段。"""
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="ext_pool", purpose=PoolPurpose.STABLE)
+        db_session.add(pool)
+        db_session.commit()
+
+        device = Device(serial="EXT001", pool_id=pool.id)
+        db_session.add(device)
+        db_session.commit()
+
+        assert device.pool_id == pool.id
+        assert device.pool.name == "ext_pool"
+
+    def test_device_sync_failure_count(self, db_session):
+        """测试同步失败计数字段。"""
+        device = Device(serial="SYNC001", sync_failure_count=3)
+        db_session.add(device)
+        db_session.commit()
+
+        assert device.sync_failure_count == 3
+        # 默认值为 0
+        device2 = Device(serial="SYNC002")
+        db_session.add(device2)
+        db_session.commit()
+        assert device2.sync_failure_count == 0
+
+    def test_device_health_score_int(self, db_session):
+        """测试健康评分为整数类型。"""
+        device = Device(serial="HEALTH001", health_score=85)
+        db_session.add(device)
+        db_session.commit()
+
+        assert device.health_score == 85
+        assert isinstance(device.health_score, int)
+
+    def test_device_reserved_status(self, db_session):
+        """测试设备 RESERVED 状态。"""
+        from app.models.enums import DeviceStatus
+
+        device = Device(serial="RESERVED001", status=DeviceStatus.RESERVED)
+        db_session.add(device)
+        db_session.commit()
+
+        assert device.status == DeviceStatus.RESERVED
+        # RESERVED 状态的设备不可用
+        assert device.is_available() is False
+
+
+class TestDeviceLeaseExtensions:
+    """DeviceLease 模型扩展测试。"""
+
+    def test_lease_preemptible(self, db_session):
+        """测试租约可抢占字段。"""
+        device = Device(serial="PREEMPT001")
+        db_session.add(device)
+        db_session.commit()
+
+        lease = DeviceLease(device_id=device.id, preemptible=True)
+        db_session.add(lease)
+        db_session.commit()
+
+        assert lease.preemptible is True
+        # 默认值为 False
+        lease2 = DeviceLease(device_id=device.id)
+        db_session.add(lease2)
+        db_session.commit()
+        assert lease2.preemptible is False
+
+    def test_lease_preemption_info(self, db_session):
+        """测试租约抢占信息。"""
+        from datetime import datetime, timezone
+
+        device = Device(serial="PREEMPT002")
+        db_session.add(device)
+        db_session.commit()
+
+        lease = DeviceLease(
+            device_id=device.id,
+            preempted_at=datetime.now(timezone.utc),
+            preempted_by_run_id=123,
+        )
+        db_session.add(lease)
+        db_session.commit()
+
+        assert lease.preempted_at is not None
+        assert lease.preempted_by_run_id == 123
