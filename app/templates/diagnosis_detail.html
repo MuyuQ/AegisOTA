@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}诊断详情 #{{ diagnosis.run_id }} - AegisOTA{% endblock %}
+
+{% block content %}
+<!-- 返回链接 -->
+<div style="margin-bottom: 1.5rem;">
+    <a href="/diagnosis" style="color: var(--text-muted); text-decoration: none;">
+        &larr; 返回诊断列表
+    </a>
+</div>
+
+<h1>诊断详情 - 任务 #{{ diagnosis.run_id }}</h1>
+
+<div class="grid grid-cols-2" style="margin-top: 2rem;">
+    <!-- 诊断结果卡片 -->
+    <div class="card">
+        <div class="card-header">诊断结果</div>
+        <table class="table">
+            <tr>
+                <th>失败阶段</th>
+                <td><span class="status-badge">{{ diagnosis.stage }}</span></td>
+            </tr>
+            <tr>
+                <th>故障分类</th>
+                <td>
+                    <span class="category-badge category-{{ diagnosis.category }}">
+                        {{ diagnosis.category_display }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>根因</th>
+                <td><strong>{{ diagnosis.root_cause }}</strong></td>
+            </tr>
+            <tr>
+                <th>置信度</th>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="confidence-bar" style="width: 150px; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden;">
+                            <div class="confidence-bar-fill confidence-{{ diagnosis.confidence_level }}"
+                                 style="width: {{ (diagnosis.confidence * 100)|round|int }}%; height: 100%; border-radius: 4px;">
+                            </div>
+                        </div>
+                        <span class="confidence-badge confidence-{{ diagnosis.confidence_level }}">
+                            {{ (diagnosis.confidence * 100)|round|int }}%
+                        </span>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>诊断状态</th>
+                <td><span class="status-badge status-{{ diagnosis.result_status }}">{{ diagnosis.result_status }}</span></td>
+            </tr>
+            {% if diagnosis.next_action %}
+            <tr>
+                <th>建议操作</th>
+                <td style="color: var(--primary-color);">{{ diagnosis.next_action }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>设备 SN</th>
+                <td><code>{{ diagnosis.device_serial }}</code></td>
+            </tr>
+            <tr>
+                <th>诊断时间</th>
+                <td>{{ diagnosis.created_at_display }}</td>
+            </tr>
+        </table>
+
+        <!-- 操作按钮 -->
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <a href="/api/diagnosis/{{ diagnosis.run_id }}/export?format=md" class="btn btn-secondary" target="_blank">
+                导出 Markdown
+            </a>
+            <a href="/api/diagnosis/{{ diagnosis.run_id }}/export?format=html" class="btn btn-secondary" target="_blank">
+                导出 HTML
+            </a>
+            <a href="/runs/{{ diagnosis.run_id }}" class="btn btn-primary">
+                查看任务详情
+            </a>
+        </div>
+    </div>
+
+    <!-- 关键证据卡片 -->
+    <div class="card">
+        <div class="card-header">
+            <span>关键证据</span>
+            <button class="btn btn-sm btn-secondary" onclick="toggleEvidence()" style="float: right;">
+                展开/收起
+            </button>
+        </div>
+        <div id="evidence-content" style="max-height: 300px; overflow-y: auto;">
+            {% if key_evidence %}
+            <div class="evidence-list">
+                {% for evidence in key_evidence %}
+                <div class="evidence-item" style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem;">
+                    <code style="white-space: pre-wrap; word-break: break-all;">{{ evidence.raw_line }}</code>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 1rem;">暂无关键证据</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 规则命中记录卡片 -->
+{% if rule_hits %}
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">规则命中记录</div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>规则 ID</th>
+                    <th>规则名称</th>
+                    <th>优先级</th>
+                    <th>基础置信度</th>
+                    <th>匹配事件码</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hit in rule_hits %}
+                <tr>
+                    <td><code>{{ hit.rule_id }}</code></td>
+                    <td>{{ hit.rule_name }}</td>
+                    <td>{{ hit.priority }}</td>
+                    <td>{{ (hit.base_confidence * 100)|round|int }}%</td>
+                    <td>
+                        {% for code in hit.matched_codes %}
+                        <span class="code-badge" style="display: inline-block; margin: 2px; padding: 2px 6px; background-color: var(--background-color); border-radius: 4px; font-size: 0.75rem;">
+                            {{ code }}
+                        </span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 相似案例卡片 -->
+{% if similar_cases %}
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">相似案例 (Top 3)</div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>任务 ID</th>
+                    <th>相似度</th>
+                    <th>故障分类</th>
+                    <th>根因</th>
+                    <th>设备 SN</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in similar_cases %}
+                <tr>
+                    <td><code>#{{ case.run_id }}</code></td>
+                    <td>
+                        <span class="confidence-badge confidence-{{ 'high' if case.similarity >= 0.7 else 'medium' if case.similarity >= 0.4 else 'low' }}">
+                            {{ (case.similarity * 100)|round|int }}%
+                        </span>
+                    </td>
+                    <td>
+                        <span class="category-badge category-{{ case.category }}">{{ case.category }}</span>
+                    </td>
+                    <td>{{ case.root_cause }}</td>
+                    <td><code>{{ case.device_serial }}</code></td>
+                    <td>
+                        <a href="/diagnosis/{{ case.run_id }}" class="btn btn-sm btn-secondary">查看详情</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 原始日志卡片 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">原始日志</div>
+
+    <!-- 日志源切换标签 -->
+    <div class="log-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        {% for source in log_sources %}
+        <button class="log-tab-btn {% if loop.first %}active{% endif %}"
+                onclick="switchLogTab('{{ source.type }}')"
+                data-tab="{{ source.type }}"
+                style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-radius: 0.25rem; font-size: 0.875rem;">
+            {{ source.name }} {% if source.count > 0 %}({{ source.count }}){% endif %}
+        </button>
+        {% endfor %}
+    </div>
+
+    <!-- 日志内容 -->
+    <div class="log-content-container">
+        {% for source in log_sources %}
+        <div id="log-{{ source.type }}" class="log-content {% if not loop.first %}hidden{% endif %}"
+             style="max-height: 400px; overflow-y: auto;">
+            {% if source.events %}
+            <pre class="log-code" style="font-size: 0.8rem; padding: 1rem; background-color: var(--background-color); border-radius: 0.25rem; overflow-x: auto;"><code>{% for event in source.events %}
+[{{ event.severity }}] {{ event.normalized_code }}
+  {{ event.raw_line }}
+{% endfor %}</code></pre>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center; padding: 2rem;">暂无该类型日志</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 下载链接 -->
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <a href="/api/reports/{{ diagnosis.run_id }}/artifacts" class="btn btn-sm btn-secondary" target="_blank">
+            下载全部日志文件
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* 故障分类标签颜色 */
+    .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .category-device_env_issue { background-color: #fef3c7; color: #b45309; }
+    .category-boot_failure { background-color: #fee2e2; color: #b91c1c; }
+    .category-package_issue { background-color: #fed7aa; color: #c2410c; }
+    .category-validation_failure { background-color: #e0f2fe; color: #0369a1; }
+    .category-monkey_instability { background-color: #fae8ff; color: #9334ea; }
+    .category-adb_transport_issue { background-color: #f1f5f9; color: #475569; }
+    .category-unknown { background-color: #f1f5f9; color: #64748b; }
+
+    @media (prefers-color-scheme: dark) {
+        .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
+        .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
+        .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
+        .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
+        .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
+        .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
+        .category-unknown { background-color: #334155; color: #94a3b8; }
+    }
+
+    [data-theme="dark"] .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
+    [data-theme="dark"] .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
+    [data-theme="dark"] .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
+    [data-theme="dark"] .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
+    [data-theme="dark"] .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
+    [data-theme="dark"] .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
+    [data-theme="dark"] .category-unknown { background-color: #334155; color: #94a3b8; }
+
+    /* 置信度标签颜色 */
+    .confidence-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .confidence-high { background-color: #dcfce7; color: #15803d; }
+    .confidence-medium { background-color: #fef3c7; color: #b45309; }
+    .confidence-low { background-color: #fee2e2; color: #b91c1c; }
+
+    @media (prefers-color-scheme: dark) {
+        .confidence-high { background-color: #14532d; color: #bbf7d0; }
+        .confidence-medium { background-color: #78350f; color: #fef3c7; }
+        .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+    }
+
+    [data-theme="dark"] .confidence-high { background-color: #14532d; color: #bbf7d0; }
+    [data-theme="dark"] .confidence-medium { background-color: #78350f; color: #fef3c7; }
+    [data-theme="dark"] .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+
+    /* 置信度进度条 */
+    .confidence-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s;
+    }
+    .confidence-bar-fill.high { background-color: #22c55e; }
+    .confidence-bar-fill.medium { background-color: #f59e0b; }
+    .confidence-bar-fill.low { background-color: #ef4444; }
+
+    /* 日志标签页 */
+    .log-tab-btn {
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+    .log-tab-btn:hover {
+        color: var(--text-color);
+        background-color: var(--background-color);
+    }
+    .log-tab-btn.active {
+        color: var(--primary-color);
+        background-color: var(--background-color);
+        border-bottom: 2px solid var(--primary-color);
+    }
+
+    .log-content.hidden {
+        display: none;
+    }
+
+    /* 日志代码块 */
+    .log-code {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+</style>
+
+<script>
+function toggleEvidence() {
+    const content = document.getElementById('evidence-content');
+    if (content.style.maxHeight === 'none') {
+        content.style.maxHeight = '300px';
+    } else {
+        content.style.maxHeight = 'none';
+    }
+}
+
+function switchLogTab(tabName) {
+    // 隐藏所有日志内容
+    document.querySelectorAll('.log-content').forEach(el => {
+        el.classList.add('hidden');
+    });
+
+    // 显示选中的日志内容
+    document.getElementById('log-' + tabName).classList.remove('hidden');
+
+    // 更新标签按钮状态
+    document.querySelectorAll('.log-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('active');
+        }
+    });
+}
+</script>
+{% endblock %}

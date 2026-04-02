@@ -53,13 +53,28 @@
     <input type="hidden" id="csrf-token" value="{{ csrf_token }}" aria-hidden="true">
 
     <script>
-        // HTMX CSRF 保护：自动为所有 POST 请求添加 CSRF token
+        // HTMX CSRF 保护：自动为所有 POST/PUT/DELETE 请求添加 CSRF token 到请求头
         document.body.addEventListener('htmx:configRequest', function(evt) {
-            if (evt.detail.method === 'POST' || evt.detail.method === 'post') {
-                var csrfToken = document.getElementById('csrf-token').value;
-                evt.detail.parameters['csrf_token'] = csrfToken;
+            var method = evt.detail.method.toUpperCase();
+            if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+                var csrfToken = document.getElementById('csrf-token')?.value || getCsrfTokenFromCookie();
+                if (csrfToken) {
+                    evt.detail.headers['X-CSRF-Token'] = csrfToken;
+                }
             }
         });
+
+        // 从 cookie 获取 CSRF token（备用方案）
+        function getCsrfTokenFromCookie() {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.startsWith('csrf_token=')) {
+                    return cookie.substring('csrf_token='.length);
+                }
+            }
+            return null;
+        }
     </script>
     {% endif %}
 
@@ -83,6 +98,7 @@
                 <li role="none"><a href="/pools" role="menuitem">设备池</a></li>
                 <li role="none"><a href="/runs" role="menuitem">任务列表</a></li>
                 <li role="none"><a href="/runs/create" role="menuitem">创建任务</a></li>
+                <li role="none"><a href="/diagnosis" role="menuitem">诊断记录</a></li>
                 <li role="none"><a href="/settings" role="menuitem">系统设置</a></li>
             </ul>
         </div>

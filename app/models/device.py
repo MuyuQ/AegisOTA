@@ -98,6 +98,9 @@ class Device(Base):
         Integer, ForeignKey("device_pools.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
+    # 物理位置
+    location: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+
     # 标签（JSON 存储）
     tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

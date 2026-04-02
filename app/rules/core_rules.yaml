@@ -1,0 +1,318 @@
+rules:
+  # ========== 设备环境问题 (device_env_issue) ==========
+
+  - rule_id: R001
+    name: low_battery_precheck_failure
+    priority: 100
+    enabled: true
+    match_all:
+      - RECOVERY_LOW_BATTERY
+    match_any: []
+    exclude_any: []
+    match_stage:
+      - precheck
+    category: device_env_issue
+    root_cause: low_battery
+    base_confidence: 0.98
+    next_action: 请将设备充电至阈值以上后重试
+
+  - rule_id: R002
+    name: bootreason_blocked_failure
+    priority: 100
+    enabled: true
+    match_all:
+      - RECOVERY_BOOTREASON_BLOCKED
+    match_any: []
+    exclude_any: []
+    match_stage:
+      - precheck
+    category: device_env_issue
+    root_cause: bootreason_blocklisted
+    base_confidence: 0.95
+    next_action: 请检查设备启动原因并重试
+
+  - rule_id: R008
+    name: transport_error_failure
+    priority: 85
+    enabled: true
+    match_all: []
+    match_any:
+      - ADB_TRANSPORT_ERROR
+      - DEVICE_OFFLINE_DURING_UPDATE
+    exclude_any: []
+    match_stage:
+      - apply_update
+      - reboot_wait
+    category: transport_or_device_env_issue
+    root_cause: adb_transport_failure
+    base_confidence: 0.85
+    next_action: 请检查ADB连接和设备状态
+
+  # ========== 动态分区空间问题 (dynamic_partition_space) ==========
+
+  - rule_id: R003
+    name: virtual_ab_space_exceeded
+    priority: 100
+    enabled: true
+    match_all:
+      - DP_ALLOCATABLE_SPACE_EXCEEDED
+    match_any: []
+    exclude_any: []
+    match_stage:
+      - package_prepare
+    category: dynamic_partition_space
+    root_cause: virtual_ab_allocatable_space_exceeded
+    base_confidence: 0.95
+    next_action: 请检查动态分区配置和可用空间
+
+  - rule_id: R010
+    name: storage_space_insufficient
+    priority: 95
+    enabled: true
+    match_all: []
+    match_any:
+      - STORAGE_SPACE_INSUFFICIENT
+      - DATA_PARTITION_LOW_SPACE
+      - SYSTEM_PARTITION_LOW_SPACE
+    exclude_any: []
+    match_stage:
+      - precheck
+      - package_prepare
+    category: device_env_issue
+    root_cause: storage_space_insufficient
+    base_confidence: 0.92
+    next_action: 请清理设备存储空间后重试
+
+  # ========== 启动失败 (boot_failure) ==========
+
+  - rule_id: R004
+    name: boot_failure_after_update
+    priority: 90
+    enabled: true
+    match_all:
+      - UE_STATUS_UPDATED_NEED_REBOOT
+      - BOOT_NOT_COMPLETED
+    match_any:
+      - LAUNCHER_NOT_READY
+      - SYSTEM_SERVER_NOT_READY
+    exclude_any: []
+    match_stage:
+      - post_reboot
+    category: boot_failure
+    root_cause: boot_not_completed_after_update
+    base_confidence: 0.92
+    next_action: 请检查启动日志和系统初始化状态
+
+  - rule_id: R011
+    name: bootloop_detected
+    priority: 95
+    enabled: true
+    match_all: []
+    match_any:
+      - BOOTLOOP_DETECTED
+      - REBOOT_COUNT_EXCEEDED
+    exclude_any: []
+    match_stage:
+      - post_reboot
+    category: boot_failure
+    root_cause: bootloop_after_update
+    base_confidence: 0.95
+    next_action: 请检查启动日志，可能需要回滚系统
+
+  - rule_id: R012
+    name: critical_process_crash
+    priority: 90
+    enabled: true
+    match_all: []
+    match_any:
+      - SYSTEM_SERVER_CRASH
+      - ZYGOTE_CRASH
+      - CRITICAL_PROCESS_CRASH
+    exclude_any: []
+    match_stage:
+      - post_reboot
+      - post_validate
+    category: boot_failure
+    root_cause: critical_process_crash
+    base_confidence: 0.90
+    next_action: 请分析关键进程崩溃日志，检查是否存在回归问题
+
+  # ========== 稳定性失败 (stability_failure) ==========
+
+  - rule_id: R005
+    name: monkey_stability_failure
+    priority: 90
+    enabled: true
+    match_all:
+      - MONKEY_FATAL_EVENT
+    match_any: []
+    exclude_any: []
+    match_stage:
+      - post_validate
+    category: stability_failure
+    root_cause: monkey_crash_or_anr_after_upgrade
+    base_confidence: 0.95
+    next_action: 请分析崩溃/ANR日志，检查是否存在回归问题
+
+  - rule_id: R013
+    name: monkey_anr_detected
+    priority: 85
+    enabled: true
+    match_all: []
+    match_any:
+      - MONKEY_ANR_EVENT
+      - ANR_DETECTED_IN_LOGCAT
+    exclude_any:
+      - MONKEY_FATAL_EVENT
+    match_stage:
+      - post_validate
+    category: stability_failure
+    root_cause: monkey_anr_after_upgrade
+    base_confidence: 0.88
+    next_action: 请分析ANR日志，检查是否存在性能回归问题
+
+  # ========== 安装包问题 (package_issue) ==========
+
+  - rule_id: R007
+    name: package_validation_failure
+    priority: 95
+    enabled: true
+    match_all: []
+    match_any:
+      - PACKAGE_VERIFY_FAILED
+      - PACKAGE_METADATA_MISMATCH
+      - LAST_INSTALL_ERROR_PACKAGE_VERIFY_FAILED
+      - PACKAGE_CORRUPTED
+    exclude_any: []
+    match_stage:
+      - package_prepare
+      - apply_update
+    category: package_issue
+    root_cause: package_validation_failure
+    base_confidence: 0.90
+    next_action: 请验证OTA包完整性和元数据
+
+  - rule_id: R014
+    name: package_signature_failure
+    priority: 95
+    enabled: true
+    match_all: []
+    match_any:
+      - PACKAGE_SIGNATURE_INVALID
+      - PACKAGE_CERTIFICATE_MISMATCH
+    exclude_any: []
+    match_stage:
+      - package_prepare
+      - apply_update
+    category: package_issue
+    root_cause: package_signature_failure
+    base_confidence: 0.92
+    next_action: 请检查OTA包签名和证书配置
+
+  # ========== 可重试安装错误 (retryable_install_error) ==========
+
+  - rule_id: R006
+    name: install_aborted_retrying
+    priority: 80
+    enabled: true
+    match_all:
+      - RECOVERY_INSTALL_ABORTED
+      - RECOVERY_RETRY_ATTEMPT
+    match_any: []
+    exclude_any: []
+    match_stage:
+      - apply_update
+    category: retryable_install_error
+    root_cause: install_aborted_retrying
+    base_confidence: 0.88
+    next_action: 请等待重试完成或检查重试日志
+
+  - rule_id: R015
+    name: update_engine_retry
+    priority: 75
+    enabled: true
+    match_all: []
+    match_any:
+      - UE_RETRY_ATTEMPT
+      - UE_DOWNLOAD_RETRY
+    exclude_any:
+      - UE_FINAL_FAILURE
+    match_stage:
+      - apply_update
+    category: retryable_install_error
+    root_cause: update_engine_retrying
+    base_confidence: 0.80
+    next_action: 请等待重试完成或检查重试日志
+
+  # ========== 更新引擎错误 ==========
+
+  - rule_id: R016
+    name: update_engine_fatal_error
+    priority: 95
+    enabled: true
+    match_all: []
+    match_any:
+      - UE_FATAL_ERROR
+      - UE_FINAL_FAILURE
+      - UPDATE_ENGINE_CRASH
+    exclude_any: []
+    match_stage:
+      - apply_update
+    category: update_engine_error
+    root_cause: update_engine_fatal_error
+    base_confidence: 0.93
+    next_action: 请检查更新引擎日志，分析具体错误原因
+
+  - rule_id: R017
+    name: update_engine_timeout
+    priority: 85
+    enabled: true
+    match_all: []
+    match_any:
+      - UE_UPDATE_TIMEOUT
+      - UE_DOWNLOAD_TIMEOUT
+    exclude_any: []
+    match_stage:
+      - apply_update
+    category: update_engine_error
+    root_cause: update_engine_timeout
+    base_confidence: 0.85
+    next_action: 请检查网络连接和服务器状态
+
+  # ========== 成功状态 ==========
+
+  - rule_id: R009
+    name: success_boot_complete
+    priority: 50
+    enabled: true
+    match_all:
+      - UE_BOOT_SUCCESS
+    match_any: []
+    exclude_any:
+      - BOOT_NOT_COMPLETED
+      - MONKEY_FATAL_EVENT
+      - CRITICAL_PROCESS_CRASH
+    match_stage:
+      - post_reboot
+    category: success
+    root_cause: null
+    base_confidence: 0.95
+    next_action: 无需处理
+
+  - rule_id: R018
+    name: success_validation_complete
+    priority: 45
+    enabled: true
+    match_all:
+      - VALIDATION_PASSED
+    match_any:
+      - UE_BOOT_SUCCESS
+    exclude_any:
+      - MONKEY_FATAL_EVENT
+      - VALIDATION_FAILED
+    match_stage:
+      - post_validate
+    category: success
+    root_cause: null
+    base_confidence: 0.97
+    next_action: 无需处理

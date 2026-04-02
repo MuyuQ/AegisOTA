@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import devices, reports, runs, web, pools
+from app.api import devices, reports, runs, web, pools, diagnosis
 from app.api.settings import router as settings_router
 from app.config import get_settings
 from app.database import init_db
@@ -40,7 +40,7 @@ API_PATH_PREFIX = "/api"
 class CSRFMiddleware(BaseHTTPMiddleware):
     """CSRF 保护中间件。
 
-    通过 cookie 存储 CSRF token，并在 POST 请求中验证表单提交的 token。
+    通过 cookie 存储 CSRF token，并验证请求头中的 token。
     """
 
     async def dispatch(self, request: Request, call_next):
@@ -51,24 +51,15 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if not csrf_token:
             csrf_token = secrets.token_urlsafe(CSRF_TOKEN_LENGTH)
 
-        # 对于 POST 请求，验证 CSRF token
-        if request.method == "POST":
-            # 尝试从表单数据获取 token
-            form_token = None
+        # 对于 POST/PUT/DELETE 请求，验证 CSRF token
+        if request.method in ("POST", "PUT", "DELETE"):
+            # 从请求头获取 token（HTMX 使用 X-CSRF-Token）
+            header_token = request.headers.get("X-CSRF-Token")
 
-            # 需要先读取 body，但要注意不能影响后续处理
-            # 使用 request._body 缓存机制
-            try:
-                form_data = await request.form()
-                form_token = form_data.get("csrf_token")
-            except Exception:
-                # 如果不是表单数据（如 JSON），跳过验证
-                pass
-
-            # 如果有表单 token，验证它
-            if form_token is not None:
+            # 如果有 header token，验证它
+            if header_token is not None:
                 cookie_token = request.cookies.get(CSRF_TOKEN_COOKIE)
-                if not cookie_token or cookie_token != form_token:
+                if not cookie_token or cookie_token != header_token:
                     return JSONResponse(
                         {"detail": "CSRF token missing or invalid"},
                         status_code=400
@@ -197,6 +188,7 @@ app.include_router(runs.router)
 app.include_router(reports.router)
 app.include_router(settings_router)
 app.include_router(pools.router)
+app.include_router(diagnosis.router)
 
 
 @app.get("/health")

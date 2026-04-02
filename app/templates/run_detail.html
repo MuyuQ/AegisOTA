@@ -101,4 +101,115 @@
     </div>
 </div>
 {% endif %}
+
+<!-- 诊断结果区块 -->
+{% if diagnosis %}
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">诊断结果</div>
+    <div class="diagnosis-summary" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <span class="category-badge category-{{ diagnosis.category }}" style="padding: 0.5rem 1rem;">
+            {{ diagnosis.category_display }}
+        </span>
+        <span style="color: var(--text-muted);">根因: <strong>{{ diagnosis.root_cause }}</strong></span>
+        <span class="confidence-badge confidence-{{ diagnosis.confidence_level }}" style="padding: 0.25rem 0.75rem;">
+            置信度: {{ (diagnosis.confidence * 100)|round|int }}%
+        </span>
+        <a href="/diagnosis/{{ run.id }}" class="btn btn-sm btn-primary">查看诊断详情</a>
+    </div>
+    {% if diagnosis.next_action %}
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <strong style="color: var(--text-muted);">建议操作:</strong>
+        <span style="color: var(--primary-color);">{{ diagnosis.next_action }}</span>
+    </div>
+    {% endif %}
+</div>
+{% elif run.status in ['failed', 'aborted', 'preempted'] %}
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">诊断结果</div>
+    <div style="text-align: center; padding: 1rem;">
+        <p style="color: var(--text-muted);">暂无诊断结果</p>
+        <button class="btn btn-primary" onclick="triggerDiagnosis({{ run.id }})">开始诊断</button>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if diagnosis %}
+<style>
+    /* 故障分类标签颜色 */
+    .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .category-device_env_issue { background-color: #fef3c7; color: #b45309; }
+    .category-boot_failure { background-color: #fee2e2; color: #b91c1c; }
+    .category-package_issue { background-color: #fed7aa; color: #c2410c; }
+    .category-validation_failure { background-color: #e0f2fe; color: #0369a1; }
+    .category-monkey_instability { background-color: #fae8ff; color: #9334ea; }
+    .category-adb_transport_issue { background-color: #f1f5f9; color: #475569; }
+    .category-unknown { background-color: #f1f5f9; color: #64748b; }
+
+    @media (prefers-color-scheme: dark) {
+        .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
+        .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
+        .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
+        .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
+        .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
+        .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
+        .category-unknown { background-color: #334155; color: #94a3b8; }
+    }
+
+    [data-theme="dark"] .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
+    [data-theme="dark"] .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
+    [data-theme="dark"] .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
+    [data-theme="dark"] .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
+    [data-theme="dark"] .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
+    [data-theme="dark"] .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
+    [data-theme="dark"] .category-unknown { background-color: #334155; color: #94a3b8; }
+
+    /* 置信度标签颜色 */
+    .confidence-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .confidence-high { background-color: #dcfce7; color: #15803d; }
+    .confidence-medium { background-color: #fef3c7; color: #b45309; }
+    .confidence-low { background-color: #fee2e2; color: #b91c1c; }
+
+    @media (prefers-color-scheme: dark) {
+        .confidence-high { background-color: #14532d; color: #bbf7d0; }
+        .confidence-medium { background-color: #78350f; color: #fef3c7; }
+        .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+    }
+
+    [data-theme="dark"] .confidence-high { background-color: #14532d; color: #bbf7d0; }
+    [data-theme="dark"] .confidence-medium { background-color: #78350f; color: #fef3c7; }
+    [data-theme="dark"] .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+</style>
+{% endif %}
+
+<script>
+function triggerDiagnosis(runId) {
+    fetch('/api/diagnosis/' + runId + '/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(response => {
+        if (response.ok) {
+            alert('诊断已启动，请稍后刷新页面查看结果');
+            location.reload();
+        } else {
+            response.json().then(data => alert(data.detail || '诊断启动失败'));
+        }
+    });
+}
+</script>
 {% endblock %}

@@ -36,6 +36,9 @@ def init_db(db_engine=None):
     from app.models.fault import FaultProfile  # noqa: F401
     from app.models.artifact import Artifact  # noqa: F401
     from app.models.report import Report  # noqa: F401
+    from app.models.diagnostic import (  # noqa: F401
+        NormalizedEvent, DiagnosticResult, RuleHit, DiagnosticRule, SimilarCaseIndex
+    )
 
     Base.metadata.create_all(bind=target_engine)
 
@@ -51,11 +54,11 @@ def init_db(db_engine=None):
         if db.query(Device).count() == 0:
             # 添加示例设备（Android 原生机）
             devices = [
-                Device(serial="RF8N70XYZ123", brand="Samsung", model="Galaxy S24 Ultra", system_version="14", status=DeviceStatus.IDLE, battery_level=85, health_score=95),
-                Device(serial="RF8N70XYZ124", brand="Xiaomi", model="14 Pro", system_version="14", status=DeviceStatus.IDLE, battery_level=92, health_score=98),
-                Device(serial="RF8N70XYZ125", brand="OPPO", model="Find X7 Ultra", system_version="14", status=DeviceStatus.OFFLINE, battery_level=45, health_score=88),
-                Device(serial="RF8N70XYZ126", brand="vivo", model="X100 Pro", system_version="14", status=DeviceStatus.IDLE, battery_level=78, health_score=92),
-                Device(serial="RF8N70XYZ127", brand="Google", model="Pixel 8 Pro", system_version="14", status=DeviceStatus.BUSY, battery_level=65, health_score=90),
+                Device(serial="RF8N70XYZ123", brand="Samsung", model="Galaxy S24 Ultra", system_version="14", status=DeviceStatus.IDLE, battery_level=85, health_score=95, location="1楼106机房第1列"),
+                Device(serial="RF8N70XYZ124", brand="Xiaomi", model="14 Pro", system_version="14", status=DeviceStatus.IDLE, battery_level=92, health_score=98, location="1楼106机房第1列"),
+                Device(serial="RF8N70XYZ125", brand="OPPO", model="Find X7 Ultra", system_version="14", status=DeviceStatus.OFFLINE, battery_level=45, health_score=88, location="1楼106机房第2列"),
+                Device(serial="RF8N70XYZ126", brand="vivo", model="X100 Pro", system_version="14", status=DeviceStatus.IDLE, battery_level=78, health_score=92, location="1楼106机房第2列"),
+                Device(serial="RF8N70XYZ127", brand="Google", model="Pixel 8 Pro", system_version="14", status=DeviceStatus.BUSY, battery_level=65, health_score=90, location="1楼106机房第3列"),
             ]
             for d in devices:
                 db.add(d)

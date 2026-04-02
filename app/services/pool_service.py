@@ -29,7 +29,7 @@ class PoolService:
             name: 池名称
             purpose: 池用途
             reserved_ratio: 预留比例 (0.0-1.0)
-            max_parallel: 最大并行设备数
+            max_parallel: 最大并行任务数
             tag_selector: 标签选择器配置
             enabled: 是否启用
 
@@ -120,7 +120,7 @@ class PoolService:
         Args:
             pool_id: 池 ID
             reserved_ratio: 预留比例
-            max_parallel: 最大并行设备数
+            max_parallel: 最大并行任务数
             tag_selector: 标签选择器配置
             enabled: 是否启用
 
@@ -221,7 +221,7 @@ class PoolService:
 
         Returns:
             容量信息字典，如果池不存在则返回 None
-            包含：total, available, busy, offline, quarantined, max_parallel, reserved, usable
+            包含：total, available, busy, offline, quarantined, reserved, usable
         """
         pool = self.get_pool_by_id(pool_id)
         if not pool:
@@ -258,9 +258,9 @@ class PoolService:
             "busy": busy,
             "offline": offline,
             "quarantined": quarantined,
-            "max_parallel": pool.max_parallel,
             "reserved": reserved,
             "usable": usable,
+            "max_parallel": pool.max_parallel,
         }
 
     def match_devices_for_pool(self, pool_id: int) -> List[Device]:
@@ -367,7 +367,6 @@ class PoolService:
                     name=config["name"],
                     purpose=config["purpose"],
                     reserved_ratio=config["reserved_ratio"],
-                    max_parallel=5,
                     enabled=True,
                 )
                 pools.append(pool)
