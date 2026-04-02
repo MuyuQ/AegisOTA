@@ -239,7 +239,7 @@ class TestRunSessionCreation:
 
     def test_session_is_terminal_state(self, db_session, sample_device, sample_plan):
         """测试终态判断。"""
-        terminal_states = [RunStatus.PASSED, RunStatus.FAILED, RunStatus.ABORTED]
+        terminal_states = [RunStatus.PASSED, RunStatus.FAILED, RunStatus.ABORTED, RunStatus.PREEMPTED]
         non_terminal_states = [RunStatus.QUEUED, RunStatus.ALLOCATING, RunStatus.RESERVED, RunStatus.RUNNING, RunStatus.VALIDATING]
 
         for status in terminal_states:
@@ -530,3 +530,133 @@ class TestCascadeDelete:
         # 步骤应该被级联删除
         from sqlalchemy.orm import object_session
         assert object_session(step) is None
+
+
+class TestRunSessionExtensions:
+    """RunSession 模型扩展测试。"""
+
+    def test_run_priority(self, db_session):
+        """测试任务优先级字段。"""
+        from app.models.run import RunSession
+        from app.models.enums import RunPriority
+
+        run = RunSession(priority=RunPriority.HIGH)
+        db_session.add(run)
+        db_session.commit()
+
+        assert run.priority == RunPriority.HIGH
+        # 默认值为 NORMAL
+        run2 = RunSession()
+        db_session.add(run2)
+        db_session.commit()
+        assert run2.priority == RunPriority.NORMAL
+
+    def test_run_pool_id(self, db_session):
+        """测试任务设备池字段。"""
+        from app.models.run import RunSession
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="run_pool", purpose=PoolPurpose.STABLE)
+        db_session.add(pool)
+        db_session.commit()
+
+        run = RunSession(pool_id=pool.id)
+        db_session.add(run)
+        db_session.commit()
+
+        assert run.pool_id == pool.id
+
+    def test_run_preemptible(self, db_session):
+        """测试任务可抢占字段。"""
+        from app.models.run import RunSession
+
+        run = RunSession(preemptible=True)
+        db_session.add(run)
+        db_session.commit()
+
+        assert run.preemptible is True
+        # 默认值为 True（可被抢占）
+        run2 = RunSession()
+        db_session.add(run2)
+        db_session.commit()
+        assert run2.preemptible is True
+
+    def test_run_drill_id(self, db_session):
+        """测试任务关联演练字段。"""
+        from app.models.run import RunSession
+
+        run = RunSession(drill_id=42)
+        db_session.add(run)
+        db_session.commit()
+
+        assert run.drill_id == 42
+
+    def test_run_status_new_states(self, db_session):
+        """测试任务新状态。"""
+        from app.models.run import RunSession
+        from app.models.enums import RunStatus as RS
+
+        # 测试 ALLOCATING 状态
+        run1 = RunSession(status=RS.ALLOCATING)
+        db_session.add(run1)
+        db_session.commit()
+        assert run1.status == RS.ALLOCATING
+
+        # 测试 PREEMPTED 状态
+        run2 = RunSession(status=RS.PREEMPTED)
+        db_session.add(run2)
+        db_session.commit()
+        assert run2.status == RS.PREEMPTED
+
+
+class TestRunStatusExtensions:
+    """RunStatus 枚举扩展测试。"""
+
+    def test_allocating_status(self):
+        """测试 ALLOCATING 状态。"""
+        from app.models.enums import RunStatus
+
+        assert RunStatus.ALLOCATING == "allocating"
+
+    def test_preempted_status(self):
+        """测试 PREEMPTED 状态。"""
+        from app.models.enums import RunStatus
+
+        assert RunStatus.PREEMPTED == "preempted"
+
+    def test_no_quarantined_status(self):
+        """测试没有 QUARANTINED 状态。"""
+        from app.models.enums import RunStatus
+
+        assert not hasattr(RunStatus, 'QUARANTINED')
+
+
+class TestUpgradePlanExtensions:
+    """UpgradePlan 模型扩展测试。"""
+
+    def test_plan_default_pool_id(self, db_session):
+        """测试升级计划默认设备池字段。"""
+        from app.models.run import UpgradePlan
+        from app.models.device import DevicePool
+        from app.models.enums import PoolPurpose
+
+        pool = DevicePool(name="default_pool", purpose=PoolPurpose.STABLE)
+        db_session.add(pool)
+        db_session.commit()
+
+        plan = UpgradePlan(name="pool_plan", default_pool_id=pool.id)
+        db_session.add(plan)
+        db_session.commit()
+
+        assert plan.default_pool_id == pool.id
+
+    def test_plan_default_pool_id_none(self, db_session):
+        """测试默认设备池可为空。"""
+        from app.models.run import UpgradePlan
+
+        plan = UpgradePlan(name="no_pool_plan")
+        db_session.add(plan)
+        db_session.commit()
+
+        assert plan.default_pool_id is None

@@ -6,6 +6,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -90,6 +91,9 @@ class UpgradePlan(Base):
     )
     validation_profile_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    # 默认设备池
+    default_pool_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # 设备选择器（JSON 存储）
     device_selector: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -145,6 +149,14 @@ class RunSession(Base):
     device_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True
     )
+
+    # 优先级和设备池
+    priority: Mapped[RunPriority] = mapped_column(
+        String(16), default=RunPriority.NORMAL, nullable=False, index=True
+    )
+    pool_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    preemptible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    drill_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # 状态与结果
     status: Mapped[RunStatus] = mapped_column(
@@ -208,6 +220,7 @@ class RunSession(Base):
             RunStatus.PASSED,
             RunStatus.FAILED,
             RunStatus.ABORTED,
+            RunStatus.PREEMPTED,
         )
 
     def get_run_options(self) -> dict[str, Any]:
