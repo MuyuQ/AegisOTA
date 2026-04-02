@@ -92,7 +92,9 @@ class UpgradePlan(Base):
     validation_profile_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # 默认设备池
-    default_pool_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    default_pool_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("device_pools.id", ondelete="SET NULL"), nullable=True
+    )
 
     # 设备选择器（JSON 存储）
     device_selector: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -154,7 +156,9 @@ class RunSession(Base):
     priority: Mapped[RunPriority] = mapped_column(
         String(16), default=RunPriority.NORMAL, nullable=False, index=True
     )
-    pool_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    pool_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("device_pools.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     preemptible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     drill_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
