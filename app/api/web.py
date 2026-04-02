@@ -256,3 +256,50 @@ async def pools_page(request: Request, db: Session = Depends(get_db)):
         "pools.html",
         get_template_context(request, pools=pools_data)
     )
+
+
+@router.get("/pools/{pool_id}", response_class=HTMLResponse)
+async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends(get_db)):
+    """设备池详情页面。"""
+    service = PoolService(db)
+    pool = service.get_pool_by_id(pool_id)
+
+    if not pool:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="设备池不存在")
+
+    # 获取容量信息
+    capacity = service.get_pool_capacity(pool_id)
+
+    # 获取池内设备
+    devices = pool.devices  # 通过关系获取
+    devices_data = []
+    for device in devices:
+        devices_data.append({
+            "id": device.id,
+            "serial": device.serial,
+            "brand": device.brand,
+            "model": device.model,
+            "status": device.status.value if hasattr(device.status, 'value') else str(device.status),
+            "health_score": device.health_score,
+        })
+
+    pool_data = {
+        "id": pool.id,
+        "name": pool.name,
+        "purpose": pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
+        "reserved_ratio": pool.reserved_ratio,
+        "max_parallel": pool.max_parallel,
+        "enabled": pool.enabled,
+        "total_devices": capacity["total"],
+        "available_devices": capacity["available"],
+        "busy_devices": capacity["busy"],
+        "offline_devices": capacity["offline"],
+        "quarantined_devices": capacity["quarantined"],
+    }
+
+    return templates.TemplateResponse(
+        request,
+        "pool_detail.html",
+        get_template_context(request, pool=pool_data, devices=devices_data)
+    )

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pool.name }} - 设备池详情 - AegisOTA{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>设备池: {{ pool.name }}</h1>
+    <a href="/pools" class="btn btn-secondary">← 返回列表</a>
+</div>
+
+<div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
+    <div class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">基本信息</h2>
+        <table class="table">
+            <tr>
+                <td style="width: 150px; color: var(--text-muted);">ID</td>
+                <td>{{ pool.id }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted);">名称</td>
+                <td>{{ pool.name }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted);">用途</td>
+                <td>
+                    {% if pool.purpose == 'stable' %}
+                    <span class="status-badge status-idle">稳定测试</span>
+                    {% elif pool.purpose == 'stress' %}
+                    <span class="status-badge status-running">压力测试</span>
+                    {% elif pool.purpose == 'emergency' %}
+                    <span class="status-badge status-failed">应急</span>
+                    {% else %}
+                    <span class="status-badge">{{ pool.purpose }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted);">状态</td>
+                <td>
+                    {% if pool.enabled %}
+                    <span style="color: var(--success-color);">● 已启用</span>
+                    {% else %}
+                    <span style="color: var(--text-muted);">○ 已禁用</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted);">最大并行任务</td>
+                <td>{{ pool.max_parallel }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted);">应急保留比例</td>
+                <td>{{ (pool.reserved_ratio * 100)|round }}%</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">容量统计</h2>
+        <div class="grid grid-cols-2" style="gap: 1rem;">
+            <div class="stat-card">
+                <div class="stat-value">{{ pool.total_devices }}</div>
+                <div class="stat-label">总设备数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--success-color);">{{ pool.available_devices }}</div>
+                <div class="stat-label">可用设备</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--warning-color);">{{ pool.busy_devices }}</div>
+                <div class="stat-label">忙碌设备</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--text-muted);">{{ pool.offline_devices }}</div>
+                <div class="stat-label">离线设备</div>
+            </div>
+        </div>
+        {% if pool.quarantined_devices > 0 %}
+        <div style="margin-top: 1rem; padding: 0.5rem; background: #fee2e2; border-radius: 4px; color: #b91c1c;">
+            ⚠️ {{ pool.quarantined_devices }} 台设备已被隔离
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">
+        池内设备
+        <span style="font-weight: normal; color: var(--text-muted); font-size: 0.9rem;">({{ devices|length }} 台)</span>
+    </h2>
+
+    {% if devices %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>序列号</th>
+                    <th>品牌</th>
+                    <th>型号</th>
+                    <th>状态</th>
+                    <th>健康度</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr>
+                    <td><code>{{ device.serial }}</code></td>
+                    <td>{{ device.brand or '-' }}</td>
+                    <td>{{ device.model or '-' }}</td>
+                    <td>
+                        <span class="status-badge status-{{ device.status|lower }}">
+                            {% if device.status == 'idle' %}空闲
+                            {% elif device.status == 'busy' %}忙碌
+                            {% elif device.status == 'offline' %}离线
+                            {% elif device.status == 'quarantined' %}隔离
+                            {% else %}{{ device.status }}
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if device.health_score %}
+                        <span class="{% if device.health_score >= 90 %}health-high{% elif device.health_score >= 70 %}health-medium{% else %}health-low{% endif %}">
+                            {{ device.health_score|round(1) }}%
+                        </span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/devices/{{ device.serial }}" class="btn btn-sm btn-secondary">详情</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+        暂无设备分配到此池
+    </p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">操作</h2>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="alert('功能开发中')">分配设备</button>
+        <button class="btn btn-secondary" onclick="alert('功能开发中')">编辑配置</button>
+        {% if pool.enabled %}
+        <button class="btn btn-secondary" onclick="alert('功能开发中')">禁用</button>
+        {% else %}
+        <button class="btn btn-primary" onclick="alert('功能开发中')">启用</button>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
