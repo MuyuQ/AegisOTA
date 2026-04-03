@@ -52,3 +52,6 @@ htmlcov/
 # Project specific
 artifacts/*
 !artifacts/.gitkeep
+
+# Claude Code
+CLAUDE.md
