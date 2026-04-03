@@ -46,8 +46,22 @@ class CreatePlanRequest(BaseModel):
     upgrade_type: str
     package_path: str
     target_build: Optional[str] = None
+    source_build: Optional[str] = None
     device_selector: Optional[dict] = None
+    default_pool_id: Optional[int] = None
     parallelism: int = 1
+
+
+class UpdatePlanRequest(BaseModel):
+    """更新计划请求模型。"""
+
+    name: Optional[str] = None
+    upgrade_type: Optional[str] = None
+    package_path: Optional[str] = None
+    source_build: Optional[str] = None
+    target_build: Optional[str] = None
+    default_pool_id: Optional[int] = None
+    parallelism: Optional[int] = None
 
 
 # 升级计划 API - 放在 /{run_id} 之前，避免路由冲突
@@ -94,6 +108,54 @@ async def create_plan(
     )
 
     return {"plan_id": plan.id, "name": plan.name}
+
+
+@router.put("/plans/{plan_id}")
+async def update_plan(
+    plan_id: int,
+    request: UpdatePlanRequest,
+    db: Session = Depends(get_db),
+):
+    """更新升级计划。"""
+    service = RunService(db)
+
+    upgrade_type = None
+    if request.upgrade_type:
+        try:
+            upgrade_type = UpgradeType(request.upgrade_type)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid upgrade_type")
+
+    plan = service.update_upgrade_plan(
+        plan_id=plan_id,
+        name=request.name,
+        upgrade_type=upgrade_type,
+        package_path=request.package_path,
+        source_build=request.source_build,
+        target_build=request.target_build,
+        default_pool_id=request.default_pool_id,
+        parallelism=request.parallelism,
+    )
+
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    return {"plan_id": plan.id, "name": plan.name}
+
+
+@router.delete("/plans/{plan_id}")
+async def delete_plan(
+    plan_id: int,
+    db: Session = Depends(get_db),
+):
+    """删除升级计划。"""
+    service = RunService(db)
+
+    success = service.delete_upgrade_plan(plan_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    return {"status": "deleted", "plan_id": plan_id}
 
 
 # 任务 API
@@ -181,7 +243,7 @@ async def create_run(
 async def create_run_form(
     request: Request,
     plan_id: int = Form(...),
-    device_serial: Optional[str] = Form(None),
+    device_serials: Optional[List[str]] = Form(None),
     # 新增参数
     monkey_enabled: bool = Form(False),
     monkey_event_count: Optional[int] = Form(None),
@@ -204,11 +266,6 @@ async def create_run_form(
     if not plan:
         return HTMLResponse(content='<div class="alert alert-error">升级计划不存在</div>', status_code=400)
 
-    # 选择设备
-    device = None
-    if device_serial:
-        device = db.query(Device).filter_by(serial=device_serial).first()
-
     # 构建 run_options
     run_options = {
         "monkey_enabled": monkey_enabled,
@@ -223,14 +280,21 @@ async def create_run_form(
             "throttle": monkey_throttle or 50,
         }
 
-    # 创建任务
-    if device:
-        run = run_service.create_run_session(
-            plan_id=plan.id,
-            device_id=device.id,
-            run_options=run_options,
-            total_iterations=upgrade_count,
-        )
+    # 处理设备选择
+    created_runs = []
+
+    if device_serials:
+        # 多设备：为每个设备创建任务
+        for serial in device_serials:
+            device = db.query(Device).filter_by(serial=serial).first()
+            if device:
+                run = run_service.create_run_session(
+                    plan_id=plan.id,
+                    device_id=device.id,
+                    run_options=run_options,
+                    total_iterations=upgrade_count,
+                )
+                created_runs.append(run)
     else:
         # 无设备，排队等待
         run = RunSession(plan_id=plan.id, status=RunStatus.QUEUED, total_iterations=upgrade_count)
@@ -238,29 +302,40 @@ async def create_run_form(
         db.add(run)
         db.commit()
         db.refresh(run)
-
-    status_str = run.status.value if hasattr(run.status, 'value') else str(run.status)
+        created_runs.append(run)
 
     # 构建成功消息
-    msg_parts = [
-        "任务创建成功！",
-        f"任务 ID: {run.id}",
-        f"状态: {status_str}",
-    ]
-    if upgrade_count > 1:
-        msg_parts.append(f"升级次数: {upgrade_count}")
-    if enable_cycle_test:
-        msg_parts.append("循环升级: 已启用 (A↔B)")
-    if monkey_enabled:
-        event_count = run_options.get("monkey_params", {}).get("event_count", 1000)
-        msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
+    if len(created_runs) == 1:
+        run = created_runs[0]
+        status_str = run.status.value if hasattr(run.status, 'value') else str(run.status)
+        msg_parts = [
+            "任务创建成功！",
+            f"任务 ID: {run.id}",
+            f"状态: {status_str}",
+        ]
+        if upgrade_count > 1:
+            msg_parts.append(f"升级次数: {upgrade_count}")
+        if enable_cycle_test:
+            msg_parts.append("循环升级: 已启用 (A↔B)")
+        if monkey_enabled:
+            event_count = run_options.get("monkey_params", {}).get("event_count", 1000)
+            msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
 
-    return HTMLResponse(
-        content=f'''<div class="alert alert-success">
-            {'<br>'.join(msg_parts)}<br>
-            <a href="/runs/{run.id}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看详情</a>
+        return HTMLResponse(
+            content=f'''<div class="alert alert-success">
+                {'<br>'.join(msg_parts)}<br>
+                <a href="/runs/{run.id}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看详情</a>
+            </div>'''
+        )
+    else:
+        # 多任务
+        run_ids = [str(r.id) for r in created_runs]
+        msg = f'''<div class="alert alert-success">
+            批量任务创建成功！<br>
+            已创建 {len(created_runs)} 个任务 (ID: {', '.join(run_ids)})<br>
+            <a href="/runs" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看任务列表</a>
         </div>'''
-    )
+        return HTMLResponse(content=msg)
 
 
 @router.get("/{run_id}", response_model=RunResponse)

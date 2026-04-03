@@ -114,6 +114,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     runs_data = [
         {
             "id": r.id,
+            "plan_name": r.plan.name if r.plan else "-",
             "device_serial": r.device.serial if r.device else "-",
             "status": r.status.value if hasattr(r.status, 'value') else r.status,
             "result": r.result,
@@ -294,6 +295,44 @@ async def run_detail_page(
         request,
         "run_detail.html",
         get_template_context(request, run=run_data, steps=steps_data, diagnosis=diagnosis_data)
+    )
+
+
+@router.get("/plans", response_class=HTMLResponse)
+async def plans_page(request: Request, db: Session = Depends(get_db)):
+    """升级计划管理页面。"""
+    from app.models.run import UpgradePlan
+
+    plans = db.query(UpgradePlan).order_by(UpgradePlan.created_at.desc()).all()
+
+    # 获取设备池列表（用于下拉选择和显示名称）
+    service = PoolService(db)
+    pools = service.list_pools()
+    pools_data = [{"id": pool.id, "name": pool.name} for pool in pools]
+
+    # 创建池 ID 到名称的映射
+    pool_names = {pool.id: pool.name for pool in pools}
+
+    plans_data = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "upgrade_type": p.upgrade_type.value if hasattr(p.upgrade_type, 'value') else str(p.upgrade_type),
+            "package_path": p.package_path or "-",
+            "source_build": p.source_build or "-",
+            "target_build": p.target_build or "-",
+            "parallelism": p.parallelism or 1,
+            "default_pool_id": p.default_pool_id,
+            "default_pool_name": pool_names.get(p.default_pool_id) if p.default_pool_id else None,
+            "created_at": p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else "-",
+        }
+        for p in plans
+    ]
+
+    return templates.TemplateResponse(
+        request,
+        "plans.html",
+        get_template_context(request, plans=plans_data, pools=pools_data)
     )
 
 

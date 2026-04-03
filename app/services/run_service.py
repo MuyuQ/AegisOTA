@@ -58,6 +58,51 @@ class RunService:
             UpgradePlan.created_at.desc()
         ).all()
 
+    def update_upgrade_plan(
+        self,
+        plan_id: int,
+        name: Optional[str] = None,
+        upgrade_type: Optional[UpgradeType] = None,
+        package_path: Optional[str] = None,
+        source_build: Optional[str] = None,
+        target_build: Optional[str] = None,
+        default_pool_id: Optional[int] = None,
+        parallelism: Optional[int] = None,
+    ) -> Optional[UpgradePlan]:
+        """更新升级计划。"""
+        plan = self.get_upgrade_plan(plan_id)
+        if not plan:
+            return None
+
+        if name is not None:
+            plan.name = name
+        if upgrade_type is not None:
+            plan.upgrade_type = upgrade_type
+        if package_path is not None:
+            plan.package_path = package_path
+        if source_build is not None:
+            plan.source_build = source_build
+        if target_build is not None:
+            plan.target_build = target_build
+        if default_pool_id is not None:
+            plan.default_pool_id = default_pool_id
+        if parallelism is not None:
+            plan.parallelism = parallelism
+
+        self.db.commit()
+        self.db.refresh(plan)
+        return plan
+
+    def delete_upgrade_plan(self, plan_id: int) -> bool:
+        """删除升级计划。"""
+        plan = self.get_upgrade_plan(plan_id)
+        if not plan:
+            return False
+
+        self.db.delete(plan)
+        self.db.commit()
+        return True
+
     def create_run_session(
         self,
         plan_id: int,

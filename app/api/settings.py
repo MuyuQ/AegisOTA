@@ -1,13 +1,14 @@
 """设置 API 路由。"""
 
 from pathlib import Path
-from typing import List
 
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
 from app.config import get_settings, clear_settings_cache
+from app.database import get_db
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -17,24 +18,26 @@ templates = Jinja2Templates(directory="app/templates")
 ENV_FILE = Path(".env")
 
 
+def get_csrf_token(request: Request) -> str:
+    """从请求中获取 CSRF token。"""
+    import secrets
+    token = request.cookies.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+    return token
+
+
 @router.get("", response_class=HTMLResponse)
-async def settings_page(request: Request):
+async def settings_page(request: Request, db: Session = Depends(get_db)):
     """设置页面。"""
     settings = get_settings()
-
-    # 获取升级包目录下的文件列表
-    full_packages = _list_packages(settings.get_full_package_path())
-    incremental_packages = _list_packages(settings.get_incremental_package_path())
 
     return templates.TemplateResponse(
         request,
         "settings.html",
         {
-            "packages_dir": str(settings.OTA_PACKAGES_DIR),
-            "full_dir": str(settings.get_full_package_path()),
-            "incremental_dir": str(settings.get_incremental_package_path()),
-            "full_packages": full_packages,
-            "incremental_packages": incremental_packages,
+            "request": request,
+            "csrf_token": get_csrf_token(request),
             "max_concurrent_runs": settings.MAX_CONCURRENT_RUNS,
             "default_timeout": settings.DEFAULT_TIMEOUT,
             "reboot_wait_timeout": settings.REBOOT_WAIT_TIMEOUT,
@@ -71,22 +74,3 @@ AEGISOTA_MONKEY_THROTTLE={monkey_throttle}
         配置已保存！部分配置可能需要重启服务生效。
     </div>
     ''')
-
-
-def _list_packages(directory: Path) -> List[dict]:
-    """列出目录下的升级包文件。"""
-    if not directory.exists():
-        return []
-
-    packages = []
-    for f in directory.iterdir():
-        if f.is_file() and f.suffix in ['.zip', '.bin']:
-            packages.append({
-                "name": f.name,
-                "size": f.stat().st_size,
-                "modified": f.stat().st_mtime,
-            })
-
-    # 按修改时间倒序
-    packages.sort(key=lambda x: x["modified"], reverse=True)
-    return packages
