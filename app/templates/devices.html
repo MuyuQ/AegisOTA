@@ -11,25 +11,38 @@
 </div>
 
 <div id="device-list" class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>序列号</th>
-                <th>品牌/型号</th>
-                <th>系统版本</th>
-                <th>状态</th>
-                <th>电量</th>
-                <th>健康度</th>
-                <th>最后在线</th>
-                <th>操作</th>
-            </tr>
-        </thead>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="white-space: nowrap;">序列号</th>
+                    <th style="white-space: nowrap;">品牌/型号</th>
+                    <th style="white-space: nowrap;">系统版本</th>
+                    <th style="white-space: nowrap;">设备池</th>
+                    <th style="white-space: nowrap;">物理位置</th>
+                    <th style="white-space: nowrap;">状态</th>
+                    <th style="white-space: nowrap;">电量</th>
+                    <th style="white-space: nowrap;">健康度</th>
+                    <th style="white-space: nowrap;">最后在线</th>
+                    <th style="white-space: nowrap;">操作</th>
+                </tr>
+            </thead>
         <tbody>
             {% for device in devices %}
             <tr>
                 <td><strong>{{ device.serial }}</strong></td>
                 <td>{{ device.brand }} {{ device.model }}</td>
                 <td>{{ device.system_version }}</td>
+                <td>
+                    {% if device.pool_name %}
+                    <a href="/pools/{{ device.pool_id }}" style="text-decoration: none;">
+                        <span class="status-badge" style="background: var(--primary-color); color: white;">{{ device.pool_name }}</span>
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ device.location or '-' }}</td>
                 <td>
                     <span class="status-badge status-{{ device.status }}">{{ device.status }}</span>
                 </td>
@@ -52,7 +65,7 @@
                         恢复
                     </button>
                     {% elif device.status == 'idle' %}
-                    <button class="btn btn-sm btn-danger" hx-post="/api/devices/{{ device.serial }}/quarantine/html" hx-vals='{"reason": "手动隔离"}' hx-swap="outerHTML" hx-target="closest tr">
+                    <button class="btn btn-sm btn-danger" hx-post="/api/devices/{{ device.serial }}/quarantine/html" hx-swap="outerHTML" hx-target="closest tr">
                         隔离
                     </button>
                     {% endif %}
@@ -61,6 +74,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- 模态框容器 -->

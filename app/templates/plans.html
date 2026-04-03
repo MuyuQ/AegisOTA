@@ -3,6 +3,9 @@
 {% block title %}升级计划管理 - AegisOTA{% endblock %}
 
 {% block content %}
+<style>
+    .main-content .container { max-width: 1400px; }
+</style>
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1>升级计划管理</h1>
     <button class="btn btn-primary" onclick="showCreateModal()">新增计划</button>
@@ -10,34 +13,33 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table">
+        <table class="table plans-table">
             <thead>
                 <tr>
-                    <th style="white-space: nowrap;">ID</th>
-                    <th style="white-space: nowrap;">计划名称</th>
-                    <th style="white-space: nowrap;">升级类型</th>
-                    <th style="white-space: nowrap;">升级包路径</th>
-                    <th style="white-space: nowrap;">源版本</th>
-                    <th style="white-space: nowrap;">目标版本</th>
-                    <th style="white-space: nowrap;">默认设备池</th>
-                    <th style="white-space: nowrap;">创建时间</th>
-                    <th style="white-space: nowrap;">操作</th>
+                    <th style="width: 40px;">ID</th>
+                    <th style="min-width: 180px;">计划名称</th>
+                    <th style="width: 90px;">升级类型</th>
+                    <th style="min-width: 200px;">升级包路径</th>
+                    <th style="min-width: 150px;">源版本</th>
+                    <th style="min-width: 150px;">目标版本</th>
+                    <th style="width: 100px;">默认设备池</th>
+                    <th style="width: 140px;">创建时间</th>
+                    <th style="width: 120px;">操作</th>
                 </tr>
             </thead>
             <tbody>
                 {% for plan in plans %}
                 <tr>
                     <td>{{ plan.id }}</td>
-                    <td><strong>{{ plan.name }}</strong></td>
+                    <td style="white-space: normal;"><strong>{{ plan.name }}</strong></td>
                     <td>
-                        <span class="status-badge"
-                              style="{% if plan.upgrade_type == 'full' %}background: #22c55e; color: white;{% elif plan.upgrade_type == 'incremental' %}background: #3b82f6; color: white;{% else %}background: #f59e0b; color: white;{% endif %}">
+                        <span class="status-badge {% if plan.upgrade_type == 'full' %}type-full{% elif plan.upgrade_type == 'incremental' %}type-incremental{% else %}type-rollback{% endif %}">
                             {% if plan.upgrade_type == 'full' %}全量升级{% elif plan.upgrade_type == 'incremental' %}增量升级{% else %}回滚{% endif %}
                         </span>
                     </td>
-                    <td><code style="font-size: 0.85rem;">{{ plan.package_path }}</code></td>
-                    <td>{{ plan.source_build }}</td>
-                    <td>{{ plan.target_build }}</td>
+                    <td style="white-space: normal; word-break: break-all;"><code style="font-size: 0.85rem;">{{ plan.package_path }}</code></td>
+                    <td style="white-space: normal;">{{ plan.source_build }}</td>
+                    <td style="white-space: normal;">{{ plan.target_build }}</td>
                     <td>
                         {% if plan.default_pool_name %}
                         <a href="/pools/{{ plan.default_pool_id }}" style="text-decoration: none;">

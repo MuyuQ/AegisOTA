@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form, Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,6 @@ class PoolCreate(BaseModel):
     name: str
     purpose: str
     reserved_ratio: float = 0.2
-    max_parallel: int = 5
     tag_selector: Optional[dict] = None
     enabled: bool = True
 
@@ -30,7 +29,6 @@ class PoolUpdate(BaseModel):
     """设备池更新请求。"""
 
     reserved_ratio: Optional[float] = None
-    max_parallel: Optional[int] = None
     tag_selector: Optional[dict] = None
     enabled: Optional[bool] = None
 
@@ -50,7 +48,6 @@ class PoolResponse(BaseModel):
     name: str
     purpose: str
     reserved_ratio: float
-    max_parallel: int
     tag_selector: Optional[dict] = None
     enabled: bool
 
@@ -74,7 +71,6 @@ class CapacityResponse(BaseModel):
     busy: int
     offline: int
     quarantined: int
-    max_parallel: int
     reserved: int
     usable: int
 
@@ -95,7 +91,6 @@ async def list_pools(
             name=p.name,
             purpose=p.purpose.value if hasattr(p.purpose, "value") else str(p.purpose),
             reserved_ratio=p.reserved_ratio,
-            max_parallel=p.max_parallel,
             tag_selector=p.get_tag_selector(),
             enabled=p.enabled,
         )
@@ -124,7 +119,6 @@ async def create_pool(
             name=request.name,
             purpose=purpose,
             reserved_ratio=request.reserved_ratio,
-            max_parallel=request.max_parallel,
             tag_selector=request.tag_selector,
             enabled=request.enabled,
         )
@@ -136,7 +130,6 @@ async def create_pool(
         name=pool.name,
         purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
-        max_parallel=pool.max_parallel,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
     )
@@ -159,7 +152,6 @@ async def get_pool(
         name=pool.name,
         purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
-        max_parallel=pool.max_parallel,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
     )
@@ -171,14 +163,12 @@ async def update_pool(
     request: PoolUpdate,
     db: Session = Depends(get_db),
 ):
-    """更新设备池配置。"""
+    """更新设备池配置（JSON API）。"""
     service = PoolService(db)
 
     update_data = {}
     if request.reserved_ratio is not None:
         update_data["reserved_ratio"] = request.reserved_ratio
-    if request.max_parallel is not None:
-        update_data["max_parallel"] = request.max_parallel
     if request.tag_selector is not None:
         update_data["tag_selector"] = request.tag_selector
     if request.enabled is not None:
@@ -194,7 +184,6 @@ async def update_pool(
         name=pool.name,
         purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
-        max_parallel=pool.max_parallel,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
     )
@@ -268,3 +257,19 @@ async def get_pool_capacity(
         raise HTTPException(status_code=404, detail="Pool not found")
 
     return CapacityResponse(**capacity)
+
+
+@router.delete("/{pool_id}/devices/{device_id}")
+async def remove_device_from_pool(
+    pool_id: int,
+    device_id: int,
+    db: Session = Depends(get_db),
+):
+    """从池中移除设备。"""
+    service = PoolService(db)
+    device = service.remove_device_from_pool(device_id)
+
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found or not in a pool")
+
+    return {"status": "removed", "device_id": device_id}

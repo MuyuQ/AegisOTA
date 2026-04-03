@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.database import Base, SessionLocal, get_db
+from app.database import Base, SessionLocal, get_db, engine
 from app.models.device import Device, DeviceStatus
 
 
@@ -17,6 +17,9 @@ def client():
 @pytest.fixture
 def setup_db():
     """设置测试数据库。"""
+    # 确保表结构存在
+    Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
     device = Device(
         serial="API001",

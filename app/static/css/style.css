@@ -211,6 +211,21 @@ body {
 [data-theme="dark"] .status-failed { background-color: #7f1d1d; color: #fecaca; }
 [data-theme="dark"] .status-aborted { background-color: #334155; color: #cbd5e1; }
 
+/* 升级类型标签 */
+.type-full { background-color: #22c55e; color: white; }
+.type-incremental { background-color: #3b82f6; color: white; }
+.type-rollback { background-color: #f59e0b; color: white; }
+
+@media (prefers-color-scheme: dark) {
+    .type-full { background-color: #14532d; color: #bbf7d0; }
+    .type-incremental { background-color: #1e3a5f; color: #93c5fd; }
+    .type-rollback { background-color: #78350f; color: #fef3c7; }
+}
+
+[data-theme="dark"] .type-full { background-color: #14532d; color: #bbf7d0; }
+[data-theme="dark"] .type-incremental { background-color: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .type-rollback { background-color: #78350f; color: #fef3c7; }
+
 /* 表格 */
 .table {
     width: 100%;
@@ -419,6 +434,17 @@ body {
 .health-bar-fill.medium { background-color: #f59e0b; }
 .health-bar-fill.low { background-color: #ef4444; }
 
+/* 暗黑模式健康度进度条 */
+@media (prefers-color-scheme: dark) {
+    .health-bar {
+        background-color: #334155;
+    }
+}
+
+[data-theme="dark"] .health-bar {
+    background-color: #334155;
+}
+
 /* 模态框 */
 .modal-overlay {
     position: fixed;
@@ -607,4 +633,129 @@ body {
         box-shadow: none;
         border: 1px solid #ccc;
     }
+}
+
+/* 滚动条暗色主题 */
+@media (prefers-color-scheme: dark) {
+    /* WebKit 浏览器 (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #1e293b;
+        border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 5px;
+        border: 2px solid #1e293b;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: #1e293b;
+    }
+
+    /* 健康度详情滚动区域 */
+    .health-detail-scroll::-webkit-scrollbar-track {
+        background: #0f172a;
+    }
+
+    .health-detail-scroll::-webkit-scrollbar-thumb {
+        background: #334155;
+        border: 2px solid #0f172a;
+    }
+
+    .health-detail-scroll::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }
+}
+
+[data-theme="dark"] {
+    /* WebKit 浏览器 (Chrome, Safari, Edge) */
+    --scrollbar-bg: #1e293b;
+    --scrollbar-thumb: #475569;
+    --scrollbar-thumb-hover: #64748b;
+}
+
+/* 模态框内滚动条 */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: var(--background-color);
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* 暗黑模式模态框滚动条 */
+@media (prefers-color-scheme: dark) {
+    .modal-content::-webkit-scrollbar-track {
+        background: #0f172a;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb {
+        background: #334155;
+    }
+
+    .modal-content::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }
+}
+
+[data-theme="dark"] .modal-content::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* 通用滚动条样式 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--background-color);
+}
+
+/* 模态框 Firefox 滚动条 */
+.modal-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--background-color);
+}
+
+@media (prefers-color-scheme: dark) {
+    * {
+        scrollbar-color: #475569 #1e293b;
+    }
+
+    .modal-content {
+        scrollbar-color: #334155 #0f172a;
+    }
+}
+
+[data-theme="dark"] * {
+    scrollbar-color: #475569 #1e293b;
+}
+
+[data-theme="dark"] .modal-content {
+    scrollbar-color: #334155 #0f172a;
 }

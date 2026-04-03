@@ -61,6 +61,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>任务名称</th>
                     <th>设备</th>
                     <th>状态</th>
                     <th>结果</th>
@@ -70,7 +71,8 @@
                 {% for run in recent_runs %}
                 <tr>
                     <td><a href="/runs/{{ run.id }}">#{{ run.id }}</a></td>
-                    <td>{{ run.device_serial }}</td>
+                    <td>{{ run.plan_name }}</td>
+                    <td><code>{{ run.device_serial }}</code></td>
                     <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
                     <td>{{ run.result or '-' }}</td>
                 </tr>

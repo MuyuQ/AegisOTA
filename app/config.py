@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     FULL_PACKAGE_SUBDIR: str = "full"  # 全量包子目录
     INCREMENTAL_PACKAGE_SUBDIR: str = "incremental"  # 差分包子目录
 
+    # 相似案例召回配置
+    SIMILARITY_THRESHOLD: float = 0.3  # 最低相似度阈值
+    SIMILARITY_ROOT_CAUSE_WEIGHT: float = 0.5  # 根因完全匹配权重
+    SIMILARITY_CATEGORY_WEIGHT: float = 0.2  # 分类匹配权重
+    SIMILARITY_EVIDENCE_WEIGHT: float = 0.3  # 证据哈希相似度权重
+    SIMILAR_CASE_LIMIT: int = 3  # 相似案例召回数量
+
     model_config = SettingsConfigDict(
         env_prefix="AEGISOTA_",
         env_file=".env",
