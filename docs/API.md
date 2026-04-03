@@ -1,22 +1,15 @@
 # AegisOTA API 文档
 
-## 概述
+完整的 RESTful API 参考文档。
 
-AegisOTA 提供 RESTful API 用于管理设备、任务和报告。
+## 基础信息
 
-### 基础信息
-
-- **Base URL**: `http://localhost:8000`
-- **API 前缀**: `/api`
-- **认证方式**: API Key（通过 `X-API-Key` 请求头）
-
-### 认证
-
-所有 `/api/*` 路由需要 API Key 认证（可配置白名单）。
-
-```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8000/api/devices
-```
+| 项目 | 值 |
+|------|-----|
+| **Base URL** | `http://localhost:8000` |
+| **API 前缀** | `/api` |
+| **交互式文档** | `/docs` (Swagger UI) |
+| **认证方式** | API Key (通过 `X-API-Key` 请求头，可选) |
 
 ---
 
@@ -24,18 +17,18 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/api/devices
 
 ### 获取设备列表
 
-```
+```http
 GET /api/devices
 ```
 
 **查询参数：**
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| status | string | 按状态过滤（idle, busy, offline, quarantined） |
-| pool_id | int | 按设备池过滤 |
-| limit | int | 返回数量限制（默认 100） |
-| offset | int | 分页偏移（默认 0） |
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `status` | string | - | 按状态过滤 (idle/busy/offline/quarantined) |
+| `pool_id` | int | - | 按设备池过滤 |
+| `limit` | int | 100 | 返回数量限制 |
+| `offset` | int | 0 | 分页偏移 |
 
 **响应示例：**
 
@@ -45,29 +38,40 @@ GET /api/devices
     {
       "id": 1,
       "serial": "ABC123",
+      "brand": "Xiaomi",
+      "model": "2201123G",
       "status": "idle",
       "health_score": 95,
-      "pool_id": 1
+      "battery_level": 85,
+      "pool_id": 1,
+      "tags": ["flagship", "android14"]
     }
   ],
   "pagination": {
     "total": 10,
     "limit": 100,
-    "offset": 0,
-    "has_more": false
+    "offset": 0
   }
 }
 ```
 
 ### 获取设备详情
 
-```
+```http
 GET /api/devices/{device_id}
 ```
 
+### 同步设备
+
+```http
+POST /api/devices/sync
+```
+
+扫描 ADB 连接的设备并更新数据库。
+
 ### 隔离设备
 
-```
+```http
 POST /api/devices/{device_id}/quarantine
 ```
 
@@ -75,23 +79,15 @@ POST /api/devices/{device_id}/quarantine
 
 ```json
 {
-  "reason": "设备异常"
+  "reason": "升级失败 - 重启中断"
 }
 ```
 
 ### 恢复设备
 
-```
+```http
 POST /api/devices/{device_id}/recover
 ```
-
-### 同步设备
-
-```
-POST /api/devices/sync
-```
-
-扫描 ADB 连接的设备并更新数据库。
 
 ---
 
@@ -99,13 +95,31 @@ POST /api/devices/sync
 
 ### 获取设备池列表
 
-```
+```http
 GET /api/pools
+```
+
+**响应示例：**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "stable",
+      "purpose": "stable",
+      "description": "稳定测试设备池",
+      "max_devices": 20,
+      "reserved_ratio": 0.2,
+      "device_count": 5
+    }
+  ]
+}
 ```
 
 ### 创建设备池
 
-```
+```http
 POST /api/pools
 ```
 
@@ -116,32 +130,32 @@ POST /api/pools
   "name": "stable-pool",
   "purpose": "stable",
   "description": "稳定测试设备池",
-  "max_devices": 50,
+  "max_devices": 20,
   "reserved_ratio": 0.2
 }
 ```
 
 ### 获取设备池详情
 
-```
+```http
 GET /api/pools/{pool_id}
 ```
 
 ### 更新设备池
 
-```
+```http
 PUT /api/pools/{pool_id}
 ```
 
 ### 删除设备池
 
-```
+```http
 DELETE /api/pools/{pool_id}
 ```
 
 ### 分配设备到池
 
-```
+```http
 POST /api/pools/{pool_id}/assign
 ```
 
@@ -155,14 +169,27 @@ POST /api/pools/{pool_id}/assign
 
 ### 获取池内设备
 
-```
+```http
 GET /api/pools/{pool_id}/devices
 ```
 
 ### 获取池容量
 
-```
+```http
 GET /api/pools/{pool_id}/capacity
+```
+
+**响应示例：**
+
+```json
+{
+  "pool_id": 1,
+  "total": 10,
+  "available": 6,
+  "reserved": 2,
+  "busy": 2,
+  "utilization": 0.4
+}
 ```
 
 ---
@@ -171,7 +198,7 @@ GET /api/pools/{pool_id}/capacity
 
 ### 获取任务列表
 
-```
+```http
 GET /api/runs
 ```
 
@@ -179,14 +206,15 @@ GET /api/runs
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| status | string | 按状态过滤 |
-| device_id | int | 按设备过滤 |
-| limit | int | 返回数量限制 |
-| offset | int | 分页偏移 |
+| `status` | string | 按状态过滤 |
+| `device_id` | int | 按设备过滤 |
+| `pool_id` | int | 按设备池过滤 |
+| `limit` | int | 返回数量限制 |
+| `offset` | int | 分页偏移 |
 
 ### 创建任务
 
-```
+```http
 POST /api/runs
 ```
 
@@ -202,13 +230,32 @@ POST /api/runs
 
 ### 获取任务详情
 
-```
+```http
 GET /api/runs/{run_id}
+```
+
+**响应示例：**
+
+```json
+{
+  "id": 1,
+  "plan_id": 1,
+  "device_id": 1,
+  "status": "running",
+  "priority": "normal",
+  "stages": [
+    {"name": "precheck", "status": "passed"},
+    {"name": "apply_update", "status": "running"},
+    {"name": "reboot_wait", "status": "pending"},
+    {"name": "post_validate", "status": "pending"}
+  ],
+  "started_at": "2026-04-03T10:00:00"
+}
 ```
 
 ### 终止任务
 
-```
+```http
 POST /api/runs/{run_id}/abort
 ```
 
@@ -218,13 +265,13 @@ POST /api/runs/{run_id}/abort
 
 ### 获取计划列表
 
-```
+```http
 GET /api/plans
 ```
 
 ### 创建升级计划
 
-```
+```http
 POST /api/plans
 ```
 
@@ -234,9 +281,28 @@ POST /api/plans
 {
   "name": "标准升级计划",
   "upgrade_type": "full",
-  "fault_profile_id": 1,
+  "fault_profile_id": null,
+  "default_pool_id": 1,
   "description": "标准全量升级测试"
 }
+```
+
+### 获取计划详情
+
+```http
+GET /api/plans/{plan_id}
+```
+
+### 更新计划
+
+```http
+PUT /api/plans/{plan_id}
+```
+
+### 删除计划
+
+```http
+DELETE /api/plans/{plan_id}
 ```
 
 ---
@@ -245,7 +311,7 @@ POST /api/plans
 
 ### 获取任务报告
 
-```
+```http
 GET /api/reports/{run_id}
 ```
 
@@ -253,17 +319,69 @@ GET /api/reports/{run_id}
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| format | string | 报告格式（json, html, markdown） |
+| `format` | string | 报告格式 (json/html/markdown) |
+
+### 导出报告
+
+```http
+GET /api/reports/{run_id}/export
+```
+
+---
+
+## 诊断 API (TraceLens)
+
+### 获取诊断记录列表
+
+```http
+GET /api/diagnosis
+```
+
+**查询参数：**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `serial` | string | 按设备 SN 过滤 |
+| `category` | string | 按故障分类过滤 |
+| `page` | int | 页码 |
+| `size` | int | 每页数量 |
+
+### 获取诊断详情
+
+```http
+GET /api/diagnosis/{run_id}
+```
+
+### 手动触发诊断
+
+```http
+POST /api/diagnosis/{run_id}/run
+```
+
+### 导出诊断报告
+
+```http
+GET /api/diagnosis/{run_id}/export?format=md
+```
+
+### 管理诊断规则
+
+```http
+GET /api/rules          # 列出规则
+POST /api/rules         # 创建规则
+PUT /api/rules/{rule_id} # 更新规则
+DELETE /api/rules/{rule_id} # 删除规则
+```
 
 ---
 
 ## 错误响应
 
-所有错误响应遵循统一格式：
+所有错误返回统一格式：
 
 ```json
 {
-  "detail": "错误描述",
+  "detail": "错误描述信息",
   "code": "ERROR_CODE"
 }
 ```
@@ -280,73 +398,52 @@ GET /api/reports/{run_id}
 
 ---
 
-## CLI 命令
+## 使用示例
 
-### 设备管理
-
-```bash
-# 同步设备
-labctl device sync
-
-# 列出设备
-labctl device list
-
-# 隔离设备
-labctl device quarantine --device-id 1 --reason "设备异常"
-
-# 恢复设备
-labctl device recover --device-id 1
-```
-
-### 设备池管理
+### cURL 示例
 
 ```bash
-# 列出设备池
-labctl pool list
+# 获取设备列表
+curl -s http://localhost:8000/api/devices | jq
 
 # 创建设备池
-labctl pool create --name stable --purpose stable
+curl -X POST http://localhost:8000/api/pools \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "stable-pool",
+    "purpose": "stable",
+    "max_devices": 20
+  }'
 
-# 查看设备池详情
-labctl pool show --name stable
-
-# 分配设备到池
-labctl pool assign --device-id 1 --pool-name stable
-
-# 初始化默认设备池
-labctl pool init
-```
-
-### 任务管理
-
-```bash
-# 提交任务
-labctl run submit --plan-id 1 --device-serial ABC123
-
-# 列出任务
-labctl run list
+# 提交升级任务
+curl -X POST http://localhost:8000/api/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_id": 1,
+    "device_id": 1
+  }'
 
 # 终止任务
-labctl run abort --run-id 1
-
-# 执行任务（Worker 模式）
-labctl run execute --run-id 1
+curl -X POST http://localhost:8000/api/runs/1/abort
 ```
 
-### 报告导出
+### Python 示例
 
-```bash
-# 导出报告
-labctl report export --run-id 1 --format html --output report.html
+```python
+import httpx
+
+BASE_URL = "http://localhost:8000"
+
+# 获取设备列表
+with httpx.Client() as client:
+    resp = client.get(f"{BASE_URL}/api/devices")
+    devices = resp.json()["data"]
+    
+# 创建任务
+with httpx.Client() as client:
+    resp = client.post(
+        f"{BASE_URL}/api/runs",
+        json={"plan_id": 1, "device_id": 1}
+    )
+    run = resp.json()
 ```
-
----
-
-## WebSocket 事件（规划中）
-
-未来版本将支持 WebSocket 实时事件推送：
-
-- `device.status_changed` - 设备状态变更
-- `run.status_changed` - 任务状态变更
-- `run.step_completed` - 步骤完成
-- `run.step_failed` - 步骤失败
