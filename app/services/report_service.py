@@ -5,15 +5,15 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.report import Report, ReportFormat, ReportStatus
-from app.models.run import RunSession, RunStep, RunStatus, StepStatus
+from app.models.run import RunSession, RunStatus, RunStep, StepStatus
+from app.reporting.failure_classifier import FailureCategory, FailureClassifier
 from app.reporting.generator import ReportGenerator
-from app.reporting.failure_classifier import FailureClassifier, FailureCategory
 
 
 class ReportService:
@@ -48,21 +48,38 @@ class ReportService:
         root_cause = None
         recommendation = None
 
-        if (run_session.status.value if hasattr(run_session.status, 'value') else str(run_session.status)) == RunStatus.FAILED.value:
+        if (
+            run_session.status.value
+            if hasattr(run_session.status, "value")
+            else str(run_session.status)
+        ) == RunStatus.FAILED.value:
             failed_step, error_message = self._find_failed_step(steps)
             if failed_step:
-                failure_category = self._classify_failure(
-                    failed_step, error_message, steps
-                )
+                failure_category = self._classify_failure(failed_step, error_message, steps)
                 failure_summary = f"步骤 {failed_step} 失败"
                 root_cause = error_message
                 recommendation = self.classifier.get_recommendation(failure_category)
 
         # 统计步骤
         total_steps = len(steps)
-        passed_steps = sum(1 for s in steps if (s.status.value if hasattr(s.status, 'value') else str(s.status)) == StepStatus.SUCCESS.value)
-        failed_steps = sum(1 for s in steps if (s.status.value if hasattr(s.status, 'value') else str(s.status)) == StepStatus.FAILED.value)
-        skipped_steps = sum(1 for s in steps if (s.status.value if hasattr(s.status, 'value') else str(s.status)) == StepStatus.SKIPPED.value)
+        passed_steps = sum(
+            1
+            for s in steps
+            if (s.status.value if hasattr(s.status, "value") else str(s.status))
+            == StepStatus.SUCCESS.value
+        )
+        failed_steps = sum(
+            1
+            for s in steps
+            if (s.status.value if hasattr(s.status, "value") else str(s.status))
+            == StepStatus.FAILED.value
+        )
+        skipped_steps = sum(
+            1
+            for s in steps
+            if (s.status.value if hasattr(s.status, "value") else str(s.status))
+            == StepStatus.SKIPPED.value
+        )
 
         # 创建报告记录
         report = Report(
@@ -93,7 +110,7 @@ class ReportService:
             try:
                 content_path = self._save_report_files(report, report_data)
                 report.content_path = str(content_path)
-            except Exception as e:
+            except Exception:
                 report.status = ReportStatus.FAILED
                 self.db.commit()
                 raise
@@ -180,9 +197,12 @@ class ReportService:
 
     def _get_run_steps(self, run_session: RunSession) -> List[RunStep]:
         """获取任务的所有步骤。"""
-        return self.db.query(RunStep).filter_by(
-            run_id=run_session.id
-        ).order_by(RunStep.step_order).all()
+        return (
+            self.db.query(RunStep)
+            .filter_by(run_id=run_session.id)
+            .order_by(RunStep.step_order)
+            .all()
+        )
 
     def _find_failed_step(
         self,
@@ -191,7 +211,7 @@ class ReportService:
         """查找失败的步骤。"""
         failed_status = StepStatus.FAILED.value
         for step in steps:
-            step_status = step.status.value if hasattr(step.status, 'value') else str(step.status)
+            step_status = step.status.value if hasattr(step.status, "value") else str(step.status)
             if step_status == failed_status:
                 error_msg = None
                 if step.step_result:
@@ -203,7 +223,9 @@ class ReportService:
                 # step_name 可能是枚举或字符串
                 step_name = step.step_name
                 if step_name:
-                    return step_name.value if hasattr(step_name, 'value') else str(step_name), error_msg
+                    return step_name.value if hasattr(step_name, "value") else str(
+                        step_name
+                    ), error_msg
                 return None, error_msg
         return None, None
 
@@ -218,7 +240,11 @@ class ReportService:
         for step in steps:
             if step.step_name:
                 try:
-                    step_name_value = step.step_name.value if hasattr(step.step_name, 'value') else str(step.step_name)
+                    step_name_value = (
+                        step.step_name.value
+                        if hasattr(step.step_name, "value")
+                        else str(step.step_name)
+                    )
                     step_results[step_name_value] = step.get_result()
                 except Exception:
                     pass
@@ -229,7 +255,11 @@ class ReportService:
         """生成报告标题。"""
         plan_name = run_session.plan.name if run_session.plan else "未知计划"
         device_serial = run_session.device.serial if run_session.device else "未知设备"
-        status_value = run_session.status.value if hasattr(run_session.status, 'value') else str(run_session.status)
+        status_value = (
+            run_session.status.value
+            if hasattr(run_session.status, "value")
+            else str(run_session.status)
+        )
         status_text = "成功" if status_value == RunStatus.PASSED.value else "失败"
         return f"{plan_name} - {device_serial} - {status_text}"
 
@@ -245,12 +275,18 @@ class ReportService:
         for step in steps:
             # step_name 可能是枚举或字符串
             step_name = step.step_name
-            step_name_value = step_name.value if step_name and hasattr(step_name, 'value') else str(step_name) if step_name else None
+            step_name_value = (
+                step_name.value
+                if step_name and hasattr(step_name, "value")
+                else str(step_name)
+                if step_name
+                else None
+            )
 
             event = {
                 "step_name": step_name_value,
                 "step_order": step.step_order,
-                "status": step.status.value if hasattr(step.status, 'value') else str(step.status),
+                "status": step.status.value if hasattr(step.status, "value") else str(step.status),
                 "started_at": step.started_at.isoformat() if step.started_at else None,
                 "ended_at": step.ended_at.isoformat() if step.ended_at else None,
                 "duration_seconds": step.get_duration_seconds(),
@@ -261,14 +297,22 @@ class ReportService:
         step_results = {}
         for step in steps:
             if step.step_name:
-                step_name_value = step.step_name.value if hasattr(step.step_name, 'value') else str(step.step_name)
+                step_name_value = (
+                    step.step_name.value
+                    if hasattr(step.step_name, "value")
+                    else str(step.step_name)
+                )
                 try:
                     step_results[step_name_value] = step.get_result()
                 except Exception:
                     step_results[step_name_value] = {}
 
         # 生成报告数据
-        status_value = run_session.status.value if hasattr(run_session.status, 'value') else str(run_session.status)
+        status_value = (
+            run_session.status.value
+            if hasattr(run_session.status, "value")
+            else str(run_session.status)
+        )
         return self.generator.generate(
             run_id=run_session.id,
             plan_name=run_session.plan.name if run_session.plan else "未知计划",
@@ -338,6 +382,7 @@ class ReportService:
 
         try:
             import shutil
+
             report_dir = Path(report.content_path).parent
             if report_dir.exists():
                 shutil.rmtree(report_dir)
@@ -363,6 +408,4 @@ class ReportService:
         if status:
             query = query.filter(Report.status == status)
 
-        return query.order_by(
-            Report.generated_at.desc()
-        ).limit(limit).all()
+        return query.order_by(Report.generated_at.desc()).limit(limit).all()

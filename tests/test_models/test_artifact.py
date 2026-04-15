@@ -9,10 +9,8 @@ from app.models.artifact import Artifact, ArtifactType
 from app.models.device import Device
 from app.models.run import (
     RunSession,
-    RunStatus,
     RunStep,
     StepName,
-    StepStatus,
     UpgradePlan,
     UpgradeType,
 )
@@ -24,14 +22,14 @@ def db_engine():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     yield engine
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
     """创建测试数据库会话。"""
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
+    session_factory = sessionmaker(bind=db_engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -125,11 +123,13 @@ class TestArtifactCreation:
             mime_type="image/png",
             description="升级后截图",
         )
-        artifact.set_metadata({
-            "width": 1080,
-            "height": 2400,
-            "taken_at": "2024-01-15T10:30:00Z",
-        })
+        artifact.set_metadata(
+            {
+                "width": 1080,
+                "height": 2400,
+                "taken_at": "2024-01-15T10:30:00Z",
+            }
+        )
         db_session.add(artifact)
         db_session.commit()
 
@@ -259,14 +259,13 @@ class TestCascadeDelete:
         db_session.add(artifact)
         db_session.commit()
 
-        artifact_id = artifact.id
-
         # 删除会话
         db_session.delete(run)
         db_session.commit()
 
         # 产物应该被级联删除
         from sqlalchemy.orm import object_session
+
         assert object_session(artifact) is None
 
 

@@ -1,25 +1,22 @@
-from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
-from alembic import context
-
 # 导入项目配置和模型
 import sys
+from logging.config import fileConfig
 from pathlib import Path
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import get_settings
 from app.database import Base
+from app.models.artifact import Artifact  # noqa: F401
 
 # 导入所有模型以确保它们注册到 Base.metadata
 from app.models.device import Device, DeviceLease, DevicePool  # noqa: F401
-from app.models.run import RunSession, RunStep, UpgradePlan  # noqa: F401
 from app.models.fault import FaultProfile  # noqa: F401
-from app.models.artifact import Artifact  # noqa: F401
+from app.models.run import RunSession, RunStep, UpgradePlan  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -77,9 +74,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

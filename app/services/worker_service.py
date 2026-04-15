@@ -1,22 +1,22 @@
 """Worker 服务模块。"""
 
-import time
 import threading
+import time
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.executors.command_runner import CommandRunner
-from app.executors.run_executor import RunExecutor, ExecutionResult
 from app.executors.run_context import RunContext
+from app.executors.run_executor import ExecutionResult, RunExecutor
+from app.models.artifact import Artifact, ArtifactType
 from app.models.device import Device
 from app.models.run import RunSession, RunStatus, StepName
-from app.models.artifact import Artifact, ArtifactType
-from app.services.scheduler_service import SchedulerService
-from app.services.run_service import RunService
-from app.reporting.generator import ReportGenerator
 from app.reporting.failure_classifier import FailureCategory, FailureClassifier
+from app.reporting.generator import ReportGenerator
+from app.services.run_service import RunService
+from app.services.scheduler_service import SchedulerService
 
 
 class WorkerService:
@@ -118,7 +118,7 @@ class WorkerService:
 
         # 创建执行上下文
         upgrade_type = plan.upgrade_type
-        if hasattr(upgrade_type, 'value'):
+        if hasattr(upgrade_type, "value"):
             upgrade_type = upgrade_type.value
 
         context = RunContext(
@@ -247,9 +247,9 @@ class WorkerService:
         """生成任务报告。"""
         # 转换 step_results 为可序列化格式
         step_results = {}
-        if hasattr(execution_result, 'step_results'):
+        if hasattr(execution_result, "step_results"):
             for name, result in execution_result.step_results.items():
-                if hasattr(result, 'to_dict'):
+                if hasattr(result, "to_dict"):
                     step_results[name] = result.to_dict()
                 elif isinstance(result, dict):
                     step_results[name] = result
@@ -260,11 +260,15 @@ class WorkerService:
             run_id=run.id,
             plan_name=run.plan.name if run.plan else "Unknown",
             device_serial=run.device.serial if run.device else "Unknown",
-            status=run.status.value if hasattr(run.status, 'value') else str(run.status),
+            status=run.status.value if hasattr(run.status, "value") else str(run.status),
             started_at=run.started_at,
             ended_at=run.ended_at,
-            failed_step=execution_result.failed_step.value if execution_result.failed_step else None,
-            failure_category=FailureCategory(run.failure_category) if run.failure_category else None,
+            failed_step=execution_result.failed_step.value
+            if execution_result.failed_step
+            else None,
+            failure_category=FailureCategory(run.failure_category)
+            if run.failure_category
+            else None,
             timeline=timeline,
             step_results=step_results,
         )

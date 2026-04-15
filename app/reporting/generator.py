@@ -3,13 +3,11 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from app.config import get_settings
 from app.reporting.failure_classifier import FailureCategory
-
 
 # 初始化 Jinja2 环境
 _templates_dir = Path(__file__).parent / "templates"
@@ -207,10 +205,9 @@ class ReportGenerator:
         ]
 
         for event in timeline:
-            md_parts.append("- **{}**: {}".format(
-                event.get("timestamp", ""),
-                event.get("message", "")
-            ))
+            md_parts.append(
+                "- **{}**: {}".format(event.get("timestamp", ""), event.get("message", ""))
+            )
 
         return "\n".join(md_parts)
 
@@ -220,11 +217,11 @@ class ReportGenerator:
         output_dir: Path,
     ) -> Path:
         """保存报告到文件。"""
-        settings = get_settings()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # 保存 JSON 报告
         import json
+
         json_path = output_dir / "report.json"
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(report_data, f, indent=2, ensure_ascii=False)

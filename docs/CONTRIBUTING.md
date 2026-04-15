@@ -328,9 +328,9 @@ class TestDeviceService:
     def test_sync_discovers_devices(self, service, mock_adb):
         """测试同步发现设备。"""
         mock_adb.list_devices.return_value = [("ABC123", "device")]
-        
+
         result = service.sync_devices()
-        
+
         assert result.discovered == 1
         assert result.registered == 0
 ```
@@ -343,7 +343,7 @@ from unittest.mock import patch, MagicMock
 @patch("app.executors.adb_executor.subprocess")
 def test_adb_command(mock_subprocess):
     mock_subprocess.run.return_value = MagicMock(returncode=0, stdout="OK")
-    
+
     # 测试代码
 ```
 

@@ -1,19 +1,14 @@
 """开机检测测试。"""
 
-import pytest
-
-from app.validators.boot_check import BootChecker
 from app.executors.mock_executor import MockADBExecutor
+from app.validators.boot_check import BootChecker
 
 
 def test_boot_checker_success():
     """测试开机检测成功。"""
     executor = MockADBExecutor()
     # 设置完整的 getprop 响应
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_completed]: [1]\n"
-    )
+    executor.set_response("shell getprop", stdout="[sys.boot_completed]: [1]\n")
 
     checker = BootChecker(executor)
     result = checker.check("ABC123")
@@ -24,10 +19,7 @@ def test_boot_checker_success():
 def test_boot_checker_failure():
     """测试开机检测失败。"""
     executor = MockADBExecutor()
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_completed]: [0]\n"
-    )
+    executor.set_response("shell getprop", stdout="[sys.boot_completed]: [0]\n")
 
     checker = BootChecker(executor)
     result = checker.check("ABC123")

@@ -7,7 +7,7 @@ class DeviceStatus(str, Enum):
     """设备状态枚举。"""
 
     IDLE = "idle"
-    RESERVED = "reserved"       # 新增：已分配但任务未开始
+    RESERVED = "reserved"  # 新增：已分配但任务未开始
     BUSY = "busy"
     OFFLINE = "offline"
     QUARANTINED = "quarantined"
@@ -19,16 +19,16 @@ class LeaseStatus(str, Enum):
 
     ACTIVE = "active"
     RELEASED = "released"
-    PREEMPTED = "preempted"     # 新增：被抢占
+    PREEMPTED = "preempted"  # 新增：被抢占
     EXPIRED = "expired"
 
 
 class PoolPurpose(str, Enum):
     """设备池用途枚举。"""
 
-    STABLE = "stable"           # 稳定测试池
-    STRESS = "stress"           # 压力测试池
-    EMERGENCY = "emergency"     # 应急池
+    STABLE = "stable"  # 稳定测试池
+    STRESS = "stress"  # 压力测试池
+    EMERGENCY = "emergency"  # 应急池
 
 
 class RunPriority(str, Enum):
@@ -43,14 +43,14 @@ class RunStatus(str, Enum):
     """任务状态枚举。"""
 
     QUEUED = "queued"
-    ALLOCATING = "allocating"   # 新增：正在分配设备
+    ALLOCATING = "allocating"  # 新增：正在分配设备
     RESERVED = "reserved"
     RUNNING = "running"
     VALIDATING = "validating"
     PASSED = "passed"
     FAILED = "failed"
     ABORTED = "aborted"
-    PREEMPTED = "preempted"     # 新增：被抢占
+    PREEMPTED = "preempted"  # 新增：被抢占
 
 
 class Stage(str, Enum):

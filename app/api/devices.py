@@ -6,13 +6,14 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.device import Device, DeviceStatus
 from app.services.device_service import DeviceService
 
-router = APIRouter(prefix="/api/devices", tags=["devices"])
+router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
 
 
 class DeviceResponse(BaseModel):
@@ -62,8 +63,7 @@ async def list_devices(
         except ValueError:
             valid_values = [s.value for s in DeviceStatus]
             raise HTTPException(
-                status_code=400,
-                detail=f"Invalid status '{status}'. Valid values: {valid_values}"
+                status_code=400, detail=f"Invalid status '{status}'. Valid values: {valid_values}"
             )
 
     devices = service.list_devices(status=device_status)
@@ -75,7 +75,7 @@ async def list_devices(
             brand=d.brand,
             model=d.model,
             system_version=d.system_version,
-            status=d.status.value if hasattr(d.status, 'value') else str(d.status),
+            status=d.status.value if hasattr(d.status, "value") else str(d.status),
             battery_level=d.battery_level,
             health_score=d.health_score,
             tags=d.get_tags(),
@@ -106,7 +106,7 @@ async def get_device(
         brand=device.brand,
         model=device.model,
         system_version=device.system_version,
-        status=device.status.value if hasattr(device.status, 'value') else str(device.status),
+        status=device.status.value if hasattr(device.status, "value") else str(device.status),
         battery_level=device.battery_level,
         health_score=device.health_score,
         tags=device.get_tags(),
@@ -121,6 +121,7 @@ async def get_device(
 async def sync_devices(db: Session = Depends(get_db)):
     """同步设备状态。"""
     from app.executors.mock_executor import MockExecutor
+
     service = DeviceService(db, runner=MockExecutor.default_device_responses())
     devices = service.sync_devices()
 
@@ -131,8 +132,9 @@ async def sync_devices(db: Session = Depends(get_db)):
 async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
     """同步设备状态并返回 HTML（用于 HTMX）。"""
     from app.executors.mock_executor import MockExecutor
+
     service = DeviceService(db, runner=MockExecutor.default_device_responses())
-    devices = service.sync_devices()
+    service.sync_devices()
 
     # 获取更新后的设备列表
     all_devices = db.query(Device).order_by(Device.last_seen_at.desc()).all()
@@ -147,7 +149,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
             "pool_id": d.pool_id,
             "pool_name": d.pool.name if d.pool else None,
             "location": d.location or "-",
-            "status": d.status.value if hasattr(d.status, 'value') else d.status,
+            "status": d.status.value if hasattr(d.status, "value") else d.status,
             "battery_level": d.battery_level or "-",
             "health_score": d.health_score or 0,
             "last_seen_at": d.last_seen_at.strftime("%Y-%m-%d %H:%M") if d.last_seen_at else "-",
@@ -160,40 +162,60 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
     for d in devices_data:
         status_class = f"status-{d['status']}"
 
-        pool_html = f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;"><span class="status-badge" style="background: var(--primary-color); color: white;">{d["pool_name"]}</span></a>' if d["pool_name"] else '<span style="color: var(--text-muted);">-</span>'
+        pool_html = (
+            f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
+            f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
+            f"{d['pool_name']}</span></a>"
+            if d["pool_name"]
+            else '<span style="color: var(--text-muted);">-</span>'
+        )
 
-        health_class = 'health-high' if d['health_score'] >= 80 else 'health-medium' if d['health_score'] >= 50 else 'health-low'
+        health_class = (
+            "health-high"
+            if d["health_score"] >= 80
+            else "health-medium"
+            if d["health_score"] >= 50
+            else "health-low"
+        )
 
         action_btn = ""
-        if d['status'] == 'quarantined':
-            action_btn = f'''<button class="btn btn-sm btn-primary" hx-post="/api/devices/{d['serial']}/recover/html" hx-swap="outerHTML" hx-target="closest tr">恢复</button>'''
-        elif d['status'] == 'idle':
-            action_btn = f'''<button class="btn btn-sm btn-danger" hx-post="/api/devices/{d['serial']}/quarantine/html" hx-swap="outerHTML" hx-target="closest tr">隔离</button>'''
+        if d["status"] == "quarantined":
+            action_btn = (
+                f'<button class="btn btn-sm btn-primary" '
+                f'hx-post="/api/v1/devices/{d["serial"]}/recover/html" '
+                f'hx-swap="outerHTML" hx-target="closest tr">恢复</button>'
+            )
+        elif d["status"] == "idle":
+            action_btn = (
+                f'<button class="btn btn-sm btn-danger" '
+                f'hx-post="/api/v1/devices/{d["serial"]}/quarantine/html" '
+                f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
+            )
 
         rows_html += f'''
         <tr>
-            <td><strong>{d['serial']}</strong></td>
-            <td>{d['brand']} {d['model']}</td>
-            <td>{d['system_version']}</td>
+            <td><strong>{d["serial"]}</strong></td>
+            <td>{d["brand"]} {d["model"]}</td>
+            <td>{d["system_version"]}</td>
             <td>{pool_html}</td>
-            <td>{d['location']}</td>
-            <td><span class="status-badge {status_class}">{d['status']}</span></td>
-            <td>{d['battery_level']}%</td>
+            <td>{d["location"]}</td>
+            <td><span class="status-badge {status_class}">{d["status"]}</span></td>
+            <td>{d["battery_level"]}%</td>
             <td>
-                <a href="#" hx-get="/api/devices/{d['serial']}/health-detail"
+                <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                    hx-target="#modal-container" hx-swap="innerHTML"
                    onclick="document.getElementById('modal-container').style.display='flex'"
                    style="text-decoration: none; cursor: pointer;">
                     <span class="{health_class}" style="font-weight: 600;">
-                        {d['health_score']}%
+                        {d["health_score"]}%
                     </span>
                 </a>
             </td>
-            <td>{d['last_seen_at']}</td>
+            <td>{d["last_seen_at"]}</td>
             <td>{action_btn}</td>
         </tr>'''
 
-    html = f'''
+    html = f"""
     <table class="table">
         <thead>
             <tr>
@@ -214,7 +236,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
         </tbody>
     </table>
     <div class="alert alert-success">同步完成，已更新 {len(devices_data)} 台设备</div>
-    '''
+    """
 
     return HTMLResponse(content=html)
 
@@ -257,38 +279,58 @@ async def quarantine_device_html(
         "pool_id": device.pool_id,
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
-        "status": device.status.value if hasattr(device.status, 'value') else device.status,
+        "status": device.status.value if hasattr(device.status, "value") else device.status,
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
-        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M") if device.last_seen_at else "-",
+        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M")
+        if device.last_seen_at
+        else "-",
     }
 
-    pool_html = f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;"><span class="status-badge" style="background: var(--primary-color); color: white;">{d["pool_name"]}</span></a>' if d["pool_name"] else '<span style="color: var(--text-muted);">-</span>'
+    pool_html = (
+        f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
+        f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
+        f"{d['pool_name']}</span></a>"
+        if d["pool_name"]
+        else '<span style="color: var(--text-muted);">-</span>'
+    )
 
-    health_class = 'health-high' if d['health_score'] >= 80 else 'health-medium' if d['health_score'] >= 50 else 'health-low'
+    health_class = (
+        "health-high"
+        if d["health_score"] >= 80
+        else "health-medium"
+        if d["health_score"] >= 50
+        else "health-low"
+    )
 
-    return HTMLResponse(content=f'''
+    return HTMLResponse(
+        content=f'''
     <tr>
-        <td><strong>{d['serial']}</strong></td>
-        <td>{d['brand']} {d['model']}</td>
-        <td>{d['system_version']}</td>
+        <td><strong>{d["serial"]}</strong></td>
+        <td>{d["brand"]} {d["model"]}</td>
+        <td>{d["system_version"]}</td>
         <td>{pool_html}</td>
-        <td>{d['location']}</td>
-        <td><span class="status-badge status-quarantined">{d['status']}</span></td>
-        <td>{d['battery_level']}%</td>
+        <td>{d["location"]}</td>
+        <td><span class="status-badge status-quarantined">{d["status"]}</span></td>
+        <td>{d["battery_level"]}%</td>
         <td>
-            <a href="#" hx-get="/api/devices/{d['serial']}/health-detail"
+            <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                hx-target="#modal-container" hx-swap="innerHTML"
                onclick="document.getElementById('modal-container').style.display='flex'"
                style="text-decoration: none; cursor: pointer;">
                 <span class="{health_class}" style="font-weight: 600;">
-                    {d['health_score']}%
+                    {d["health_score"]}%
                 </span>
             </a>
         </td>
-        <td>{d['last_seen_at']}</td>
-        <td><button class="btn btn-sm btn-primary" hx-post="/api/devices/{d['serial']}/recover/html" hx-swap="outerHTML" hx-target="closest tr">恢复</button></td>
-    </tr>''')
+        <td>{d["last_seen_at"]}</td>
+        <td>
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/api/v1/devices/{d["serial"]}/recover/html"
+                    hx-swap="outerHTML" hx-target="closest tr">恢复</button>
+        </td>
+    </tr>'''
+    )
 
 
 @router.post("/{serial}/recover")
@@ -306,7 +348,9 @@ async def recover_device(
     return {
         "status": "recovered",
         "serial": serial,
-        "new_status": device.status.value if hasattr(device.status, 'value') else str(device.status)
+        "new_status": device.status.value
+        if hasattr(device.status, "value")
+        else str(device.status),
     }
 
 
@@ -332,43 +376,63 @@ async def recover_device_html(
         "pool_id": device.pool_id,
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
-        "status": device.status.value if hasattr(device.status, 'value') else device.status,
+        "status": device.status.value if hasattr(device.status, "value") else device.status,
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
-        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M") if device.last_seen_at else "-",
+        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M")
+        if device.last_seen_at
+        else "-",
     }
 
     status_class = f"status-{d['status']}"
-    pool_html = f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;"><span class="status-badge" style="background: var(--primary-color); color: white;">{d["pool_name"]}</span></a>' if d["pool_name"] else '<span style="color: var(--text-muted);">-</span>'
+    pool_html = (
+        f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
+        f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
+        f"{d['pool_name']}</span></a>"
+        if d["pool_name"]
+        else '<span style="color: var(--text-muted);">-</span>'
+    )
 
-    health_class = 'health-high' if d['health_score'] >= 80 else 'health-medium' if d['health_score'] >= 50 else 'health-low'
+    health_class = (
+        "health-high"
+        if d["health_score"] >= 80
+        else "health-medium"
+        if d["health_score"] >= 50
+        else "health-low"
+    )
 
     action_btn = ""
-    if d['status'] == 'idle':
-        action_btn = f'''<button class="btn btn-sm btn-danger" hx-post="/api/devices/{d['serial']}/quarantine/html" hx-swap="outerHTML" hx-target="closest tr">隔离</button>'''
+    if d["status"] == "idle":
+        action_btn = (
+            f'<button class="btn btn-sm btn-danger" '
+            f'hx-post="/api/v1/devices/{d["serial"]}/quarantine/html" '
+            f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
+        )
 
-    return HTMLResponse(content=f'''
+    return HTMLResponse(
+        content=f'''
     <tr>
-        <td><strong>{d['serial']}</strong></td>
-        <td>{d['brand']} {d['model']}</td>
-        <td>{d['system_version']}</td>
+        <td><strong>{d["serial"]}</strong></td>
+        <td>{d["brand"]} {d["model"]}</td>
+        <td>{d["system_version"]}</td>
         <td>{pool_html}</td>
-        <td>{d['location']}</td>
-        <td><span class="status-badge {status_class}">{d['status']}</span></td>
-        <td>{d['battery_level']}%</td>
+        <td>{d["location"]}</td>
+        <td><span class="status-badge {status_class}">{d["status"]}</span></td>
+        <td>{d["battery_level"]}%</td>
         <td>
-            <a href="#" hx-get="/api/devices/{d['serial']}/health-detail"
+            <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                hx-target="#modal-container" hx-swap="innerHTML"
                onclick="document.getElementById('modal-container').style.display='flex'"
                style="text-decoration: none; cursor: pointer;">
                 <span class="{health_class}" style="font-weight: 600;">
-                    {d['health_score']}%
+                    {d["health_score"]}%
                 </span>
             </a>
         </td>
-        <td>{d['last_seen_at']}</td>
+        <td>{d["last_seen_at"]}</td>
         <td>{action_btn}</td>
-    </tr>''')
+    </tr>'''
+    )
 
 
 @router.put("/{serial}/tags")
@@ -394,8 +458,9 @@ async def get_device_health_detail(
     db: Session = Depends(get_db),
 ):
     """获取设备健康度详情（HTML 片段，用于模态框）。"""
-    from app.models.run import RunSession
     from datetime import datetime
+
+    from app.models.run import RunSession
 
     device = db.query(Device).filter_by(serial=serial).first()
 
@@ -413,67 +478,91 @@ async def get_device_health_detail(
             battery_impact = -30
         elif device.battery_level < 50:
             battery_impact = -10
-    health_factors.append({
-        "label": "电池健康",
-        "value": battery_value,
-        "impact": battery_impact,
-    })
+    health_factors.append(
+        {
+            "label": "电池健康",
+            "value": battery_value,
+            "impact": battery_impact,
+        }
+    )
 
     # 2. 设备状态
     status_impact = 0
-    status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
+    status_value = device.status.value if hasattr(device.status, "value") else str(device.status)
     if device.status == DeviceStatus.OFFLINE:
         status_impact = -20
     elif device.status == DeviceStatus.QUARANTINED:
         status_impact = -50
-    health_factors.append({
-        "label": "设备状态",
-        "value": status_value,
-        "impact": status_impact,
-    })
+    health_factors.append(
+        {
+            "label": "设备状态",
+            "value": status_value,
+            "impact": status_impact,
+        }
+    )
 
-    # 3. 升级成功率
-    runs = db.query(RunSession).filter_by(device_id=device.id).all()
-    if runs:
-        failed = sum(1 for r in runs if r.status.value in ['failed', 'aborted'])
-        success_rate = (len(runs) - failed) / len(runs) * 100
+    # 3. 升级成功率 (优化: 使用聚合查询替代加载全部对象)
+    run_stats = (
+        db.query(
+            func.count(RunSession.id),
+            func.sum(func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
+        )
+        .filter(RunSession.device_id == device.id)
+        .first()
+    )
+
+    total_runs = run_stats[0] if run_stats[0] else 0
+    failed_runs = run_stats[1] if run_stats[1] else 0
+
+    if total_runs > 0:
+        success_rate = (total_runs - failed_runs) / total_runs * 100
         success_impact = 0
         if success_rate < 50:
             success_impact = -20
         elif success_rate < 80:
             success_impact = -10
-        health_factors.append({
-            "label": "升级成功率",
-            "value": f"{success_rate:.1f}% ({len(runs)}次)",
-            "impact": success_impact,
-        })
+        health_factors.append(
+            {
+                "label": "升级成功率",
+                "value": f"{success_rate:.1f}% ({total_runs}次)",
+                "impact": success_impact,
+            }
+        )
     else:
-        health_factors.append({
-            "label": "升级成功率",
-            "value": "N/A (无历史记录)",
-            "impact": 0,
-        })
+        health_factors.append(
+            {
+                "label": "升级成功率",
+                "value": "N/A (无历史记录)",
+                "impact": 0,
+            }
+        )
 
     # 4. 存储空间 (待采集)
-    health_factors.append({
-        "label": "存储空间",
-        "value": "N/A",
-        "impact": 0,
-    })
+    health_factors.append(
+        {
+            "label": "存储空间",
+            "value": "N/A",
+            "impact": 0,
+        }
+    )
 
     # 5. 设备温度 (待采集)
-    health_factors.append({
-        "label": "设备温度",
-        "value": "N/A",
-        "impact": 0,
-    })
+    health_factors.append(
+        {
+            "label": "设备温度",
+            "value": "N/A",
+            "impact": 0,
+        }
+    )
 
     # 6. 系统稳定性 (待采集)
-    health_factors.append({
-        "label": "系统稳定性",
-        "value": "N/A",
-        "impact": 0,
-    })
+    health_factors.append(
+        {
+            "label": "系统稳定性",
+            "value": "N/A",
+            "impact": 0,
+        }
+    )
 
     # 7. 最近同步时间
     sync_impact = 0
@@ -484,11 +573,13 @@ async def get_device_health_detail(
         sync_value = device.last_seen_at.strftime("%Y-%m-%d %H:%M")
     else:
         sync_value = "N/A"
-    health_factors.append({
-        "label": "最近同步",
-        "value": sync_value,
-        "impact": sync_impact,
-    })
+    health_factors.append(
+        {
+            "label": "最近同步",
+            "value": sync_value,
+            "impact": sync_impact,
+        }
+    )
 
     # 计算总分（使用数据库中存储的健康度分数）
     total_score = device.health_score if device.health_score is not None else 100
@@ -510,16 +601,19 @@ async def get_device_health_detail(
         value_class = "health-low" if f["impact"] < 0 else ""
         factor_rows += f'''
         <tr>
-            <td>{f['label']}</td>
-            <td class="{value_class}">{f['value']}</td>
+            <td>{f["label"]}</td>
+            <td class="{value_class}">{f["value"]}</td>
         </tr>'''
 
     # 构建 HTML
-    html = f'''
+    html = f"""
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
             <span class="modal-title">设备健康度详情</span>
-            <button class="modal-close" onclick="document.getElementById('modal-container').style.display='none'">&times;</button>
+            <button class="modal-close"
+                    onclick="document.getElementById('modal-container').style.display='none'">
+                &times;
+            </button>
         </div>
 
         <div style="text-align: center; margin: 1.5rem 0;">
@@ -538,9 +632,9 @@ async def get_device_health_detail(
         <div class="card-header" style="margin-top: 1rem;">设备信息</div>
         <table class="table" style="margin-top: 0.5rem;">
             <tr><td style="width: 120px;">序列号</td><td><code>{device.serial}</code></td></tr>
-            <tr><td>品牌/型号</td><td>{device.brand or '-'} {device.model or '-'}</td></tr>
-            <tr><td>系统版本</td><td>{device.system_version or '-'}</td></tr>
-            <tr><td>物理位置</td><td>{device.location or '-'}</td></tr>
+            <tr><td>品牌/型号</td><td>{device.brand or "-"} {device.model or "-"}</td></tr>
+            <tr><td>系统版本</td><td>{device.system_version or "-"}</td></tr>
+            <tr><td>物理位置</td><td>{device.location or "-"}</td></tr>
         </table>
 
         <div class="card-header" style="margin-top: 1rem;">状态指标</div>
@@ -556,6 +650,6 @@ async def get_device_health_detail(
             </tbody>
         </table>
     </div>
-    '''
+    """
 
     return HTMLResponse(content=html)

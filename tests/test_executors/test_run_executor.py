@@ -1,11 +1,10 @@
 """状态机驱动器测试。"""
 
 import pytest
-from pathlib import Path
 
-from app.executors.run_executor import RunExecutor, MockRunExecutor
-from app.executors.run_context import RunContext
 from app.executors.mock_executor import MockADBExecutor
+from app.executors.run_context import RunContext
+from app.executors.run_executor import MockRunExecutor, RunExecutor
 from app.models.run import StepName
 
 

@@ -4,8 +4,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from app.executors.adb_executor import ADBExecutor
 from app.config import get_settings
+from app.executors.adb_executor import ADBExecutor
 
 
 @dataclass

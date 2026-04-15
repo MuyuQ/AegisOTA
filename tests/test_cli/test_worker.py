@@ -1,6 +1,5 @@
 """Worker CLI 测试。"""
 
-import pytest
 from typer.testing import CliRunner
 
 from app.cli.main import app

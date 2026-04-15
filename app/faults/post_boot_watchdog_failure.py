@@ -1,11 +1,11 @@
 """启动后 Watchdog 故障注入插件。"""
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class PostBootWatchdogFailureFault(FaultPlugin):
@@ -77,7 +77,7 @@ class PostBootWatchdogFailureFault(FaultPlugin):
 
         if self.failure_type == "system_server_crash":
             # 强制停止 system_server 触发 Watchdog
-            result = self.executor.shell(
+            self.executor.shell(
                 "pkill -9 system_server",
                 device=context.device_serial,
             )
@@ -87,7 +87,7 @@ class PostBootWatchdogFailureFault(FaultPlugin):
         elif self.failure_type == "boot_loop":
             # 通过破坏 boot_complete 标志模拟启动循环
             # 这会阻止系统认为启动完成
-            result = self.executor.shell(
+            self.executor.shell(
                 "setprop sys.boot_completed 0",
                 device=context.device_serial,
             )
@@ -95,7 +95,7 @@ class PostBootWatchdogFailureFault(FaultPlugin):
 
         elif self.failure_type == "anr":
             # 发送 SIGSTOP 到 system_server 触发 ANR
-            result = self.executor.shell(
+            self.executor.shell(
                 "pkill -STOP system_server",
                 device=context.device_serial,
             )

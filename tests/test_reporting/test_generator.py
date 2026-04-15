@@ -1,11 +1,9 @@
 """报告生成器测试。"""
 
-import pytest
 from pathlib import Path
 
-from app.reporting.generator import ReportGenerator, ReportData
 from app.reporting.failure_classifier import FailureCategory
-from app.models.run import RunStatus
+from app.reporting.generator import ReportData, ReportGenerator
 
 
 def test_report_generator_init():
@@ -127,7 +125,6 @@ def test_generate_markdown_with_timeline():
 def test_save_report():
     """测试保存报告。"""
     import tempfile
-    import os
 
     generator = ReportGenerator()
 
@@ -150,6 +147,7 @@ def test_save_report():
 
         # 检查 JSON 文件内容
         import json
+
         with open(json_path, "r", encoding="utf-8") as f:
             saved_data = json.load(f)
         assert saved_data["run_id"] == 1

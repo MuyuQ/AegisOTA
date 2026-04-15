@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from app.database import SessionLocal, init_db
-from app.models import RunSession, Artifact
+from app.models import Artifact, RunSession
 
 app = typer.Typer(help="报告管理命令")
 console = Console()
@@ -20,12 +20,8 @@ console = Console()
 @app.command("export")
 def export_report(
     run_id: int = typer.Argument(..., help="任务 ID"),
-    output: Optional[Path] = typer.Option(
-        None, "--output", "-o", help="输出文件路径"
-    ),
-    format: str = typer.Option(
-        "markdown", "--format", "-f", help="报告格式 (markdown/html/json)"
-    ),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="输出文件路径"),
+    format: str = typer.Option("markdown", "--format", "-f", help="报告格式 (markdown/html/json)"),
 ):
     """导出任务报告。
 
@@ -122,9 +118,7 @@ def export_report(
         db.close()
 
 
-def _generate_report_content(
-    run: RunSession, artifacts: list[Artifact], format: str
-) -> str:
+def _generate_report_content(run: RunSession, artifacts: list[Artifact], format: str) -> str:
     """生成报告内容。
 
     根据格式类型生成对应的报告文本。
@@ -193,11 +187,13 @@ def _generate_report_content(
         ]
 
         if run.steps:
-            html_parts.extend([
-                "<h2>执行步骤</h2>",
-                "<table>",
-                "<tr><th>步骤</th><th>状态</th><th>持续时间</th></tr>",
-            ])
+            html_parts.extend(
+                [
+                    "<h2>执行步骤</h2>",
+                    "<table>",
+                    "<tr><th>步骤</th><th>状态</th><th>持续时间</th></tr>",
+                ]
+            )
             for step in sorted(run.steps, key=lambda s: s.step_order):
                 step_duration = step.get_duration_seconds()
                 step_duration_str = f"{step_duration:.1f}s" if step_duration else "-"
@@ -216,8 +212,8 @@ def _generate_report_content(
             "",
             "## 基本信息",
             "",
-            f"| 属性 | 值 |",
-            f"| --- | --- |",
+            "| 属性 | 值 |",
+            "| --- | --- |",
             f"| 升级计划 | {plan_name} |",
             f"| 设备序列号 | {device_serial} |",
             f"| 状态 | {run.status.value} |",
@@ -227,13 +223,15 @@ def _generate_report_content(
         ]
 
         if run.steps:
-            md_parts.extend([
-                "",
-                "## 执行步骤",
-                "",
-                "| 步骤 | 状态 | 持续时间 |",
-                "| --- | --- | --- |",
-            ])
+            md_parts.extend(
+                [
+                    "",
+                    "## 执行步骤",
+                    "",
+                    "| 步骤 | 状态 | 持续时间 |",
+                    "| --- | --- | --- |",
+                ]
+            )
             for step in sorted(run.steps, key=lambda s: s.step_order):
                 step_duration = step.get_duration_seconds()
                 step_duration_str = f"{step_duration:.1f}s" if step_duration else "-"
@@ -242,13 +240,15 @@ def _generate_report_content(
                 )
 
         if artifacts:
-            md_parts.extend([
-                "",
-                "## 执行产物",
-                "",
-                "| 类型 | 文件路径 | 大小 |",
-                "| --- | --- | --- |",
-            ])
+            md_parts.extend(
+                [
+                    "",
+                    "## 执行产物",
+                    "",
+                    "| 类型 | 文件路径 | 大小 |",
+                    "| --- | --- | --- |",
+                ]
+            )
             for artifact in artifacts:
                 md_parts.append(
                     f"| {artifact.artifact_type} | {artifact.file_path} | "
@@ -256,11 +256,13 @@ def _generate_report_content(
                 )
 
         if run.summary:
-            md_parts.extend([
-                "",
-                "## 总结",
-                "",
-                run.summary,
-            ])
+            md_parts.extend(
+                [
+                    "",
+                    "## 总结",
+                    "",
+                    run.summary,
+                ]
+            )
 
         return "\n".join(md_parts)

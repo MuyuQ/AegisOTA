@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-from app.parsers.base import BaseParser, Stage, SourceType, EventType, Severity
+from app.parsers.base import BaseParser, EventType, Severity, SourceType, Stage
 
 
 class RecoveryParser(BaseParser):
@@ -245,7 +245,7 @@ class RecoveryParser(BaseParser):
                         if parts[i] in ("0", "1"):
                             result = parts[i]
                             # 之后的字段组合为包路径
-                            package_path = " ".join(parts[i + 1:]) if i + 1 < len(parts) else ""
+                            package_path = " ".join(parts[i + 1 :]) if i + 1 < len(parts) else ""
                             break
 
                     if result is not None:

@@ -1,15 +1,12 @@
 """任务管理业务逻辑。"""
 
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.config import get_settings
-from app.models.run import (
-    UpgradePlan, RunSession, RunStep,
-    RunStatus, UpgradeType, StepName
-)
+from app.models.run import RunSession, RunStatus, RunStep, StepName, UpgradePlan, UpgradeType
 
 
 class RunService:
@@ -54,9 +51,7 @@ class RunService:
 
     def list_upgrade_plans(self) -> List[UpgradePlan]:
         """列出所有升级计划。"""
-        return self.db.query(UpgradePlan).order_by(
-            UpgradePlan.created_at.desc()
-        ).all()
+        return self.db.query(UpgradePlan).order_by(UpgradePlan.created_at.desc()).all()
 
     def update_upgrade_plan(
         self,
@@ -199,7 +194,10 @@ class RunService:
         limit: int = 100,
     ) -> List[RunSession]:
         """列出任务。"""
-        query = self.db.query(RunSession)
+        query = self.db.query(RunSession).options(
+            joinedload(RunSession.device),
+            joinedload(RunSession.plan),
+        )
 
         if status:
             query = query.filter(RunSession.status == status)
@@ -208,9 +206,12 @@ class RunService:
 
     def list_pending_runs(self) -> List[RunSession]:
         """列出待执行任务（排队状态）。"""
-        return self.db.query(RunSession).filter(
-            RunSession.status == RunStatus.QUEUED
-        ).order_by(RunSession.created_at).all()
+        return (
+            self.db.query(RunSession)
+            .filter(RunSession.status == RunStatus.QUEUED)
+            .order_by(RunSession.created_at)
+            .all()
+        )
 
     def create_run_step(
         self,
@@ -264,6 +265,4 @@ class RunService:
 
     def get_run_steps(self, run_id: int) -> List[RunStep]:
         """获取任务的所有执行步骤。"""
-        return self.db.query(RunStep).filter_by(
-            run_id=run_id
-        ).order_by(RunStep.step_order).all()
+        return self.db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()

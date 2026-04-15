@@ -3,7 +3,6 @@
 从 YAML 文件和数据库加载诊断规则。
 """
 
-import json
 from pathlib import Path
 from typing import Optional
 
@@ -190,9 +189,9 @@ class RuleLoader:
         if not self.db_session:
             return []
 
-        db_rules = self.db_session.query(DiagnosticRuleModel).filter(
-            DiagnosticRuleModel.enabled == True
-        ).all()
+        db_rules = (
+            self.db_session.query(DiagnosticRuleModel).filter(DiagnosticRuleModel.enabled).all()
+        )
 
         rules = [DiagnosticRule.from_db_model(db_rule) for db_rule in db_rules]
 
@@ -252,9 +251,11 @@ class RuleLoader:
         for rule_data in rule_data_list:
             try:
                 # 查找现有规则
-                existing = self.db_session.query(DiagnosticRuleModel).filter(
-                    DiagnosticRuleModel.rule_id == rule_data["rule_id"]
-                ).first()
+                existing = (
+                    self.db_session.query(DiagnosticRuleModel)
+                    .filter(DiagnosticRuleModel.rule_id == rule_data["rule_id"])
+                    .first()
+                )
 
                 if existing:
                     # 更新现有规则

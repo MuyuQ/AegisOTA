@@ -1,9 +1,6 @@
 """枚举定义测试。"""
 
-import pytest
-from app.models.enums import (
-    DeviceStatus, LeaseStatus, PoolPurpose, RunPriority, RunStatus
-)
+from app.models.enums import DeviceStatus, LeaseStatus, PoolPurpose, RunPriority, RunStatus
 
 
 class TestDeviceStatus:
@@ -73,7 +70,7 @@ class TestRunStatus:
     def test_removed_quarantined(self):
         """测试已移除的 quarantined 状态。"""
         # RunStatus 不应包含 quarantined
-        assert not hasattr(RunStatus, 'QUARANTINED')
+        assert not hasattr(RunStatus, "QUARANTINED")
 
 
 class TestLeaseStatus:

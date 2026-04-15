@@ -1,15 +1,16 @@
 """阶段执行 Handler 测试。"""
 
 import pytest
-from pathlib import Path
 
-from app.executors.step_handlers import (
-    PrecheckHandler, PushPackageHandler,
-    ApplyUpdateHandler, RebootWaitHandler,
-    PostValidateHandler,
-)
-from app.executors.run_context import RunContext, DeviceSnapshot
 from app.executors.mock_executor import MockADBExecutor
+from app.executors.run_context import RunContext
+from app.executors.step_handlers import (
+    ApplyUpdateHandler,
+    PostValidateHandler,
+    PrecheckHandler,
+    PushPackageHandler,
+    RebootWaitHandler,
+)
 from app.models.run import StepName
 
 
@@ -36,7 +37,7 @@ def test_precheck_handler_interface():
     """测试 Precheck Handler 接口。"""
     handler = PrecheckHandler()
     assert handler.step_name == StepName.PRECHECK
-    assert hasattr(handler, 'execute')
+    assert hasattr(handler, "execute")
 
 
 def test_precheck_handler_success(mock_executor, run_context):

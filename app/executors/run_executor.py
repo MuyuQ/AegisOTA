@@ -3,18 +3,21 @@
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from app.config import get_settings
-from app.executors.command_runner import CommandRunner
 from app.executors.adb_executor import ADBExecutor
+from app.executors.command_runner import CommandRunner
 from app.executors.mock_executor import MockADBExecutor
 from app.executors.run_context import RunContext
 from app.executors.step_handlers import (
-    StepHandler, StepHandlerResult,
-    PrecheckHandler, PushPackageHandler,
-    ApplyUpdateHandler, RebootWaitHandler,
+    ApplyUpdateHandler,
     PostValidateHandler,
+    PrecheckHandler,
+    PushPackageHandler,
+    RebootWaitHandler,
+    StepHandler,
+    StepHandlerResult,
 )
 from app.models.run import StepName
 
@@ -46,10 +49,7 @@ class RunExecutionResult:
             "duration_seconds": self.get_duration_seconds(),
             "failed_step": self.failed_step.value if self.failed_step else None,
             "error": self.error,
-            "steps": {
-                name: result.to_dict()
-                for name, result in self.step_results.items()
-            },
+            "steps": {name: result.to_dict() for name, result in self.step_results.items()},
         }
 
 
@@ -78,7 +78,9 @@ class RunExecutor:
         self.runner = runner
 
         # 初始化 handler
-        self.handlers: Dict[StepName, StepHandler] = custom_handlers or self._create_default_handlers()
+        self.handlers: Dict[StepName, StepHandler] = (
+            custom_handlers or self._create_default_handlers()
+        )
 
     def _create_default_handlers(self) -> Dict[StepName, StepHandler]:
         """创建默认 handler 集合。"""
@@ -127,7 +129,7 @@ class RunExecutor:
                 context.record_event(
                     "step_failure",
                     f"Step {step_name.value} failed: {result.message}",
-                    {"error": result.error}
+                    {"error": result.error},
                 )
                 break
 

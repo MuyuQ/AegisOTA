@@ -6,7 +6,7 @@
 <h1>创建升级任务</h1>
 
 <div class="card" style="margin-top: 2rem;">
-    <form hx-post="/api/runs/form" hx-swap="innerHTML" hx-target="#result">
+    <form hx-post="/api/v1/runs/form" hx-swap="innerHTML" hx-target="#result">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <!-- 升级计划选择 -->
@@ -21,7 +21,7 @@
                 {% endfor %}
             </select>
             {% if not plans %}
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem;">暂无升级计划，请先创建升级计划</p>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.875rem;">暂无升级计划，请先创建升级计划</p>
             {% endif %}
         </div>
 
@@ -29,7 +29,7 @@
         <div class="form-group" style="margin-bottom: 2rem;">
             <label class="form-label" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; display: block;">
                 选择设备
-                <span style="font-weight: normal; color: var(--text-muted); font-size: 0.875rem;">（可多选，留空自动分配）</span>
+                <span class="text-muted" style="font-weight: normal; font-size: 0.875rem;">（可多选，留空自动分配）</span>
             </label>
 
             {% if devices_by_location %}
@@ -55,7 +55,7 @@
                             <span style="flex: 1;">
                                 <code style="font-size: 0.9rem;">{{ device.serial }}</code>
                             </span>
-                            <span style="color: var(--text-muted); font-size: 0.875rem;">
+                            <span class="text-secondary" style="font-size: 0.875rem;">
                                 {{ device.brand }} {{ device.model }}
                             </span>
                             <span class="status-badge status-{{ device.status }}" style="margin-left: 0.75rem; font-size: 0.75rem;">
@@ -68,7 +68,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <p style="color: var(--text-muted); padding: 1rem;">暂无可用设备</p>
+            <p class="text-muted" style="padding: 1rem;">暂无可用设备</p>
             {% endif %}
         </div>
 
@@ -89,7 +89,7 @@
                 <label class="form-label">升级次数</label>
                 <input type="number" name="upgrade_count" value="1" min="1" max="100"
                        class="form-input" style="width: 100px;">
-                <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.875rem;">设为 1 表示单次升级</span>
+                <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.875rem;">设为 1 表示单次升级</span>
             </div>
 
             <div class="form-group" style="margin-top: 0.5rem;">
@@ -105,7 +105,7 @@
                            onchange="toggleCycleOptions()" style="width: 16px; height: 16px;">
                     启用循环升级测试 (A版本 ↔ B版本)
                 </label>
-                <div id="cycle-hint" style="display: none; margin-top: 0.5rem; padding-left: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">
+                <div id="cycle-hint" class="text-muted" style="display: none; margin-top: 0.5rem; padding-left: 1.5rem; font-size: 0.8rem;">
                     循环测试：先升级到目标版本，再回滚到源版本，循环往复。需要升级计划配置源版本和目标版本。
                 </div>
             </div>
@@ -128,13 +128,13 @@
                     <label class="form-label" style="font-size: 0.875rem;">事件数量</label>
                     <input type="number" name="monkey_event_count" value="1000" min="100"
                            class="form-input" style="width: 120px;">
-                    <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.75rem;">默认 1000</span>
+                    <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.75rem;">默认 1000</span>
                 </div>
                 <div class="form-group" style="margin-top: 0.5rem;">
                     <label class="form-label" style="font-size: 0.875rem;">事件间隔 (ms)</label>
                     <input type="number" name="monkey_throttle" value="50" min="10"
                            class="form-input" style="width: 120px;">
-                    <span style="color: var(--text-muted); margin-left: 0.5rem; font-size: 0.75rem;">默认 50ms</span>
+                    <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.75rem;">默认 50ms</span>
                 </div>
             </div>
         </div>

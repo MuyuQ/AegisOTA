@@ -1,8 +1,5 @@
 """Report 模型测试。"""
 
-import pytest
-from datetime import datetime
-
 from app.models.report import Report, ReportFormat, ReportStatus
 from app.models.run import RunSession, RunStatus
 

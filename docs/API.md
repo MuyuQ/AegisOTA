@@ -438,7 +438,7 @@ BASE_URL = "http://localhost:8000"
 with httpx.Client() as client:
     resp = client.get(f"{BASE_URL}/api/devices")
     devices = resp.json()["data"]
-    
+
 # 创建任务
 with httpx.Client() as client:
     resp = client.post(

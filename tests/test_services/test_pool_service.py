@@ -15,10 +15,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture
@@ -162,9 +165,7 @@ class TestPoolServiceUpdate:
         """测试更新池配置。"""
         pool = pool_service.create_pool(name="update_test_pool", purpose=PoolPurpose.STABLE)
 
-        updated = pool_service.update_pool(
-            pool.id, reserved_ratio=0.5, max_parallel=20
-        )
+        updated = pool_service.update_pool(pool.id, reserved_ratio=0.5, max_parallel=20)
 
         assert updated is not None
         assert updated.reserved_ratio == 0.5

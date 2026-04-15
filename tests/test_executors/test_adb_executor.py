@@ -1,9 +1,6 @@
 """ADB 执行器测试。"""
 
-import pytest
-
 from app.executors.adb_executor import ADBExecutor
-from app.executors.command_runner import CommandResult
 
 
 def test_adb_executor_init():
@@ -43,8 +40,8 @@ def test_adb_push_command_format():
 def test_adb_executor_interface():
     """测试 ADB 执行器接口方法。"""
     executor = ADBExecutor()
-    assert hasattr(executor, 'devices')
-    assert hasattr(executor, 'shell')
-    assert hasattr(executor, 'push')
-    assert hasattr(executor, 'reboot')
-    assert hasattr(executor, 'getprop')
+    assert hasattr(executor, "devices")
+    assert hasattr(executor, "shell")
+    assert hasattr(executor, "push")
+    assert hasattr(executor, "reboot")
+    assert hasattr(executor, "getprop")

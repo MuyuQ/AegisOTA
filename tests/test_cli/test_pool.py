@@ -4,7 +4,7 @@ import pytest
 from typer.testing import CliRunner
 
 from app.cli.main import app
-from app.database import SessionLocal, init_db, engine
+from app.database import SessionLocal, engine, init_db
 from app.models.device import DevicePool
 
 runner = CliRunner()
@@ -44,36 +44,60 @@ class TestPoolCLI:
 
     def test_pool_create(self, setup_db):
         """测试创建设备池。"""
-        result = runner.invoke(app, [
-            "pool", "create",
-            "--name", "cli_pool",
-            "--purpose", "stable",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "pool",
+                "create",
+                "--name",
+                "cli_pool",
+                "--purpose",
+                "stable",
+            ],
+        )
         assert result.exit_code == 0
         assert "cli_pool" in result.output
 
     def test_pool_create_duplicate(self, setup_db):
         """测试创建重复名称设备池。"""
-        runner.invoke(app, [
-            "pool", "create",
-            "--name", "duplicate_pool",
-            "--purpose", "stable",
-        ])
-        result = runner.invoke(app, [
-            "pool", "create",
-            "--name", "duplicate_pool",
-            "--purpose", "stress",
-        ])
+        runner.invoke(
+            app,
+            [
+                "pool",
+                "create",
+                "--name",
+                "duplicate_pool",
+                "--purpose",
+                "stable",
+            ],
+        )
+        result = runner.invoke(
+            app,
+            [
+                "pool",
+                "create",
+                "--name",
+                "duplicate_pool",
+                "--purpose",
+                "stress",
+            ],
+        )
         assert result.exit_code == 1
 
     def test_pool_show(self, setup_db):
         """测试显示设备池详情。"""
         # 先创建
-        runner.invoke(app, [
-            "pool", "create",
-            "--name", "show_pool",
-            "--purpose", "stable",
-        ])
+        runner.invoke(
+            app,
+            [
+                "pool",
+                "create",
+                "--name",
+                "show_pool",
+                "--purpose",
+                "stable",
+            ],
+        )
 
         result = runner.invoke(app, ["pool", "show", "--name", "show_pool"])
         assert result.exit_code == 0
@@ -87,17 +111,29 @@ class TestPoolCLI:
 
     def test_pool_update(self, setup_db):
         """测试更新设备池。"""
-        runner.invoke(app, [
-            "pool", "create",
-            "--name", "update_pool",
-            "--purpose", "stable",
-        ])
+        runner.invoke(
+            app,
+            [
+                "pool",
+                "create",
+                "--name",
+                "update_pool",
+                "--purpose",
+                "stable",
+            ],
+        )
 
-        result = runner.invoke(app, [
-            "pool", "update",
-            "--name", "update_pool",
-            "--reserved-ratio", "0.3",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "pool",
+                "update",
+                "--name",
+                "update_pool",
+                "--reserved-ratio",
+                "0.3",
+            ],
+        )
         assert result.exit_code == 0
 
     def test_pool_init_defaults(self, setup_db):

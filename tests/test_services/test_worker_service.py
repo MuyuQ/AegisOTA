@@ -1,17 +1,16 @@
 """Worker 服务测试。"""
 
 import pytest
-import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models.device import Device, DeviceStatus
-from app.models.run import UpgradePlan, RunSession, RunStatus, UpgradeType
-from app.services.worker_service import WorkerService
-from app.services.scheduler_service import SchedulerService
 from app.executors.mock_executor import MockADBExecutor
 from app.executors.run_executor import MockRunExecutor
+from app.models.device import Device, DeviceStatus
+from app.models.run import RunSession, RunStatus, UpgradePlan, UpgradeType
+from app.services.scheduler_service import SchedulerService
+from app.services.worker_service import WorkerService
 
 
 @pytest.fixture
@@ -19,10 +18,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture

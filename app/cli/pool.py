@@ -21,7 +21,9 @@ def list_pools():
         pools = service.list_pools()
 
         if not pools:
-            console.print("[yellow]No pools found. Run 'pool init' to create default pools.[/yellow]")
+            console.print(
+                "[yellow]No pools found. Run 'pool init' to create default pools.[/yellow]"
+            )
             return
 
         table = Table(title="Device Pools")
@@ -50,7 +52,9 @@ def list_pools():
 @app.command("create")
 def create_pool(
     name: str = typer.Option(..., "--name", "-n", help="设备池名称"),
-    purpose: str = typer.Option("stable", "--purpose", "-p", help="设备池用途: stable, stress, emergency"),
+    purpose: str = typer.Option(
+        "stable", "--purpose", "-p", help="设备池用途: stable, stress, emergency"
+    ),
     reserved_ratio: float = typer.Option(0.2, "--reserved-ratio", "-r", help="保留比例"),
     max_parallel: int = typer.Option(5, "--max-parallel", "-m", help="最大并行数"),
 ):
@@ -61,7 +65,9 @@ def create_pool(
         try:
             purpose_enum = PoolPurpose(purpose)
         except ValueError:
-            console.print(f"[red]Invalid purpose '{purpose}'. Valid values: stable, stress, emergency[/red]")
+            console.print(
+                f"[red]Invalid purpose '{purpose}'. Valid values: stable, stress, emergency[/red]"
+            )
             raise typer.Exit(1)
 
         try:
@@ -106,12 +112,14 @@ def show_pool(
 
         console.print(f"\n[bold cyan]Pool: {pool.name}[/bold cyan]")
         console.print(f"  ID: {pool.id}")
-        console.print(f"  Purpose: {pool.purpose.value if hasattr(pool.purpose, 'value') else pool.purpose}")
+        console.print(
+            f"  Purpose: {pool.purpose.value if hasattr(pool.purpose, 'value') else pool.purpose}"
+        )
         console.print(f"  Reserved Ratio: {pool.reserved_ratio:.0%}")
         console.print(f"  Max Parallel: {pool.max_parallel}")
         console.print(f"  Enabled: {'Yes' if pool.enabled else 'No'}")
 
-        console.print(f"\n[bold]Capacity:[/bold]")
+        console.print("\n[bold]Capacity:[/bold]")
         console.print(f"  Total Devices: {capacity['total']}")
         console.print(f"  Available: {capacity['available']}")
         console.print(f"  Busy: {capacity['busy']}")
@@ -173,7 +181,11 @@ def init_pools():
 
         console.print("[green]Created default pools:[/green]")
         for pool in pools:
-            console.print(f"  - {pool.name} ({pool.purpose.value if hasattr(pool.purpose, 'value') else pool.purpose})")
+            console.print(
+                f"  - {pool.name} ("
+                f"{pool.purpose.value if hasattr(pool.purpose, 'value') else pool.purpose}"
+                f")"
+            )
     finally:
         db.close()
 

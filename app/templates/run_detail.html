@@ -11,11 +11,11 @@
         <table class="table">
             <tr>
                 <th>升级计划</th>
-                <td>{{ run.plan_name }}</td>
+                <td class="text-secondary">{{ run.plan_name }}</td>
             </tr>
             <tr>
                 <th>设备</th>
-                <td>{{ run.device_serial }}</td>
+                <td class="text-secondary">{{ run.device_serial }}</td>
             </tr>
             <tr>
                 <th>状态</th>
@@ -23,24 +23,24 @@
             </tr>
             <tr>
                 <th>结果</th>
-                <td>{{ run.result }}</td>
+                <td class="text-secondary">{{ run.result }}</td>
             </tr>
             <tr>
                 <th>开始时间</th>
-                <td>{{ run.started_at }}</td>
+                <td class="text-tertiary">{{ run.started_at }}</td>
             </tr>
             <tr>
                 <th>结束时间</th>
-                <td>{{ run.ended_at }}</td>
+                <td class="text-tertiary">{{ run.ended_at }}</td>
             </tr>
             <tr>
                 <th>执行时长</th>
-                <td>{{ run.duration }} 秒</td>
+                <td class="text-tertiary">{{ run.duration }} 秒</td>
             </tr>
             {% if run.failure_category != '-' %}
             <tr>
                 <th>失败分类</th>
-                <td>{{ run.failure_category }}</td>
+                <td class="text-secondary">{{ run.failure_category }}</td>
             </tr>
             {% endif %}
         </table>
@@ -61,13 +61,13 @@
     <div class="card">
         <div class="card-header">操作</div>
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="/api/reports/{{ run.id }}/html" class="btn btn-primary" target="_blank">
+            <a href="/api/v1/reports/{{ run.id }}/html" class="btn btn-primary" target="_blank">
                 查看 HTML 报告
             </a>
-            <a href="/api/reports/{{ run.id }}/markdown" class="btn btn-secondary" target="_blank">
+            <a href="/api/v1/reports/{{ run.id }}/markdown" class="btn btn-secondary" target="_blank">
                 下载 Markdown
             </a>
-            <a href="/api/reports/{{ run.id }}/artifacts" class="btn btn-secondary" target="_blank">
+            <a href="/api/v1/reports/{{ run.id }}/artifacts" class="btn btn-secondary" target="_blank">
                 查看产物
             </a>
         </div>
@@ -88,10 +88,10 @@
         {% for step in steps %}
         <div class="timeline-item {% if step.status == 'success' %}success{% elif step.status == 'failed' %}failure{% endif %}">
             <div>
-                <strong>{{ step.step_name }}</strong>
+                <strong class="text-secondary">{{ step.step_name }}</strong>
                 <span class="status-badge status-{{ step.status }}" style="margin-left: 0.5rem;">{{ step.status }}</span>
             </div>
-            <div style="color: var(--text-muted); font-size: 0.875rem;">
+            <div class="text-tertiary" style="font-size: 0.875rem;">
                 {% if step.duration != '-' %}
                 耗时: {{ step.duration }}s
                 {% endif %}
@@ -110,16 +110,16 @@
         <span class="category-badge category-{{ diagnosis.category }}" style="padding: 0.5rem 1rem;">
             {{ diagnosis.category_display }}
         </span>
-        <span style="color: var(--text-muted);">根因: <strong>{{ diagnosis.root_cause }}</strong></span>
+        <span class="text-tertiary">根因: <strong>{{ diagnosis.root_cause }}</strong></span>
         <span class="confidence-badge confidence-{{ diagnosis.confidence_level }}" style="padding: 0.25rem 0.75rem;">
-            置信度: {{ (diagnosis.confidence * 100)|round|int }}%
+            置信度: <span class="text-accent">{{ (diagnosis.confidence * 100)|round|int }}%</span>
         </span>
         <a href="/diagnosis/{{ run.id }}" class="btn btn-sm btn-primary">查看诊断详情</a>
     </div>
     {% if diagnosis.next_action %}
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-        <strong style="color: var(--text-muted);">建议操作:</strong>
-        <span style="color: var(--primary-color);">{{ diagnosis.next_action }}</span>
+        <strong class="text-tertiary">建议操作:</strong>
+        <span class="text-accent">{{ diagnosis.next_action }}</span>
     </div>
     {% endif %}
 </div>
@@ -199,7 +199,7 @@
 
 <script>
 function triggerDiagnosis(runId) {
-    fetch('/api/diagnosis/' + runId + '/run', {
+    fetch('/api/v1/diagnosis/' + runId + '/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     }).then(response => {

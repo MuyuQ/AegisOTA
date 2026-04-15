@@ -5,15 +5,15 @@ import pytest
 from app.models.enums import DeviceStatus, RunStatus
 from app.validators.state_machine import (
     StateMachine,
+    StateTransitionError,
     device_state_machine,
+    get_device_allowed_transitions,
+    get_run_allowed_transitions,
+    is_device_terminal_state,
+    is_run_terminal_state,
     run_state_machine,
     validate_device_transition,
     validate_run_transition,
-    StateTransitionError,
-    is_run_terminal_state,
-    is_device_terminal_state,
-    get_run_allowed_transitions,
-    get_device_allowed_transitions,
 )
 
 
@@ -22,10 +22,12 @@ class TestStateMachine:
 
     def test_can_transition_valid(self):
         """测试合法的状态转换。"""
-        sm = StateMachine({
-            "state_a": {"state_b", "state_c"},
-            "state_b": {"state_a"},
-        })
+        sm = StateMachine(
+            {
+                "state_a": {"state_b", "state_c"},
+                "state_b": {"state_a"},
+            }
+        )
 
         assert sm.can_transition("state_a", "state_b") is True
         assert sm.can_transition("state_a", "state_c") is True
@@ -33,38 +35,46 @@ class TestStateMachine:
 
     def test_can_transition_invalid(self):
         """测试非法的状态转换。"""
-        sm = StateMachine({
-            "state_a": {"state_b"},
-            "state_b": {"state_a"},
-        })
+        sm = StateMachine(
+            {
+                "state_a": {"state_b"},
+                "state_b": {"state_a"},
+            }
+        )
 
         assert sm.can_transition("state_a", "state_a") is False
         assert sm.can_transition("state_b", "state_b") is False
 
     def test_can_transition_unknown_state(self):
         """测试未知状态的转换。"""
-        sm = StateMachine({
-            "state_a": {"state_b"},
-        })
+        sm = StateMachine(
+            {
+                "state_a": {"state_b"},
+            }
+        )
 
         assert sm.can_transition("unknown", "state_b") is False
         assert sm.can_transition("state_a", "unknown") is False
 
     def test_get_allowed_transitions(self):
         """测试获取允许的转换。"""
-        sm = StateMachine({
-            "state_a": {"state_b", "state_c"},
-        })
+        sm = StateMachine(
+            {
+                "state_a": {"state_b", "state_c"},
+            }
+        )
 
         allowed = sm.get_allowed_transitions("state_a")
         assert allowed == {"state_b", "state_c"}
 
     def test_is_terminal_state(self):
         """测试终态判断。"""
-        sm = StateMachine({
-            "state_a": {"state_b"},
-            "state_b": set(),  # 终态
-        })
+        sm = StateMachine(
+            {
+                "state_a": {"state_b"},
+                "state_b": set(),  # 终态
+            }
+        )
 
         assert sm.is_terminal_state("state_a") is False
         assert sm.is_terminal_state("state_b") is True
@@ -98,14 +108,18 @@ class TestDeviceStateMachine:
     def test_invalid_device_transition(self):
         """测试非法的设备状态转换。"""
         # BUSY 不能直接转换到 RESERVED
-        assert device_state_machine.can_transition(
-            DeviceStatus.BUSY.value, DeviceStatus.RESERVED.value
-        ) is False
+        assert (
+            device_state_machine.can_transition(
+                DeviceStatus.BUSY.value, DeviceStatus.RESERVED.value
+            )
+            is False
+        )
 
         # OFFLINE 不能直接转换到 BUSY
-        assert device_state_machine.can_transition(
-            DeviceStatus.OFFLINE.value, DeviceStatus.BUSY.value
-        ) is False
+        assert (
+            device_state_machine.can_transition(DeviceStatus.OFFLINE.value, DeviceStatus.BUSY.value)
+            is False
+        )
 
 
 class TestRunStateMachine:
@@ -141,14 +155,16 @@ class TestRunStateMachine:
     def test_invalid_run_transition(self):
         """测试非法的任务状态转换。"""
         # PASSED 不能转换到任何状态
-        assert run_state_machine.can_transition(
-            RunStatus.PASSED.value, RunStatus.QUEUED.value
-        ) is False
+        assert (
+            run_state_machine.can_transition(RunStatus.PASSED.value, RunStatus.QUEUED.value)
+            is False
+        )
 
         # QUEUED 不能直接转换到 PASSED
-        assert run_state_machine.can_transition(
-            RunStatus.QUEUED.value, RunStatus.PASSED.value
-        ) is False
+        assert (
+            run_state_machine.can_transition(RunStatus.QUEUED.value, RunStatus.PASSED.value)
+            is False
+        )
 
 
 class TestValidateDeviceTransition:

@@ -1,9 +1,7 @@
 """配置系统测试。"""
 
-from pathlib import Path
 import shutil
-
-import pytest
+from pathlib import Path
 
 from app.config import Settings, clear_settings_cache, get_settings
 
@@ -80,6 +78,7 @@ class TestPoolConfig:
         monkeypatch.setenv("AEGISOTA_ENABLE_DEVICE_POOL", "false")
 
         from app.config import Settings, clear_settings_cache
+
         clear_settings_cache()
         settings = Settings()
 

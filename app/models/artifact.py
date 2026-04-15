@@ -1,9 +1,14 @@
 """执行产物数据模型。"""
 
+from __future__ import annotations
+
 import json
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from app.models.run import RunSession, RunStep
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -56,9 +61,7 @@ class Artifact(Base):
     )
 
     # 关系
-    run_session: Mapped["RunSession"] = relationship(
-        "RunSession", back_populates="artifacts"
-    )
+    run_session: Mapped["RunSession"] = relationship("RunSession", back_populates="artifacts")
     step: Mapped[Optional["RunStep"]] = relationship("RunStep")
 
     def get_metadata(self) -> dict[str, Any]:

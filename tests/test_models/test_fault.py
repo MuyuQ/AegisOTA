@@ -5,9 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models.device import Device
 from app.models.fault import FaultProfile, FaultStage, FaultType
-from app.models.run import RunSession, RunStatus, UpgradePlan, UpgradeType
+from app.models.run import UpgradePlan, UpgradeType
 
 
 @pytest.fixture
@@ -16,14 +15,14 @@ def db_engine():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     yield engine
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
     """创建测试数据库会话。"""
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
+    session_factory = sessionmaker(bind=db_engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -86,7 +85,7 @@ class TestFaultProfileCreation:
         assert profile.name == "存储压力测试"
         assert profile.fault_stage == FaultStage.PRECHECK
         assert profile.fault_type == FaultType.STORAGE_PRESSURE
-        assert profile.enabled == True
+        assert profile.enabled is True
         assert profile.created_at is not None
         assert profile.updated_at is not None
 
@@ -99,18 +98,20 @@ class TestFaultProfileCreation:
             enabled=False,
             description="模拟下载过程中的网络中断",
         )
-        profile.set_parameters({
-            "interrupt_at": "50%",
-            "timeout_seconds": 30,
-            "retry_count": 3,
-        })
+        profile.set_parameters(
+            {
+                "interrupt_at": "50%",
+                "timeout_seconds": 30,
+                "retry_count": 3,
+            }
+        )
         db_session.add(profile)
         db_session.commit()
 
         assert profile.id is not None
         assert profile.fault_stage == FaultStage.APPLY_UPDATE
         assert profile.fault_type == FaultType.DOWNLOAD_INTERRUPTED
-        assert profile.enabled == False
+        assert profile.enabled is False
         assert profile.description == "模拟下载过程中的网络中断"
         assert profile.get_parameters() == {
             "interrupt_at": "50%",
@@ -230,9 +231,6 @@ class TestFaultProfileUpgradePlanRelationship:
         db_session.add(plan)
         db_session.commit()
 
-        profile_id = profile.id
-        plan_id = plan.id
-
         # 删除故障配置
         db_session.delete(profile)
         db_session.commit()
@@ -256,7 +254,11 @@ class TestAllFaultTypes:
             (FaultType.REBOOT_INTERRUPTED, FaultStage.APPLY_UPDATE, {"timeout": 60}),
             (FaultType.POST_BOOT_WATCHDOG_FAILURE, FaultStage.POST_VALIDATE, {"check_interval": 5}),
             (FaultType.MONKEY_AFTER_UPGRADE, FaultStage.POST_VALIDATE, {"event_count": 5000}),
-            (FaultType.PERFORMANCE_REGRESSION, FaultStage.POST_VALIDATE, {"metrics": ["cpu", "mem"]}),
+            (
+                FaultType.PERFORMANCE_REGRESSION,
+                FaultStage.POST_VALIDATE,
+                {"metrics": ["cpu", "mem"]},
+            ),
         ]
 
         profiles = []

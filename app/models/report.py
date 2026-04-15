@@ -1,8 +1,13 @@
 """报告数据模型。"""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from app.models.run import RunSession
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -42,9 +47,7 @@ class Report(Base):
     # 报告信息
     title: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     format: Mapped[str] = mapped_column(String(16), nullable=False, default=ReportFormat.JSON)
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default=ReportStatus.GENERATING
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default=ReportStatus.GENERATING)
 
     # 文件路径
     content_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

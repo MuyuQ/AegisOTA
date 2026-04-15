@@ -1,12 +1,12 @@
 """Monkey 稳定性测试插件。"""
 
 import re
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from app.config import get_settings
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class MonkeyAfterUpgradeFault(FaultPlugin):
@@ -100,7 +100,7 @@ class MonkeyAfterUpgradeFault(FaultPlugin):
 
         self.record_event(
             context,
-            f"Monkey 测试完成",
+            "Monkey 测试完成",
             monkey_stats,
         )
 

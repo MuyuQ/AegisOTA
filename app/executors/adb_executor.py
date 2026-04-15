@@ -1,9 +1,9 @@
 """ADB/Fastboot 命令执行器。"""
 
 import re
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from app.executors.command_runner import CommandRunner, CommandResult, ShellCommandRunner
+from app.executors.command_runner import CommandResult, CommandRunner, ShellCommandRunner
 
 
 class ADBExecutor:
@@ -60,10 +60,12 @@ class ADBExecutor:
             if line and not line.startswith("List of devices"):
                 parts = line.split("\t")
                 if len(parts) >= 2:
-                    devices.append({
-                        "serial": parts[0],
-                        "status": parts[1],
-                    })
+                    devices.append(
+                        {
+                            "serial": parts[0],
+                            "status": parts[1],
+                        }
+                    )
 
         return devices
 
@@ -203,10 +205,7 @@ class ADBExecutor:
         props = self.getprop(device=device)
 
         # 获取电量
-        battery_result = self.shell(
-            "dumpsys battery | grep level",
-            device=device
-        )
+        battery_result = self.shell("dumpsys battery | grep level", device=device)
         battery_level = None
         if battery_result.success:
             match = re.search(r"level: (\d+)", battery_result.stdout)
@@ -214,10 +213,7 @@ class ADBExecutor:
                 battery_level = int(match.group(1))
 
         # 获取存储信息
-        storage_result = self.shell(
-            "df /data | tail -1",
-            device=device
-        )
+        storage_result = self.shell("df /data | tail -1", device=device)
 
         return {
             "serial": device,

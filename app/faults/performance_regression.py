@@ -1,10 +1,10 @@
 """性能退化注入插件。"""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class PerformanceRegressionFault(FaultPlugin):
@@ -90,7 +90,7 @@ class PerformanceRegressionFault(FaultPlugin):
 
         if self.pressure_type == "cpu":
             # CPU 压力：启动多个计算进程
-            result = self.executor.shell(
+            self.executor.shell(
                 f"""
                 for i in 1 2 3 4; do
                     (while true; do echo $i > /dev/null; done) &
@@ -104,7 +104,7 @@ class PerformanceRegressionFault(FaultPlugin):
 
         elif self.pressure_type == "memory":
             # 内存压力：创建大文件占用内存（通过 ashmem 或 tmpfs）
-            result = self.executor.shell(
+            self.executor.shell(
                 f"""
                 dd if=/dev/zero of=/dev/ashmem/dummy bs=1M count=100 2>/dev/null || \
                 dd if=/dev/zero of=/data/local/tmp/stress_mem bs=1M count=100
@@ -117,7 +117,7 @@ class PerformanceRegressionFault(FaultPlugin):
 
         elif self.pressure_type == "io":
             # IO 压力：持续读写
-            result = self.executor.shell(
+            self.executor.shell(
                 f"""
                 while true; do
                     dd if=/dev/zero of=/data/local/tmp/io_stress bs=1M count=10
@@ -161,7 +161,11 @@ class PerformanceRegressionFault(FaultPlugin):
 
         # 清理可能残留的压力进程和文件
         self.executor.shell(
-            "pkill -f 'echo.*>/dev/null' 2>/dev/null; rm -f /data/local/tmp/io_stress /data/local/tmp/stress_mem 2>/dev/null",
+            (
+                "pkill -f 'echo.*>/dev/null' 2>/dev/null; "
+                "rm -f /data/local/tmp/io_stress "
+                "/data/local/tmp/stress_mem 2>/dev/null"
+            ),
             device=context.device_serial,
         )
 

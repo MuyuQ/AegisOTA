@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, APIKeyMiddleware
+from app.main import APIKeyMiddleware, app
 
 
 class TestAPIKeyMiddleware:
@@ -35,7 +35,7 @@ class TestAPIKeyMiddleware:
         """测试未配置 API Keys 时允许所有请求（开发模式）。"""
         # 默认配置下 API_KEYS 为空列表，应允许请求
         client = TestClient(app)
-        response = client.get("/api/devices")
+        response = client.get("/api/v1/devices")
         # 如果未配置 API Keys，应返回 200 或其他非 401 状态
         assert response.status_code != 401
 
@@ -58,7 +58,7 @@ class TestAPIKeyMiddlewareWithKeys:
         )
 
         # 添加简单测试路由
-        @test_app.get("/api/test")
+        @test_app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "success"}
 
@@ -71,27 +71,27 @@ class TestAPIKeyMiddlewareWithKeys:
     def test_api_with_valid_key(self, app_with_keys):
         """测试有效 API Key 可访问 API。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/test", headers={"X-API-Key": "test-key-123"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "test-key-123"})
         assert response.status_code == 200
         assert response.json()["message"] == "success"
 
     def test_api_with_admin_key(self, app_with_keys):
         """测试管理员 API Key 可访问 API。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/test", headers={"X-API-Key": "admin-key-456"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "admin-key-456"})
         assert response.status_code == 200
 
     def test_api_without_key(self, app_with_keys):
         """测试无 API Key 时返回 401。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/test")
+        response = client.get("/api/v1/test")
         assert response.status_code == 401
         assert "Invalid or missing API key" in response.json()["detail"]
 
     def test_api_with_invalid_key(self, app_with_keys):
         """测试无效 API Key 时返回 401。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/test", headers={"X-API-Key": "invalid-key"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "invalid-key"})
         assert response.status_code == 401
 
     def test_health_check_still_public(self, app_with_keys):
@@ -103,7 +103,7 @@ class TestAPIKeyMiddlewareWithKeys:
     def test_authenticate_header_in_response(self, app_with_keys):
         """测试 401 响应包含 WWW-Authenticate 头。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/test")
+        response = client.get("/api/v1/test")
         assert response.status_code == 401
         assert "WWW-Authenticate" in response.headers
         assert "ApiKey" in response.headers["WWW-Authenticate"]
@@ -127,7 +127,7 @@ class TestAPIKeyMiddlewareEdgeCases:
         )
 
         # 然后添加路由
-        @test_app.get("/api/test")
+        @test_app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "success"}
 
@@ -137,11 +137,11 @@ class TestAPIKeyMiddlewareEdgeCases:
         """测试自定义请求头名称。"""
         client = TestClient(app_custom_header)
         # 使用自定义请求头
-        response = client.get("/api/test", headers={"X-Custom-Auth": "secret-key"})
+        response = client.get("/api/v1/test", headers={"X-Custom-Auth": "secret-key"})
         assert response.status_code == 200
 
         # 使用默认请求头应失败
-        response = client.get("/api/test", headers={"X-API-Key": "secret-key"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 401
 
     @pytest.fixture
@@ -159,7 +159,7 @@ class TestAPIKeyMiddlewareEdgeCases:
         )
 
         # 然后添加路由
-        @test_app.get("/api/test")
+        @test_app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "success"}
 
@@ -168,10 +168,10 @@ class TestAPIKeyMiddlewareEdgeCases:
     def test_empty_keys_allows_all(self, app_empty_keys):
         """测试空 API Keys 允许所有请求。"""
         client = TestClient(app_empty_keys)
-        response = client.get("/api/test")
+        response = client.get("/api/v1/test")
         assert response.status_code == 200
 
-        response = client.get("/api/test", headers={"X-API-Key": "any-key"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "any-key"})
         assert response.status_code == 200
 
     def test_case_sensitive_key(self):
@@ -188,15 +188,15 @@ class TestAPIKeyMiddlewareEdgeCases:
         )
 
         # 然后添加路由
-        @test_app.get("/api/test")
+        @test_app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "success"}
 
         client = TestClient(test_app)
         # 正确大小写
-        response = client.get("/api/test", headers={"X-API-Key": "Secret-Key"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "Secret-Key"})
         assert response.status_code == 200
 
         # 错误大小写
-        response = client.get("/api/test", headers={"X-API-Key": "secret-key"})
+        response = client.get("/api/v1/test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 401

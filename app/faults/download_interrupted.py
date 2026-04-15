@@ -1,10 +1,10 @@
 """下载中断注入插件。"""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class DownloadInterruptedFault(FaultPlugin):
@@ -21,7 +21,7 @@ class DownloadInterruptedFault(FaultPlugin):
     INTERRUPT_POINTS = [
         "before_download",  # 下载前删除包
         "during_download",  # 下载过程中模拟中断
-        "after_download",   # 下载后损坏包
+        "after_download",  # 下载后损坏包
     ]
 
     DEFAULT_INTERRUPT_POINT = "before_download"
@@ -66,7 +66,7 @@ class DownloadInterruptedFault(FaultPlugin):
 
         if self.interrupt_point == "before_download":
             # 在推送前确保没有现有包
-            rm_result = self.executor.shell(
+            self.executor.shell(
                 f"rm -f {remote_path}",
                 device=context.device_serial,
             )
@@ -86,7 +86,7 @@ class DownloadInterruptedFault(FaultPlugin):
         elif self.interrupt_point == "during_download":
             # 在推送过程中模拟网络中断：创建部分文件
             # 创建一个小的部分文件模拟下载中断
-            partial_result = self.executor.shell(
+            self.executor.shell(
                 f"dd if=/dev/zero of={remote_path} bs=1024 count=1024 2>/dev/null",
                 device=context.device_serial,
             )
@@ -106,7 +106,7 @@ class DownloadInterruptedFault(FaultPlugin):
 
         elif self.interrupt_point == "after_download":
             # 下载完成后损坏包：追加垃圾数据破坏 ZIP 结构
-            corrupt_result = self.executor.shell(
+            self.executor.shell(
                 f"echo 'CORRUPTED_DATA' >> {remote_path}",
                 device=context.device_serial,
             )

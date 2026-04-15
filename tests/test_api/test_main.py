@@ -75,19 +75,19 @@ class TestOpenAPI:
         """验证 OpenAPI schema 包含 devices 路径。"""
         response = client.get("/openapi.json")
         schema = response.json()
-        assert "/api/devices" in schema["paths"]
+        assert "/api/v1/devices" in schema["paths"]
 
     def test_openapi_schema_has_runs_path(self, client):
         """验证 OpenAPI schema 包含 runs 路径。"""
         response = client.get("/openapi.json")
         schema = response.json()
-        assert "/api/runs" in schema["paths"]
+        assert "/api/v1/runs" in schema["paths"]
 
     def test_openapi_schema_has_reports_path(self, client):
         """验证 OpenAPI schema 包含 reports 路径。"""
         response = client.get("/openapi.json")
         schema = response.json()
-        assert "/api/reports/{run_id}" in schema["paths"]
+        assert "/api/v1/reports/{run_id}" in schema["paths"]
 
 
 class TestDevicesEndpoint:
@@ -95,13 +95,13 @@ class TestDevicesEndpoint:
 
     def test_devices_endpoint_returns_list(self, client):
         """验证设备 API 端点返回列表。"""
-        response = client.get("/api/devices")
+        response = client.get("/api/v1/devices")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
 
     def test_devices_endpoint_empty_list_initially(self, client):
         """验证设备 API 端点返回列表格式。"""
-        response = client.get("/api/devices")
+        response = client.get("/api/v1/devices")
         data = response.json()
         assert isinstance(data, list)
 
@@ -111,13 +111,13 @@ class TestRunsEndpoint:
 
     def test_runs_endpoint_returns_list(self, client):
         """验证任务 API 端点返回列表。"""
-        response = client.get("/api/runs")
+        response = client.get("/api/v1/runs")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
 
     def test_runs_endpoint_empty_list_initially(self, client):
         """验证任务 API 端点初始返回空列表。"""
-        response = client.get("/api/runs")
+        response = client.get("/api/v1/runs")
         data = response.json()
         assert isinstance(data, list)
         assert len(data) == 0
@@ -128,29 +128,35 @@ class TestReportsEndpoint:
 
     def test_reports_endpoint_returns_404_for_nonexistent_run(self, client):
         """验证报告 API 端点对不存在的任务返回 404。"""
-        response = client.get("/api/reports/99999")
+        response = client.get("/api/v1/reports/99999")
         assert response.status_code == 404
 
     def test_reports_endpoint_with_valid_run(self, client):
         """验证报告 API 端点对有效任务返回 JSON。"""
         # 首先创建一个计划
-        plan_response = client.post("/api/runs/plans", json={
-            "name": "测试计划",
-            "upgrade_type": "full",
-            "package_path": "/tmp/update.zip",
-        })
+        plan_response = client.post(
+            "/api/v1/runs/plans",
+            json={
+                "name": "测试计划",
+                "upgrade_type": "full",
+                "package_path": "/tmp/update.zip",
+            },
+        )
         assert plan_response.status_code == 200
         plan_id = plan_response.json()["plan_id"]
 
         # 创建任务
-        run_response = client.post("/api/runs", json={
-            "plan_id": plan_id,
-        })
+        run_response = client.post(
+            "/api/v1/runs",
+            json={
+                "plan_id": plan_id,
+            },
+        )
         assert run_response.status_code == 200
         run_id = run_response.json()["run_id"]
 
         # 获取报告
-        response = client.get(f"/api/reports/{run_id}")
+        response = client.get(f"/api/v1/reports/{run_id}")
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/json"
 

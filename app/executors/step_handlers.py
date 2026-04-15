@@ -8,12 +8,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from app.config import get_settings
-from app.executors.command_runner import CommandResult
 from app.executors.adb_executor import ADBExecutor
-from app.executors.run_context import RunContext, DeviceSnapshot
+from app.executors.command_runner import CommandResult
+from app.executors.run_context import DeviceSnapshot, RunContext
 from app.models.run import StepName
 
 
@@ -102,7 +102,7 @@ class StepHandler(ABC):
             return StepHandlerResult(
                 success=True,
                 step_name=self.step_name,
-                message=f"步骤已跳过（幂等性检查通过）",
+                message="步骤已跳过（幂等性检查通过）",
                 data=prev_result.get("data", {}),
                 duration_ms=0,
                 skipped=True,
@@ -139,7 +139,7 @@ class StepHandler(ABC):
             {
                 "exit_code": result.exit_code,
                 "duration_ms": result.duration_ms,
-            }
+            },
         )
 
 
@@ -154,10 +154,7 @@ class PrecheckHandler(StepHandler):
         if prev_result and prev_result.get("success"):
             # 验证设备仍然在线
             devices = self.executor.devices()
-            device_online = any(
-                d["serial"] == context.device_serial
-                for d in devices
-            )
+            device_online = any(d["serial"] == context.device_serial for d in devices)
             if device_online:
                 return True
         return False
@@ -171,10 +168,7 @@ class PrecheckHandler(StepHandler):
 
         # 检查设备在线
         devices = self.executor.devices()
-        device_online = any(
-            d["serial"] == context.device_serial
-            for d in devices
-        )
+        device_online = any(d["serial"] == context.device_serial for d in devices)
 
         if not device_online:
             return StepHandlerResult(
@@ -197,6 +191,7 @@ class PrecheckHandler(StepHandler):
         )
         if battery_result.success:
             import re
+
             match = re.search(r"level: (\d+)", battery_result.stdout)
             if match:
                 battery_level = int(match.group(1))

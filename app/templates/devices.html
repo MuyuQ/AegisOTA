@@ -5,7 +5,7 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1>设备管理</h1>
-    <button class="btn btn-primary" hx-post="/api/devices/sync/html" hx-swap="innerHTML" hx-target="#device-list">
+    <button class="btn btn-primary" hx-post="/api/v1/devices/sync/html" hx-swap="innerHTML" hx-target="#device-list">
         同步设备
     </button>
 </div>
@@ -31,8 +31,8 @@
             {% for device in devices %}
             <tr>
                 <td><strong>{{ device.serial }}</strong></td>
-                <td>{{ device.brand }} {{ device.model }}</td>
-                <td>{{ device.system_version }}</td>
+                <td class="text-secondary">{{ device.brand }} {{ device.model }}</td>
+                <td class="text-secondary">{{ device.system_version }}</td>
                 <td>
                     {% if device.pool_name %}
                     <a href="/pools/{{ device.pool_id }}" style="text-decoration: none;">
@@ -42,13 +42,13 @@
                     <span style="color: var(--text-muted);">-</span>
                     {% endif %}
                 </td>
-                <td>{{ device.location or '-' }}</td>
+                <td class="text-tertiary">{{ device.location or '-' }}</td>
                 <td>
                     <span class="status-badge status-{{ device.status }}">{{ device.status }}</span>
                 </td>
                 <td>{{ device.battery_level }}%</td>
                 <td>
-                    <a href="#" hx-get="/api/devices/{{ device.serial }}/health-detail"
+                    <a href="#" hx-get="/api/v1/devices/{{ device.serial }}/health-detail"
                        hx-target="#modal-container" hx-swap="innerHTML"
                        onclick="document.getElementById('modal-container').style.display='flex'"
                        style="text-decoration: none; cursor: pointer;">
@@ -58,14 +58,14 @@
                         </span>
                     </a>
                 </td>
-                <td>{{ device.last_seen_at }}</td>
+                <td class="text-tertiary">{{ device.last_seen_at }}</td>
                 <td>
                     {% if device.status == 'quarantined' %}
-                    <button class="btn btn-sm btn-primary" hx-post="/api/devices/{{ device.serial }}/recover/html" hx-swap="outerHTML" hx-target="closest tr">
+                    <button class="btn btn-sm btn-primary" hx-post="/api/v1/devices/{{ device.serial }}/recover/html" hx-swap="outerHTML" hx-target="closest tr">
                         恢复
                     </button>
                     {% elif device.status == 'idle' %}
-                    <button class="btn btn-sm btn-danger" hx-post="/api/devices/{{ device.serial }}/quarantine/html" hx-swap="outerHTML" hx-target="closest tr">
+                    <button class="btn btn-sm btn-danger" hx-post="/api/v1/devices/{{ device.serial }}/quarantine/html" hx-swap="outerHTML" hx-target="closest tr">
                         隔离
                     </button>
                     {% endif %}

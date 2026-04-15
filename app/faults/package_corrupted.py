@@ -1,10 +1,10 @@
 """升级包损坏注入插件。"""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class PackageCorruptedFault(FaultPlugin):
@@ -119,7 +119,7 @@ class PackageCorruptedFault(FaultPlugin):
         remote_path = "/data/local/tmp/update.zip"
 
         # 删除损坏的包
-        rm_result = self.executor.shell(
+        self.executor.shell(
             f"rm -f {remote_path}",
             device=context.device_serial,
         )

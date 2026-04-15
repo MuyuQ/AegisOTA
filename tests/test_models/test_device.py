@@ -1,7 +1,8 @@
 """设备模型测试。"""
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -12,17 +13,17 @@ from app.models.device import Device, DeviceLease, DeviceStatus, LeaseStatus
 @pytest.fixture
 def db_engine():
     """创建测试数据库引擎。"""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
+    eng = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=eng)
+    yield eng
+    eng.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
     """创建测试数据库会话。"""
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
+    session_factory = sessionmaker(bind=db_engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -224,11 +225,7 @@ class TestDeviceDatabaseOperations:
         db_session.add_all(devices)
         db_session.commit()
 
-        available = (
-            db_session.query(Device)
-            .filter(Device.status == DeviceStatus.IDLE)
-            .all()
-        )
+        available = db_session.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
         assert len(available) == 2
         assert all(d.status == DeviceStatus.IDLE for d in available)
 
@@ -382,7 +379,7 @@ class TestDevicePool:
         assert pool.name == "test_pool"
         assert pool.purpose == PoolPurpose.STABLE
         assert pool.reserved_ratio == 0.2  # 默认值
-        assert pool.max_parallel == 5      # 默认值
+        assert pool.max_parallel == 5  # 默认值
         assert pool.enabled is True
 
     def test_create_pool_full(self, db_session):
@@ -421,7 +418,7 @@ class TestDevicePool:
 
     def test_pool_device_relationship(self, db_session):
         """测试设备池与设备的关联。"""
-        from app.models.device import DevicePool, Device
+        from app.models.device import Device, DevicePool
         from app.models.enums import PoolPurpose
 
         pool = DevicePool(name="device_pool", purpose=PoolPurpose.STABLE)
@@ -451,8 +448,8 @@ class TestDevicePool:
 
     def test_pool_available_capacity(self, db_session):
         """测试设备池可用容量计算。"""
-        from app.models.device import DevicePool, Device
-        from app.models.enums import PoolPurpose, DeviceStatus
+        from app.models.device import Device, DevicePool
+        from app.models.enums import DeviceStatus, PoolPurpose
 
         pool = DevicePool(name="capacity_pool", purpose=PoolPurpose.STABLE, max_parallel=10)
         db_session.add(pool)

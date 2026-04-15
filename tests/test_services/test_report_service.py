@@ -1,17 +1,16 @@
 """报告生成服务测试。"""
 
 import json
-import pytest
 from datetime import datetime, timezone
-from pathlib import Path
 
+import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models.device import Device, DeviceStatus
-from app.models.run import RunSession, RunStep, RunStatus, StepName, StepStatus, UpgradePlan
-from app.models.report import Report, ReportFormat, ReportStatus
+from app.models.report import Report, ReportStatus
+from app.models.run import RunSession, RunStatus, RunStep, StepName, StepStatus, UpgradePlan
 from app.services.report_service import ReportService
 
 
@@ -20,10 +19,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture
@@ -334,7 +336,13 @@ class TestReportServiceFileOperations:
         test_db.add(report)
         test_db.commit()
 
-        report_data = {"run_id": test_run.id, "status": "passed", "plan_name": "Test Plan", "device_serial": "TEST001", "timeline": []}
+        report_data = {
+            "run_id": test_run.id,
+            "status": "passed",
+            "plan_name": "Test Plan",
+            "device_serial": "TEST001",
+            "timeline": [],
+        }
         content_path = service._save_report_files(report, report_data)
         report.content_path = str(content_path)
         test_db.commit()

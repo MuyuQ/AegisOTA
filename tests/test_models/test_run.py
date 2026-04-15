@@ -1,14 +1,14 @@
 """任务模型测试。"""
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models.artifact import Artifact
-from app.models.device import Device, DeviceLease, DeviceStatus
-from app.models.fault import FaultProfile, FaultStage, FaultType
+from app.models.device import Device, DeviceLease
 from app.models.run import (
     FailureCategory,
     RunSession,
@@ -27,14 +27,14 @@ def db_engine():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     yield engine
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 
 @pytest.fixture
 def db_session(db_engine):
     """创建测试数据库会话。"""
-    Session = sessionmaker(bind=db_engine)
-    session = Session()
+    session_factory = sessionmaker(bind=db_engine)
+    session = session_factory()
     yield session
     session.close()
 
@@ -239,8 +239,19 @@ class TestRunSessionCreation:
 
     def test_session_is_terminal_state(self, db_session, sample_device, sample_plan):
         """测试终态判断。"""
-        terminal_states = [RunStatus.PASSED, RunStatus.FAILED, RunStatus.ABORTED, RunStatus.PREEMPTED]
-        non_terminal_states = [RunStatus.QUEUED, RunStatus.ALLOCATING, RunStatus.RESERVED, RunStatus.RUNNING, RunStatus.VALIDATING]
+        terminal_states = [
+            RunStatus.PASSED,
+            RunStatus.FAILED,
+            RunStatus.ABORTED,
+            RunStatus.PREEMPTED,
+        ]
+        non_terminal_states = [
+            RunStatus.QUEUED,
+            RunStatus.ALLOCATING,
+            RunStatus.RESERVED,
+            RunStatus.RUNNING,
+            RunStatus.VALIDATING,
+        ]
 
         for status in terminal_states:
             session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id, status=status)
@@ -499,15 +510,13 @@ class TestCascadeDelete:
         db_session.add(session)
         db_session.commit()
 
-        session_id = session.id
-        plan_id = plan.id
-
         # 删除计划
         db_session.delete(plan)
         db_session.commit()
 
         # 会话应该被级联删除
         from sqlalchemy.orm import object_session
+
         assert object_session(session) is None
 
     def test_run_delete_cascades_steps(self, db_session, sample_device, sample_plan):
@@ -520,15 +529,13 @@ class TestCascadeDelete:
         db_session.add(step)
         db_session.commit()
 
-        step_id = step.id
-        run_id = run.id
-
         # 删除会话
         db_session.delete(run)
         db_session.commit()
 
         # 步骤应该被级联删除
         from sqlalchemy.orm import object_session
+
         assert object_session(step) is None
 
 
@@ -537,8 +544,8 @@ class TestRunSessionExtensions:
 
     def test_run_priority(self, db_session):
         """测试任务优先级字段。"""
-        from app.models.run import RunSession
         from app.models.enums import RunPriority
+        from app.models.run import RunSession
 
         run = RunSession(priority=RunPriority.HIGH)
         db_session.add(run)
@@ -553,9 +560,9 @@ class TestRunSessionExtensions:
 
     def test_run_pool_id(self, db_session):
         """测试任务设备池字段。"""
-        from app.models.run import RunSession
         from app.models.device import DevicePool
         from app.models.enums import PoolPurpose
+        from app.models.run import RunSession
 
         pool = DevicePool(name="run_pool", purpose=PoolPurpose.STABLE)
         db_session.add(pool)
@@ -594,20 +601,20 @@ class TestRunSessionExtensions:
 
     def test_run_status_new_states(self, db_session):
         """测试任务新状态。"""
+        from app.models.enums import RunStatus
         from app.models.run import RunSession
-        from app.models.enums import RunStatus as RS
 
         # 测试 ALLOCATING 状态
-        run1 = RunSession(status=RS.ALLOCATING)
+        run1 = RunSession(status=RunStatus.ALLOCATING)
         db_session.add(run1)
         db_session.commit()
-        assert run1.status == RS.ALLOCATING
+        assert run1.status == RunStatus.ALLOCATING
 
         # 测试 PREEMPTED 状态
-        run2 = RunSession(status=RS.PREEMPTED)
+        run2 = RunSession(status=RunStatus.PREEMPTED)
         db_session.add(run2)
         db_session.commit()
-        assert run2.status == RS.PREEMPTED
+        assert run2.status == RunStatus.PREEMPTED
 
 
 class TestRunStatusExtensions:
@@ -629,7 +636,7 @@ class TestRunStatusExtensions:
         """测试没有 QUARANTINED 状态。"""
         from app.models.enums import RunStatus
 
-        assert not hasattr(RunStatus, 'QUARANTINED')
+        assert not hasattr(RunStatus, "QUARANTINED")
 
 
 class TestUpgradePlanExtensions:
@@ -637,9 +644,9 @@ class TestUpgradePlanExtensions:
 
     def test_plan_default_pool_id(self, db_session):
         """测试升级计划默认设备池字段。"""
-        from app.models.run import UpgradePlan
         from app.models.device import DevicePool
         from app.models.enums import PoolPurpose
+        from app.models.run import UpgradePlan
 
         pool = DevicePool(name="default_pool", purpose=PoolPurpose.STABLE)
         db_session.add(pool)

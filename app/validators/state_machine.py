@@ -3,7 +3,7 @@
 定义设备和任务的状态机，确保状态转换符合业务规则。
 """
 
-from typing import Dict, Set, Optional
+from typing import Dict, Optional, Set
 
 from app.models.enums import DeviceStatus, RunStatus
 
@@ -74,30 +74,30 @@ class StateMachine:
 DEVICE_TRANSITIONS: Dict[str, Set[str]] = {
     DeviceStatus.IDLE.value: {
         DeviceStatus.RESERVED.value,  # 被任务占用
-        DeviceStatus.BUSY.value,      # 直接开始执行
-        DeviceStatus.OFFLINE.value,   # 设备离线
+        DeviceStatus.BUSY.value,  # 直接开始执行
+        DeviceStatus.OFFLINE.value,  # 设备离线
         DeviceStatus.QUARANTINED.value,  # 隔离
     },
     DeviceStatus.RESERVED.value: {
-        DeviceStatus.BUSY.value,      # 任务开始执行
-        DeviceStatus.IDLE.value,      # 任务取消/释放
-        DeviceStatus.OFFLINE.value,   # 设备离线
+        DeviceStatus.BUSY.value,  # 任务开始执行
+        DeviceStatus.IDLE.value,  # 任务取消/释放
+        DeviceStatus.OFFLINE.value,  # 设备离线
     },
     DeviceStatus.BUSY.value: {
-        DeviceStatus.IDLE.value,      # 任务完成
-        DeviceStatus.OFFLINE.value,   # 设备离线
+        DeviceStatus.IDLE.value,  # 任务完成
+        DeviceStatus.OFFLINE.value,  # 设备离线
         DeviceStatus.QUARANTINED.value,  # 任务失败隔离
     },
     DeviceStatus.OFFLINE.value: {
-        DeviceStatus.IDLE.value,      # 设备恢复在线
+        DeviceStatus.IDLE.value,  # 设备恢复在线
         DeviceStatus.QUARANTINED.value,  # 隔离
     },
     DeviceStatus.QUARANTINED.value: {
         DeviceStatus.RECOVERING.value,  # 开始恢复
-        DeviceStatus.OFFLINE.value,    # 放弃恢复
+        DeviceStatus.OFFLINE.value,  # 放弃恢复
     },
     DeviceStatus.RECOVERING.value: {
-        DeviceStatus.IDLE.value,      # 恢复成功
+        DeviceStatus.IDLE.value,  # 恢复成功
         DeviceStatus.QUARANTINED.value,  # 恢复失败
     },
 }
@@ -105,36 +105,36 @@ DEVICE_TRANSITIONS: Dict[str, Set[str]] = {
 # 任务状态转换定义
 RUN_TRANSITIONS: Dict[str, Set[str]] = {
     RunStatus.QUEUED.value: {
-        RunStatus.ALLOCATING.value,   # 开始分配设备
-        RunStatus.RESERVED.value,     # 直接分配设备
-        RunStatus.ABORTED.value,      # 取消任务
+        RunStatus.ALLOCATING.value,  # 开始分配设备
+        RunStatus.RESERVED.value,  # 直接分配设备
+        RunStatus.ABORTED.value,  # 取消任务
     },
     RunStatus.ALLOCATING.value: {
-        RunStatus.RESERVED.value,     # 设备分配成功
-        RunStatus.QUEUED.value,       # 分配失败，重新排队
-        RunStatus.ABORTED.value,      # 取消任务
+        RunStatus.RESERVED.value,  # 设备分配成功
+        RunStatus.QUEUED.value,  # 分配失败，重新排队
+        RunStatus.ABORTED.value,  # 取消任务
     },
     RunStatus.RESERVED.value: {
-        RunStatus.RUNNING.value,      # 开始执行
-        RunStatus.QUEUED.value,       # 释放设备，重新排队
-        RunStatus.ABORTED.value,      # 取消任务
-        RunStatus.PREEMPTED.value,    # 被高优先级任务抢占
+        RunStatus.RUNNING.value,  # 开始执行
+        RunStatus.QUEUED.value,  # 释放设备，重新排队
+        RunStatus.ABORTED.value,  # 取消任务
+        RunStatus.PREEMPTED.value,  # 被高优先级任务抢占
     },
     RunStatus.RUNNING.value: {
-        RunStatus.VALIDATING.value,   # 执行完成，进入验证
-        RunStatus.FAILED.value,       # 执行失败
-        RunStatus.ABORTED.value,      # 用户终止
-        RunStatus.PREEMPTED.value,    # 被高优先级任务抢占
+        RunStatus.VALIDATING.value,  # 执行完成，进入验证
+        RunStatus.FAILED.value,  # 执行失败
+        RunStatus.ABORTED.value,  # 用户终止
+        RunStatus.PREEMPTED.value,  # 被高优先级任务抢占
     },
     RunStatus.VALIDATING.value: {
-        RunStatus.PASSED.value,       # 验证通过
-        RunStatus.FAILED.value,       # 验证失败
-        RunStatus.ABORTED.value,      # 用户终止
+        RunStatus.PASSED.value,  # 验证通过
+        RunStatus.FAILED.value,  # 验证失败
+        RunStatus.ABORTED.value,  # 用户终止
     },
-    RunStatus.PASSED.value: set(),    # 终态
-    RunStatus.FAILED.value: set(),    # 终态
-    RunStatus.ABORTED.value: set(),   # 终态
-    RunStatus.PREEMPTED.value: set(), # 终态
+    RunStatus.PASSED.value: set(),  # 终态
+    RunStatus.FAILED.value: set(),  # 终态
+    RunStatus.ABORTED.value: set(),  # 终态
+    RunStatus.PREEMPTED.value: set(),  # 终态
 }
 
 # 创建状态机实例
@@ -166,7 +166,8 @@ class StateTransitionError(Exception):
             f"Invalid state transition for {entity_type}"
             f"{f' (id={entity_id})' if entity_id else ''}: "
             f"cannot transition from '{from_state}' to '{to_state}'. "
-            f"Allowed states: {sorted(allowed_states) if allowed_states else 'none (terminal state)'}"
+            f"Allowed states: "
+            f"{sorted(allowed_states) if allowed_states else 'none (terminal state)'}"
         )
         super().__init__(message)
 

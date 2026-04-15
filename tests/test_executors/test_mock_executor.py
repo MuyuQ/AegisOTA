@@ -1,9 +1,6 @@
 """Mock 执行器测试。"""
 
-import pytest
-
 from app.executors.mock_executor import MockExecutor
-from app.executors.command_runner import CommandResult
 
 
 def test_mock_executor_returns_success():

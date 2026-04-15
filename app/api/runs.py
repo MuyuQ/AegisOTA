@@ -2,18 +2,18 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.run import RunSession, RunStatus, UpgradeType
 from app.models.device import Device
+from app.models.run import RunSession, RunStatus, UpgradeType
 from app.services.run_service import RunService
 from app.services.scheduler_service import SchedulerService
 
-router = APIRouter(prefix="/api/runs", tags=["runs"])
+router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
 
 class CreateRunRequest(BaseModel):
@@ -77,7 +77,9 @@ async def list_plans(db: Session = Depends(get_db)):
         {
             "id": p.id,
             "name": p.name,
-            "upgrade_type": p.upgrade_type.value if hasattr(p.upgrade_type, 'value') else str(p.upgrade_type),
+            "upgrade_type": p.upgrade_type.value
+            if hasattr(p.upgrade_type, "value")
+            else str(p.upgrade_type),
             "package_path": p.package_path,
             "target_build": p.target_build,
         }
@@ -177,8 +179,7 @@ async def list_runs(
         except ValueError:
             valid_values = [s.value for s in RunStatus]
             raise HTTPException(
-                status_code=400,
-                detail=f"Invalid status '{status}'. Valid values: {valid_values}"
+                status_code=400, detail=f"Invalid status '{status}'. Valid values: {valid_values}"
             )
 
     runs = service.list_runs(status=run_status, limit=limit)
@@ -188,7 +189,7 @@ async def list_runs(
             id=r.id,
             plan_id=r.plan_id,
             device_id=r.device_id,
-            status=r.status.value if hasattr(r.status, 'value') else str(r.status),
+            status=r.status.value if hasattr(r.status, "value") else str(r.status),
             started_at=r.started_at.isoformat() if r.started_at else None,
             ended_at=r.ended_at.isoformat() if r.ended_at else None,
             result=r.result,
@@ -206,7 +207,6 @@ async def create_run(
 ):
     """创建升级任务（JSON API）。"""
     run_service = RunService(db)
-    scheduler = SchedulerService(db)
 
     # 检查计划是否存在
     plan = run_service.get_upgrade_plan(request.plan_id)
@@ -235,7 +235,7 @@ async def create_run(
 
     return {
         "run_id": run.id,
-        "status": run.status.value if hasattr(run.status, 'value') else str(run.status)
+        "status": run.status.value if hasattr(run.status, "value") else str(run.status),
     }
 
 
@@ -254,17 +254,14 @@ async def create_run_form(
     db: Session = Depends(get_db),
 ):
     """创建升级任务（表单提交，返回 HTML）。"""
-    from fastapi.templating import Jinja2Templates
-    from pathlib import Path
-
-    templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
-
     run_service = RunService(db)
 
     # 检查计划是否存在
     plan = run_service.get_upgrade_plan(plan_id)
     if not plan:
-        return HTMLResponse(content='<div class="alert alert-error">升级计划不存在</div>', status_code=400)
+        return HTMLResponse(
+            content='<div class="alert alert-error">升级计划不存在</div>', status_code=400
+        )
 
     # 构建 run_options
     run_options = {
@@ -307,7 +304,7 @@ async def create_run_form(
     # 构建成功消息
     if len(created_runs) == 1:
         run = created_runs[0]
-        status_str = run.status.value if hasattr(run.status, 'value') else str(run.status)
+        status_str = run.status.value if hasattr(run.status, "value") else str(run.status)
         msg_parts = [
             "任务创建成功！",
             f"任务 ID: {run.id}",
@@ -322,19 +319,21 @@ async def create_run_form(
             msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
 
         return HTMLResponse(
-            content=f'''<div class="alert alert-success">
-                {'<br>'.join(msg_parts)}<br>
-                <a href="/runs/{run.id}" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看详情</a>
-            </div>'''
+            content=f"""<div class="alert alert-success">
+                {"<br>".join(msg_parts)}<br>
+                <a href="/runs/{run.id}" class="btn btn-sm btn-primary"
+                   style="margin-top: 0.5rem;">查看详情</a>
+            </div>"""
         )
     else:
         # 多任务
         run_ids = [str(r.id) for r in created_runs]
-        msg = f'''<div class="alert alert-success">
+        msg = f"""<div class="alert alert-success">
             批量任务创建成功！<br>
-            已创建 {len(created_runs)} 个任务 (ID: {', '.join(run_ids)})<br>
-            <a href="/runs" class="btn btn-sm btn-primary" style="margin-top: 0.5rem;">查看任务列表</a>
-        </div>'''
+            已创建 {len(created_runs)} 个任务 (ID: {", ".join(run_ids)})<br>
+            <a href="/runs" class="btn btn-sm btn-primary"
+               style="margin-top: 0.5rem;">查看任务列表</a>
+        </div>"""
         return HTMLResponse(content=msg)
 
 
@@ -354,7 +353,7 @@ async def get_run(
         id=run.id,
         plan_id=run.plan_id,
         device_id=run.device_id,
-        status=run.status.value if hasattr(run.status, 'value') else str(run.status),
+        status=run.status.value if hasattr(run.status, "value") else str(run.status),
         started_at=run.started_at.isoformat() if run.started_at else None,
         ended_at=run.ended_at.isoformat() if run.ended_at else None,
         result=run.result,
@@ -391,8 +390,4 @@ async def reserve_run(
         raise HTTPException(status_code=400, detail="Cannot reserve run")
 
     run = db.query(RunSession).filter_by(id=run_id).first()
-    return {
-        "status": "reserved",
-        "run_id": run_id,
-        "device_id": run.device_id
-    }
+    return {"status": "reserved", "run_id": run_id, "device_id": run.device_id}

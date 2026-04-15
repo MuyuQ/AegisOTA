@@ -1,9 +1,7 @@
 """性能检查器测试。"""
 
-import pytest
-
-from app.validators.perf_check import PerfChecker, PerfCheckResult
 from app.executors.mock_executor import MockADBExecutor
+from app.validators.perf_check import PerfChecker, PerfCheckResult
 
 
 def test_perf_checker_init():
@@ -17,16 +15,12 @@ def test_perf_checker_collect_metrics():
     executor = MockADBExecutor()
     executor.set_response(
         "shell cat /proc/meminfo",
-        stdout="MemTotal:       8192000 kB\nMemFree:         4000000 kB\nMemAvailable:    5000000 kB\n"
+        stdout=(
+            "MemTotal:       8192000 kB\nMemFree:         4000000 kB\nMemAvailable:    5000000 kB\n"
+        ),
     )
-    executor.set_response(
-        "shell dumpsys cpuinfo",
-        stdout="CPU usage: 5%\n"
-    )
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_time]: [30000]\n"
-    )
+    executor.set_response("shell dumpsys cpuinfo", stdout="CPU usage: 5%\n")
+    executor.set_response("shell getprop", stdout="[sys.boot_time]: [30000]\n")
 
     checker = PerfChecker(executor=executor)
     metrics = checker.collect_metrics("ABC123")
@@ -38,10 +32,7 @@ def test_perf_checker_collect_metrics():
 def test_perf_checker_get_boot_time():
     """测试获取启动时间。"""
     executor = MockADBExecutor()
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_time]: [30000]\n"
-    )
+    executor.set_response("shell getprop", stdout="[sys.boot_time]: [30000]\n")
 
     checker = PerfChecker(executor=executor)
     boot_time = checker.get_boot_time("ABC123")
@@ -87,16 +78,10 @@ def test_perf_checker_check_passed():
     executor = MockADBExecutor()
     executor.set_response(
         "shell cat /proc/meminfo",
-        stdout="MemTotal:       8192000 kB\nMemFree:         4000000 kB\n"
+        stdout="MemTotal:       8192000 kB\nMemFree:         4000000 kB\n",
     )
-    executor.set_response(
-        "shell dumpsys cpuinfo",
-        stdout="CPU usage: 10%\n"
-    )
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_time]: [30000]\n"
-    )
+    executor.set_response("shell dumpsys cpuinfo", stdout="CPU usage: 10%\n")
+    executor.set_response("shell getprop", stdout="[sys.boot_time]: [30000]\n")
 
     checker = PerfChecker(executor=executor)
     result = checker.check("ABC123")
@@ -110,16 +95,10 @@ def test_perf_checker_check_memory_high():
     executor = MockADBExecutor()
     executor.set_response(
         "shell cat /proc/meminfo",
-        stdout="MemTotal:       8192000 kB\nMemFree:          800000 kB\n"  # ~90% used
+        stdout="MemTotal:       8192000 kB\nMemFree:          800000 kB\n",  # ~90% used
     )
-    executor.set_response(
-        "shell dumpsys cpuinfo",
-        stdout="CPU usage: 10%\n"
-    )
-    executor.set_response(
-        "shell getprop",
-        stdout="[sys.boot_time]: [30000]\n"
-    )
+    executor.set_response("shell dumpsys cpuinfo", stdout="CPU usage: 10%\n")
+    executor.set_response("shell getprop", stdout="[sys.boot_time]: [30000]\n")
 
     checker = PerfChecker(executor=executor, memory_threshold=80.0)
     result = checker.check("ABC123")
@@ -148,11 +127,6 @@ def test_perf_checker_parse_cpu():
     """测试解析 CPU 信息。"""
     checker = PerfChecker()
 
-    output = """CPU usage from 0 to 100:
-  5% total
-"""
-
-    cpu_info = checker._parse_cpu(output)
     # Note: Our regex looks for "CPU usage: X%" format
     # Let's test with matching format
     output2 = "CPU usage: 5%\n"

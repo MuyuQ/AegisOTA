@@ -25,19 +25,19 @@
         <tbody>
             {% for run in runs %}
             <tr>
-                <td><a href="/runs/{{ run.id }}"><strong>#{{ run.id }}</strong></a></td>
-                <td>{{ run.plan_name }}</td>
-                <td>{{ run.device_serial }}</td>
+                <td><a href="/runs/{{ run.id }}" class="text-secondary"><strong>#{{ run.id }}</strong></a></td>
+                <td class="text-secondary">{{ run.plan_name }}</td>
+                <td class="text-secondary">{{ run.device_serial }}</td>
                 <td>
                     <span class="status-badge status-{{ run.status }}">{{ run.status }}</span>
                 </td>
                 <td>{{ run.result }}</td>
-                <td>{{ run.duration }}s</td>
-                <td>{{ run.started_at }}</td>
+                <td class="text-tertiary">{{ run.duration }}s</td>
+                <td class="text-tertiary">{{ run.started_at }}</td>
                 <td>
                     <a href="/runs/{{ run.id }}" class="btn btn-sm btn-secondary">详情</a>
                     {% if run.status in ['queued', 'reserved', 'running'] %}
-                    <button class="btn btn-sm btn-danger" hx-post="/api/runs/{{ run.id }}/abort" hx-swap="outerHTML" hx-target="closest tr">
+                    <button class="btn btn-sm btn-danger" hx-post="/api/v1/runs/{{ run.id }}/abort" hx-swap="outerHTML" hx-target="closest tr">
                         终止
                     </button>
                     {% endif %}

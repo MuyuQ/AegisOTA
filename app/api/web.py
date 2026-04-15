@@ -1,32 +1,35 @@
 """Web 页面路由。"""
 
-from typing import Optional
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import func, select
-
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.config import get_settings
 from app.database import get_db
 from app.models.device import Device, DeviceStatus
+from app.models.diagnostic import DiagnosticResult
 from app.models.run import RunSession, RunStatus
-from app.models.diagnostic import DiagnosticResult, RuleHit, NormalizedEvent
-from app.services.pool_service import PoolService
 from app.services.diagnosis_service import DiagnosisService
+from app.services.pool_service import PoolService
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
-# 禁用 Jinja2 缓存以避免版本兼容性问题
-templates.env.cache = None
+
+settings = get_settings()
+if not settings.DEBUG:
+    templates.env.auto_reload = False
 
 
 def get_csrf_token(request: Request) -> str:
     """从请求中获取 CSRF token。"""
     import secrets
+
     token = request.cookies.get("csrf_token")
     if not token:
         token = secrets.token_urlsafe(32)
@@ -77,35 +80,40 @@ def _format_datetime(dt: datetime) -> str:
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """仪表盘首页。"""
-    # 统计数据
-    total_devices = db.query(Device).count()
-    idle_devices = db.query(Device).filter(Device.status == DeviceStatus.IDLE).count()
-    busy_devices = db.query(Device).filter(Device.status == DeviceStatus.BUSY).count()
-    offline_devices = db.query(Device).filter(Device.status == DeviceStatus.OFFLINE).count()
-    quarantined_devices = db.query(Device).filter(Device.status == DeviceStatus.QUARANTINED).count()
+    # 优化: 单次聚合查询替代多次 count
+    device_stats = db.query(Device.status, func.count(Device.id)).group_by(Device.status).all()
 
-    running_tasks = db.query(RunSession).filter(
-        RunSession.status.in_([RunStatus.RUNNING, RunStatus.VALIDATING])
-    ).count()
+    status_counts = {status: count for status, count in device_stats}
+    total_devices = sum(status_counts.values())
+
+    running_tasks = (
+        db.query(RunSession)
+        .filter(RunSession.status.in_([RunStatus.RUNNING, RunStatus.VALIDATING]))
+        .count()
+    )
 
     # 今日任务
     today = datetime.now(timezone.utc).date()
-    today_tasks = db.query(RunSession).filter(
-        func.date(RunSession.created_at) == today
-    ).count()
+    today_tasks = db.query(RunSession).filter(func.date(RunSession.created_at) == today).count()
 
-    # 最近任务（按创建时间倒序，ID倒序作为第二排序）
-    recent_runs = db.query(RunSession).order_by(
-        RunSession.created_at.desc().nullslast(),
-        RunSession.id.desc()
-    ).limit(5).all()
+    # 最近任务 (带 eager loading)
+    recent_runs = (
+        db.query(RunSession)
+        .options(
+            joinedload(RunSession.device),
+            joinedload(RunSession.plan),
+        )
+        .order_by(RunSession.created_at.desc().nullslast(), RunSession.id.desc())
+        .limit(5)
+        .all()
+    )
 
     stats = {
         "total_devices": total_devices,
-        "idle_devices": idle_devices,
-        "busy_devices": busy_devices,
-        "offline_devices": offline_devices,
-        "quarantined_devices": quarantined_devices,
+        "idle_devices": status_counts.get(DeviceStatus.IDLE.value, 0),
+        "busy_devices": status_counts.get(DeviceStatus.BUSY.value, 0),
+        "offline_devices": status_counts.get(DeviceStatus.OFFLINE.value, 0),
+        "quarantined_devices": status_counts.get(DeviceStatus.QUARANTINED.value, 0),
         "running_tasks": running_tasks,
         "today_tasks": today_tasks,
     }
@@ -116,23 +124,26 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "id": r.id,
             "plan_name": r.plan.name if r.plan else "-",
             "device_serial": r.device.serial if r.device else "-",
-            "status": r.status.value if hasattr(r.status, 'value') else r.status,
+            "status": r.status.value if hasattr(r.status, "value") else r.status,
             "result": r.result,
         }
         for r in recent_runs
     ]
 
     return templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        get_template_context(request, stats=stats, recent_runs=runs_data)
+        request, "dashboard.html", get_template_context(request, stats=stats, recent_runs=runs_data)
     )
 
 
 @router.get("/devices", response_class=HTMLResponse)
 async def devices_page(request: Request, db: Session = Depends(get_db)):
     """设备列表页面。"""
-    devices = db.query(Device).order_by(Device.last_seen_at.desc()).all()
+    devices = (
+        db.query(Device)
+        .options(selectinload(Device.pool))
+        .order_by(Device.last_seen_at.desc())
+        .all()
+    )
 
     devices_data = [
         {
@@ -141,7 +152,7 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
             "brand": d.brand or "-",
             "model": d.model or "-",
             "system_version": d.system_version or "-",
-            "status": d.status.value if hasattr(d.status, 'value') else d.status,
+            "status": d.status.value if hasattr(d.status, "value") else d.status,
             "battery_level": d.battery_level or "-",
             "health_score": d.health_score or "-",
             "tags": d.get_tags(),
@@ -154,47 +165,52 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
-        request,
-        "devices.html",
-        get_template_context(request, devices=devices_data)
+        request, "devices.html", get_template_context(request, devices=devices_data)
     )
 
 
 @router.get("/runs", response_class=HTMLResponse)
 async def runs_page(request: Request, db: Session = Depends(get_db)):
     """任务列表页面。"""
-    runs = db.query(RunSession).order_by(
-        RunSession.created_at.desc().nullslast(),
-        RunSession.id.desc()
-    ).limit(50).all()
+    runs = (
+        db.query(RunSession)
+        .options(
+            joinedload(RunSession.device),
+            joinedload(RunSession.plan),
+        )
+        .order_by(RunSession.created_at.desc().nullslast(), RunSession.id.desc())
+        .limit(50)
+        .all()
+    )
 
     runs_data = [
         {
             "id": r.id,
             "plan_name": r.plan.name if r.plan else "-",
             "device_serial": r.device.serial if r.device else "-",
-            "status": r.status.value if hasattr(r.status, 'value') else r.status,
+            "status": r.status.value if hasattr(r.status, "value") else r.status,
             "result": r.result or "-",
             "started_at": r.started_at.isoformat() if r.started_at else "-",
             "ended_at": r.ended_at.isoformat() if r.ended_at else "-",
             "duration": r.get_duration_seconds() or "-",
-            "failure_category": r.failure_category.value if hasattr(r.failure_category, 'value') else (r.failure_category or "-"),
+            "failure_category": r.failure_category.value
+            if hasattr(r.failure_category, "value")
+            else (r.failure_category or "-"),
         }
         for r in runs
     ]
 
     return templates.TemplateResponse(
-        request,
-        "runs.html",
-        get_template_context(request, runs=runs_data)
+        request, "runs.html", get_template_context(request, runs=runs_data)
     )
 
 
 @router.get("/runs/create", response_class=HTMLResponse)
 async def create_run_page(request: Request, db: Session = Depends(get_db)):
     """创建任务页面。"""
-    from app.models.run import UpgradePlan
     from collections import defaultdict
+
+    from app.models.run import UpgradePlan
 
     plans = db.query(UpgradePlan).all()
     devices = db.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
@@ -203,17 +219,21 @@ async def create_run_page(request: Request, db: Session = Depends(get_db)):
     devices_by_location = defaultdict(list)
     for device in devices:
         location = device.location or "未设置位置"
-        devices_by_location[location].append({
-            "serial": device.serial,
-            "brand": device.brand or "-",
-            "model": device.model or "-",
-            "status": device.status.value if hasattr(device.status, 'value') else str(device.status),
-        })
+        devices_by_location[location].append(
+            {
+                "serial": device.serial,
+                "brand": device.brand or "-",
+                "model": device.model or "-",
+                "status": device.status.value
+                if hasattr(device.status, "value")
+                else str(device.status),
+            }
+        )
 
     return templates.TemplateResponse(
         request,
         "create_run.html",
-        get_template_context(request, plans=plans, devices_by_location=dict(devices_by_location))
+        get_template_context(request, plans=plans, devices_by_location=dict(devices_by_location)),
     )
 
 
@@ -226,14 +246,19 @@ async def run_detail_page(
     """任务详情页面。"""
     from app.models.run import RunStep
 
-    run = db.query(RunSession).filter_by(id=run_id).first()
+    run = (
+        db.query(RunSession)
+        .options(
+            joinedload(RunSession.device),
+            joinedload(RunSession.plan),
+        )
+        .filter_by(id=run_id)
+        .first()
+    )
 
     if not run:
         return templates.TemplateResponse(
-            request,
-            "base.html",
-            get_template_context(request),
-            status_code=404
+            request, "base.html", get_template_context(request), status_code=404
         )
 
     # 获取执行步骤
@@ -248,12 +273,14 @@ async def run_detail_page(
         "id": run.id,
         "plan_name": run.plan.name if run.plan else "-",
         "device_serial": run.device.serial if run.device else "-",
-        "status": run.status.value if hasattr(run.status, 'value') else run.status,
+        "status": run.status.value if hasattr(run.status, "value") else run.status,
         "result": run.result or "-",
         "started_at": run.started_at.isoformat() if run.started_at else "-",
         "ended_at": run.ended_at.isoformat() if run.ended_at else "-",
         "duration": run.get_duration_seconds() or "-",
-        "failure_category": run.failure_category.value if hasattr(run.failure_category, 'value') else (run.failure_category or "-"),
+        "failure_category": run.failure_category.value
+        if hasattr(run.failure_category, "value")
+        else (run.failure_category or "-"),
         "summary": run.summary or "-",
         # 新增字段
         "total_iterations": run.total_iterations or 1,
@@ -267,8 +294,8 @@ async def run_detail_page(
     steps_data = [
         {
             "id": s.id,
-            "step_name": s.step_name.value if hasattr(s.step_name, 'value') else s.step_name,
-            "status": s.status.value if hasattr(s.status, 'value') else s.status,
+            "step_name": s.step_name.value if hasattr(s.step_name, "value") else s.step_name,
+            "status": s.status.value if hasattr(s.status, "value") else s.status,
             "started_at": s.started_at.isoformat() if s.started_at else "-",
             "ended_at": s.ended_at.isoformat() if s.ended_at else "-",
             "duration": s.get_duration_seconds() or "-",
@@ -294,7 +321,7 @@ async def run_detail_page(
     return templates.TemplateResponse(
         request,
         "run_detail.html",
-        get_template_context(request, run=run_data, steps=steps_data, diagnosis=diagnosis_data)
+        get_template_context(request, run=run_data, steps=steps_data, diagnosis=diagnosis_data),
     )
 
 
@@ -317,7 +344,9 @@ async def plans_page(request: Request, db: Session = Depends(get_db)):
         {
             "id": p.id,
             "name": p.name,
-            "upgrade_type": p.upgrade_type.value if hasattr(p.upgrade_type, 'value') else str(p.upgrade_type),
+            "upgrade_type": p.upgrade_type.value
+            if hasattr(p.upgrade_type, "value")
+            else str(p.upgrade_type),
             "package_path": p.package_path or "-",
             "source_build": p.source_build or "-",
             "target_build": p.target_build or "-",
@@ -330,9 +359,7 @@ async def plans_page(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
-        request,
-        "plans.html",
-        get_template_context(request, plans=plans_data, pools=pools_data)
+        request, "plans.html", get_template_context(request, plans=plans_data, pools=pools_data)
     )
 
 
@@ -346,20 +373,22 @@ async def pools_page(request: Request, db: Session = Depends(get_db)):
     pools_data = []
     for pool in pools:
         capacity = service.get_pool_capacity(pool.id)
-        pools_data.append({
-            "id": pool.id,
-            "name": pool.name,
-            "purpose": pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
-            "reserved_ratio": pool.reserved_ratio,
-            "enabled": pool.enabled,
-            "total_devices": capacity["total"],
-            "available_devices": capacity["available"],
-        })
+        pools_data.append(
+            {
+                "id": pool.id,
+                "name": pool.name,
+                "purpose": pool.purpose.value
+                if hasattr(pool.purpose, "value")
+                else str(pool.purpose),
+                "reserved_ratio": pool.reserved_ratio,
+                "enabled": pool.enabled,
+                "total_devices": capacity["total"],
+                "available_devices": capacity["available"],
+            }
+        )
 
     return templates.TemplateResponse(
-        request,
-        "pools.html",
-        get_template_context(request, pools=pools_data)
+        request, "pools.html", get_template_context(request, pools=pools_data)
     )
 
 
@@ -371,6 +400,7 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
 
     if not pool:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=404, detail="设备池不存在")
 
     # 获取容量信息
@@ -380,31 +410,39 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
     devices = pool.devices  # 通过关系获取
     devices_data = []
     for device in devices:
-        devices_data.append({
-            "id": device.id,
-            "serial": device.serial,
-            "brand": device.brand,
-            "model": device.model,
-            "status": device.status.value if hasattr(device.status, 'value') else str(device.status),
-            "health_score": device.health_score,
-        })
+        devices_data.append(
+            {
+                "id": device.id,
+                "serial": device.serial,
+                "brand": device.brand,
+                "model": device.model,
+                "status": device.status.value
+                if hasattr(device.status, "value")
+                else str(device.status),
+                "health_score": device.health_score,
+            }
+        )
 
     # 获取未分配设备（用于分配设备下拉框）
-    unassigned_devices = db.query(Device).filter(Device.pool_id == None).all()
+    unassigned_devices = db.query(Device).filter(Device.pool_id.is_(None)).all()
     unassigned_data = []
     for device in unassigned_devices:
-        unassigned_data.append({
-            "id": device.id,
-            "serial": device.serial,
-            "brand": device.brand,
-            "model": device.model,
-            "status": device.status.value if hasattr(device.status, 'value') else str(device.status),
-        })
+        unassigned_data.append(
+            {
+                "id": device.id,
+                "serial": device.serial,
+                "brand": device.brand,
+                "model": device.model,
+                "status": device.status.value
+                if hasattr(device.status, "value")
+                else str(device.status),
+            }
+        )
 
     pool_data = {
         "id": pool.id,
         "name": pool.name,
-        "purpose": pool.purpose.value if hasattr(pool.purpose, 'value') else str(pool.purpose),
+        "purpose": pool.purpose.value if hasattr(pool.purpose, "value") else str(pool.purpose),
         "reserved_ratio": pool.reserved_ratio,
         "enabled": pool.enabled,
         "total_devices": capacity["total"],
@@ -417,7 +455,9 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
     return templates.TemplateResponse(
         request,
         "pool_detail.html",
-        get_template_context(request, pool=pool_data, devices=devices_data, unassigned_devices=unassigned_data)
+        get_template_context(
+            request, pool=pool_data, devices=devices_data, unassigned_devices=unassigned_data
+        ),
     )
 
 
@@ -462,18 +502,24 @@ async def assign_device_form(
     device_id_str = form_data.get("device_id")
 
     if not device_id_str:
-        return HTMLResponse(content="<div class='alert alert-danger'>请选择设备</div>", status_code=400)
+        return HTMLResponse(
+            content="<div class='alert alert-danger'>请选择设备</div>", status_code=400
+        )
 
     try:
         device_id = int(device_id_str)
     except ValueError:
-        return HTMLResponse(content="<div class='alert alert-danger'>设备 ID 格式错误</div>", status_code=400)
+        return HTMLResponse(
+            content="<div class='alert alert-danger'>设备 ID 格式错误</div>", status_code=400
+        )
 
     service = PoolService(db)
     device = service.assign_device_to_pool(device_id, pool_id)
 
     if not device:
-        return HTMLResponse(content="<div class='alert alert-danger'>设备或池不存在</div>", status_code=404)
+        return HTMLResponse(
+            content="<div class='alert alert-danger'>设备或池不存在</div>", status_code=404
+        )
 
     # 获取更新后的池和设备列表
     pool = service.get_pool_by_id(pool_id)
@@ -488,21 +534,31 @@ async def assign_device_form(
 def _render_device_list_html(pool_id: int, devices: list) -> str:
     """渲染设备列表 HTML。"""
     if not devices:
-        return '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">暂无设备分配到此池</p>'
+        return (
+            '<p style="color: var(--text-muted); text-align: center; '
+            'padding: 2rem;">暂无设备分配到此池</p>'
+        )
 
     rows = []
     for d in devices:
-        status_val = d.status.value if hasattr(d.status, 'value') else str(d.status)
+        status_val = d.status.value if hasattr(d.status, "value") else str(d.status)
         status_text = {
-            'idle': '空闲', 'busy': '忙碌', 'offline': '离线', 'quarantined': '隔离'
+            "idle": "空闲",
+            "busy": "忙碌",
+            "offline": "离线",
+            "quarantined": "隔离",
         }.get(status_val, status_val)
 
         health_display = "-"
         if d.health_score:
-            health_class = "health-high" if d.health_score >= 90 else ("health-medium" if d.health_score >= 70 else "health-low")
+            health_class = (
+                "health-high"
+                if d.health_score >= 90
+                else ("health-medium" if d.health_score >= 70 else "health-low")
+            )
             health_display = f'<span class="{health_class}">{round(d.health_score, 1)}%</span>'
 
-        rows.append(f'''
+        rows.append(f"""
         <tr id="device-row-{d.id}">
             <td><code>{d.serial}</code></td>
             <td>{d.brand or "-"}</td>
@@ -512,16 +568,16 @@ def _render_device_list_html(pool_id: int, devices: list) -> str:
             <td>
                 <a href="/devices/{d.serial}" class="btn btn-sm btn-secondary">详情</a>
                 <button class="btn btn-sm btn-danger"
-                        hx-delete="/api/pools/{pool_id}/devices/{d.id}"
+                        hx-delete="/api/v1/pools/{pool_id}/devices/{d.id}"
                         hx-confirm="确定要从池中移除设备 {d.serial} 吗？"
                         hx-target="#device-row-{d.id}"
                         hx-swap="outerHTML swap:0.5s">
                     移除
                 </button>
             </td>
-        </tr>''')
+        </tr>""")
 
-    return f'''
+    return f"""
     <div class="table-responsive">
         <table class="table">
             <thead>
@@ -538,7 +594,7 @@ def _render_device_list_html(pool_id: int, devices: list) -> str:
                 {"".join(rows)}
             </tbody>
         </table>
-    </div>'''
+    </div>"""
 
 
 @router.put("/pools/{pool_id}/status", response_class=HTMLResponse)
@@ -549,6 +605,7 @@ async def update_pool_status(
 ):
     """更新设备池启用状态（JSON请求）。"""
     import json
+
     body = await request.body()
     try:
         data = json.loads(body) if body else {}
@@ -571,6 +628,7 @@ async def update_pool_status(
 
 
 # ============ 诊断页面路由 ============
+
 
 @router.get("/diagnosis", response_class=HTMLResponse)
 async def diagnosis_list_page(
@@ -599,25 +657,30 @@ async def diagnosis_list_page(
     offset = (page - 1) * page_size
 
     # 获取诊断记录（按诊断时间倒序）
-    diagnoses = query.order_by(
-        DiagnosticResult.created_at.desc().nullslast()
-    ).offset(offset).limit(page_size).all()
+    diagnoses = (
+        query.order_by(DiagnosticResult.created_at.desc().nullslast())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
 
     # 格式化诊断数据
     diagnoses_data = []
     for diag in diagnoses:
-        diagnoses_data.append({
-            "run_id": diag.run_id,
-            "device_serial": diag.device_serial,
-            "category": diag.category,
-            "category_display": CATEGORY_DISPLAY_MAP.get(diag.category, diag.category),
-            "root_cause": diag.root_cause,
-            "confidence": diag.confidence,
-            "confidence_level": _get_confidence_level(diag.confidence),
-            "result_status": diag.result_status,
-            "created_at": diag.created_at,
-            "created_at_display": _format_datetime(diag.created_at),
-        })
+        diagnoses_data.append(
+            {
+                "run_id": diag.run_id,
+                "device_serial": diag.device_serial,
+                "category": diag.category,
+                "category_display": CATEGORY_DISPLAY_MAP.get(diag.category, diag.category),
+                "root_cause": diag.root_cause,
+                "confidence": diag.confidence,
+                "confidence_level": _get_confidence_level(diag.confidence),
+                "result_status": diag.result_status,
+                "created_at": diag.created_at,
+                "created_at_display": _format_datetime(diag.created_at),
+            }
+        )
 
     return templates.TemplateResponse(
         request,
@@ -630,7 +693,7 @@ async def diagnosis_list_page(
             total_pages=total_pages,
             serial=serial,
             category=category,
-        )
+        ),
     )
 
 
@@ -648,23 +711,22 @@ async def diagnosis_detail_page(
 
     if not diagnosis:
         return templates.TemplateResponse(
-            request,
-            "base.html",
-            get_template_context(request),
-            status_code=404
+            request, "base.html", get_template_context(request), status_code=404
         )
 
     # 获取规则命中记录
     rule_hits = service.get_rule_hits_for_run(run_id)
     rule_hits_data = []
     for hit in rule_hits:
-        rule_hits_data.append({
-            "rule_id": hit.rule_id,
-            "rule_name": hit.rule_name,
-            "priority": hit.priority,
-            "base_confidence": hit.base_confidence,
-            "matched_codes": hit.get_matched_codes(),
-        })
+        rule_hits_data.append(
+            {
+                "rule_id": hit.rule_id,
+                "rule_name": hit.rule_name,
+                "priority": hit.priority,
+                "base_confidence": hit.base_confidence,
+                "matched_codes": hit.get_matched_codes(),
+            }
+        )
 
     # 获取关键证据
     key_evidence = diagnosis.get_key_evidence()
@@ -689,31 +751,37 @@ async def diagnosis_detail_page(
         source_type = event.source_type
         if source_type not in events_by_source:
             events_by_source[source_type] = []
-        events_by_source[source_type].append({
-            "severity": event.severity,
-            "normalized_code": event.normalized_code,
-            "raw_line": event.raw_line or "",
-        })
+        events_by_source[source_type].append(
+            {
+                "severity": event.severity,
+                "normalized_code": event.normalized_code,
+                "raw_line": event.raw_line or "",
+            }
+        )
 
     # 构建日志源列表
     log_sources = []
     for source_type, display_name in source_type_map.items():
-        log_sources.append({
-            "type": source_type,
-            "name": display_name,
-            "count": len(events_by_source.get(source_type, [])),
-            "events": events_by_source.get(source_type, []),
-        })
+        log_sources.append(
+            {
+                "type": source_type,
+                "name": display_name,
+                "count": len(events_by_source.get(source_type, [])),
+                "events": events_by_source.get(source_type, []),
+            }
+        )
 
     # 添加其他日志源（如果有）
     for source_type in events_by_source:
         if source_type not in source_type_map:
-            log_sources.append({
-                "type": source_type,
-                "name": source_type,
-                "count": len(events_by_source[source_type]),
-                "events": events_by_source[source_type],
-            })
+            log_sources.append(
+                {
+                    "type": source_type,
+                    "name": source_type,
+                    "count": len(events_by_source[source_type]),
+                    "events": events_by_source[source_type],
+                }
+            )
 
     # 格式化诊断数据
     diagnosis_data = {
@@ -741,5 +809,5 @@ async def diagnosis_detail_page(
             rule_hits=rule_hits_data,
             similar_cases=similar_cases,
             log_sources=log_sources,
-        )
+        ),
     )

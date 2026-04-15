@@ -37,9 +37,9 @@
                             {% if plan.upgrade_type == 'full' %}全量升级{% elif plan.upgrade_type == 'incremental' %}增量升级{% else %}回滚{% endif %}
                         </span>
                     </td>
-                    <td style="white-space: normal; word-break: break-all;"><code style="font-size: 0.85rem;">{{ plan.package_path }}</code></td>
-                    <td style="white-space: normal;">{{ plan.source_build }}</td>
-                    <td style="white-space: normal;">{{ plan.target_build }}</td>
+                    <td style="white-space: normal; word-break: break-all;"><code class="text-tertiary" style="font-size: 0.85rem;">{{ plan.package_path }}</code></td>
+                    <td class="text-tertiary" style="white-space: normal;">{{ plan.source_build }}</td>
+                    <td class="text-tertiary" style="white-space: normal;">{{ plan.target_build }}</td>
                     <td>
                         {% if plan.default_pool_name %}
                         <a href="/pools/{{ plan.default_pool_id }}" style="text-decoration: none;">
@@ -174,7 +174,7 @@ function savePlan(event) {
         parallelism: parseInt(document.getElementById('parallelism').value) || 1,
     };
 
-    const url = planId ? '/api/runs/plans/' + planId : '/api/runs/plans';
+    const url = planId ? '/api/v1/runs/plans/' + planId : '/api/v1/runs/plans';
     const method = planId ? 'PUT' : 'POST';
 
     fetch(url, {
@@ -192,7 +192,7 @@ function savePlan(event) {
 
 function deletePlan(planId) {
     if (confirm('确定要删除这个升级计划吗？')) {
-        fetch('/api/runs/plans/' + planId, {
+        fetch('/api/v1/runs/plans/' + planId, {
             method: 'DELETE',
         }).then(response => {
             if (response.ok) {

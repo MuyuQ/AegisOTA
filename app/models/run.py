@@ -170,9 +170,7 @@ class RunSession(Base):
         String(32), default=RunStatus.QUEUED, nullable=False, index=True
     )
     result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    failure_category: Mapped[Optional[FailureCategory]] = mapped_column(
-        String(32), nullable=True
-    )
+    failure_category: Mapped[Optional[FailureCategory]] = mapped_column(String(32), nullable=True)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 任务选项（JSON 存储）
@@ -201,9 +199,7 @@ class RunSession(Base):
     plan: Mapped[Optional["UpgradePlan"]] = relationship(
         "UpgradePlan", back_populates="run_sessions"
     )
-    device: Mapped[Optional["Device"]] = relationship(
-        "Device", back_populates="run_sessions"
-    )
+    device: Mapped[Optional["Device"]] = relationship("Device", back_populates="run_sessions")
     steps: Mapped[list["RunStep"]] = relationship(
         "RunStep", back_populates="run_session", cascade="all, delete-orphan"
     )
@@ -282,9 +278,7 @@ class RunStep(Base):
     )
 
     # 关系
-    run_session: Mapped["RunSession"] = relationship(
-        "RunSession", back_populates="steps"
-    )
+    run_session: Mapped["RunSession"] = relationship("RunSession", back_populates="steps")
 
     def get_result(self) -> dict[str, Any]:
         """获取步骤结果。"""

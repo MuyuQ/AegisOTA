@@ -99,8 +99,7 @@ class LogExportService:
                     )
             except Exception as e:
                 logger.warning(
-                    f"导出 {src_path} 时发生错误: {e} "
-                    f"(run_id={run_id}, device={device_serial})"
+                    f"导出 {src_path} 时发生错误: {e} (run_id={run_id}, device={device_serial})"
                 )
 
         return exported
@@ -146,9 +145,7 @@ class LogExportService:
                                     f.write(content)
                                     f.write("\n")
                                 except Exception as read_error:
-                                    logger.warning(
-                                        f"读取 {log_file} 失败: {read_error}"
-                                    )
+                                    logger.warning(f"读取 {log_file} 失败: {read_error}")
 
                     exported.append("update_engine.log")
                     logger.info(
@@ -169,8 +166,7 @@ class LogExportService:
                 )
         except Exception as e:
             logger.warning(
-                f"导出 update_engine_log 时发生错误: {e} "
-                f"(run_id={run_id}, device={device_serial})"
+                f"导出 update_engine_log 时发生错误: {e} (run_id={run_id}, device={device_serial})"
             )
 
         return exported
@@ -199,19 +195,14 @@ class LogExportService:
 
             if result.success and dst_path.exists():
                 exported.append("logcat.txt")
-                logger.info(
-                    f"成功导出 logcat.txt (run_id={run_id}, device={device_serial})"
-                )
+                logger.info(f"成功导出 logcat.txt (run_id={run_id}, device={device_serial})")
             else:
                 logger.warning(
                     f"无法导出 logcat: {result.stderr or '无日志内容'} "
                     f"(run_id={run_id}, device={device_serial})"
                 )
         except Exception as e:
-            logger.warning(
-                f"导出 logcat 时发生错误: {e} "
-                f"(run_id={run_id}, device={device_serial})"
-            )
+            logger.warning(f"导出 logcat 时发生错误: {e} (run_id={run_id}, device={device_serial})")
 
         return exported
 
@@ -243,9 +234,7 @@ class LogExportService:
                     json.dump(snapshot, f, indent=2, ensure_ascii=False)
 
                 exported.append("device_info.json")
-                logger.info(
-                    f"成功导出 device_info.json (run_id={run_id}, device={device_serial})"
-                )
+                logger.info(f"成功导出 device_info.json (run_id={run_id}, device={device_serial})")
             else:
                 # 尝试仅使用 getprop
                 props = self.adb.getprop(device=device_serial)
@@ -260,14 +249,9 @@ class LogExportService:
                         f"成功导出 device_info.txt (run_id={run_id}, device={device_serial})"
                     )
                 else:
-                    logger.warning(
-                        f"无法获取设备信息 (run_id={run_id}, device={device_serial})"
-                    )
+                    logger.warning(f"无法获取设备信息 (run_id={run_id}, device={device_serial})")
         except Exception as e:
-            logger.warning(
-                f"导出设备信息时发生错误: {e} "
-                f"(run_id={run_id}, device={device_serial})"
-            )
+            logger.warning(f"导出设备信息时发生错误: {e} (run_id={run_id}, device={device_serial})")
 
         return exported
 

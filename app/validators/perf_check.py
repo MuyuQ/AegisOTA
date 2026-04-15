@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from app.executors.adb_executor import ADBExecutor
 
@@ -35,7 +35,7 @@ class PerfChecker:
 
     # 性能阈值
     DEFAULT_MEMORY_THRESHOLD = 80.0  # 内存使用率上限
-    DEFAULT_CPU_THRESHOLD = 50.0    # CPU 使用率上限
+    DEFAULT_CPU_THRESHOLD = 50.0  # CPU 使用率上限
     DEFAULT_BOOT_TIME_THRESHOLD = 60000  # 启动时间上限（ms）
 
     def __init__(
@@ -61,9 +61,9 @@ class PerfChecker:
 
         # 判断是否通过
         passed = (
-            memory_usage < self.memory_threshold and
-            cpu_usage < self.cpu_threshold and
-            boot_time < self.boot_time_threshold
+            memory_usage < self.memory_threshold
+            and cpu_usage < self.cpu_threshold
+            and boot_time < self.boot_time_threshold
         )
 
         # 构建消息

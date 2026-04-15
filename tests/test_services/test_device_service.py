@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
+from app.executors.mock_executor import MockExecutor
 from app.models.device import Device, DeviceStatus
 from app.services.device_service import DeviceService
-from app.executors.mock_executor import MockExecutor
 
 
 @pytest.fixture
@@ -15,10 +15,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture

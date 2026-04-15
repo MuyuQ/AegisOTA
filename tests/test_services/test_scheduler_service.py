@@ -5,12 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models.device import Device, DeviceLease, DeviceStatus
-from app.models.run import UpgradePlan, RunSession, RunStatus, UpgradeType
+from app.models.device import Device, DeviceStatus
+from app.models.run import RunSession, RunStatus, UpgradePlan, UpgradeType
 from app.services.scheduler_service import SchedulerService
-from app.services.device_service import DeviceService
-from app.services.run_service import RunService
-from app.executors.mock_executor import MockExecutor
 
 
 @pytest.fixture
@@ -18,10 +15,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture
@@ -176,13 +176,15 @@ class TestPriorityScheduling:
     def test_schedule_highest_priority_first(self, test_db):
         """测试高优先级任务优先调度。"""
         from app.models.device import DevicePool
-        from app.models.enums import RunPriority, PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose, RunPriority
 
         pool = DevicePool(name="priority_pool", purpose=PoolPurpose.STABLE)
         test_db.add(pool)
         test_db.commit()
 
-        device = Device(serial="PRIO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80)
+        device = Device(
+            serial="PRIO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+        )
         test_db.add(device)
 
         plan = UpgradePlan(name="Priority Test Plan")
@@ -204,13 +206,15 @@ class TestPriorityScheduling:
     def test_schedule_fifo_same_priority(self, test_db):
         """测试相同优先级按 FIFO 调度。"""
         from app.models.device import DevicePool
-        from app.models.enums import RunPriority, PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose, RunPriority
 
         pool = DevicePool(name="fifo_pool", purpose=PoolPurpose.STABLE)
         test_db.add(pool)
         test_db.commit()
 
-        device = Device(serial="FIFO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80)
+        device = Device(
+            serial="FIFO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+        )
         test_db.add(device)
 
         plan = UpgradePlan(name="FIFO Test Plan")
@@ -231,14 +235,16 @@ class TestPriorityScheduling:
     def test_allocate_from_pool(self, test_db):
         """测试从设备池分配设备。"""
         from app.models.device import DevicePool
-        from app.models.enums import RunPriority, PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose, RunPriority
 
         pool = DevicePool(name="alloc_pool", purpose=PoolPurpose.STABLE, max_parallel=5)
         test_db.add(pool)
         test_db.commit()
 
         for i in range(3):
-            device = Device(serial=f"ALLOC{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80)
+            device = Device(
+                serial=f"ALLOC{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+            )
             test_db.add(device)
         test_db.commit()
 
@@ -262,7 +268,7 @@ class TestPriorityScheduling:
     def test_allocate_respects_reserved_capacity(self, test_db):
         """测试分配设备时保留容量。"""
         from app.models.device import DevicePool
-        from app.models.enums import RunPriority, PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose, RunPriority
 
         pool = DevicePool(
             name="reserved_pool",
@@ -274,7 +280,9 @@ class TestPriorityScheduling:
         test_db.commit()
 
         for i in range(4):
-            device = Device(serial=f"RES{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80)
+            device = Device(
+                serial=f"RES{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+            )
             test_db.add(device)
         test_db.commit()
 
@@ -307,13 +315,15 @@ class TestPoolBasedAllocation:
     def test_select_device_from_pool(self, test_db):
         """测试从指定池选择设备。"""
         from app.models.device import DevicePool
-        from app.models.enums import PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose
 
         pool = DevicePool(name="select_pool", purpose=PoolPurpose.STABLE)
         test_db.add(pool)
         test_db.commit()
 
-        device = Device(serial="SELECT001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80)
+        device = Device(
+            serial="SELECT001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+        )
         test_db.add(device)
         test_db.commit()
 
@@ -335,15 +345,19 @@ class TestPoolBasedAllocation:
     def test_select_device_respects_pool_boundary(self, test_db):
         """测试设备选择遵守池边界。"""
         from app.models.device import DevicePool
-        from app.models.enums import PoolPurpose, DeviceStatus
+        from app.models.enums import DeviceStatus, PoolPurpose
 
         pool1 = DevicePool(name="boundary1", purpose=PoolPurpose.STABLE)
         pool2 = DevicePool(name="boundary2", purpose=PoolPurpose.STRESS)
         test_db.add_all([pool1, pool2])
         test_db.commit()
 
-        device1 = Device(serial="BOUNDARY001", status=DeviceStatus.BUSY, pool_id=pool1.id, battery_level=80)
-        device2 = Device(serial="BOUNDARY002", status=DeviceStatus.IDLE, pool_id=pool2.id, battery_level=80)
+        device1 = Device(
+            serial="BOUNDARY001", status=DeviceStatus.BUSY, pool_id=pool1.id, battery_level=80
+        )
+        device2 = Device(
+            serial="BOUNDARY002", status=DeviceStatus.IDLE, pool_id=pool2.id, battery_level=80
+        )
         test_db.add_all([device1, device2])
         test_db.commit()
 

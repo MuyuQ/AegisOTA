@@ -83,10 +83,7 @@ def calculate_confidence(
 
     # 扣分项：多规则冲突（存在竞争规则）
     if matched_rules_count > 1:
-        confidence = max(
-            0.0,
-            confidence - CONFIDENCE_CONFlict_PENALTY * (matched_rules_count - 1)
-        )
+        confidence = max(0.0, confidence - CONFIDENCE_CONFlict_PENALTY * (matched_rules_count - 1))
 
     return round(confidence, 2)
 
@@ -128,8 +125,5 @@ def calculate_evidence_completeness(
         return 1.0  # 无 match_all 约束，视为完整匹配
 
     # 计算已匹配的唯一代码数量
-    matched_codes = {
-        e.normalized_code for e in events
-        if e.normalized_code in rule.match_all
-    }
+    matched_codes = {e.normalized_code for e in events if e.normalized_code in rule.match_all}
     return len(matched_codes) / len(rule.match_all)

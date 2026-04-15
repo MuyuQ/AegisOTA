@@ -1,8 +1,6 @@
 """失败分类器测试。"""
 
-import pytest
-
-from app.reporting.failure_classifier import FailureClassifier, FailureCategory
+from app.reporting.failure_classifier import FailureCategory, FailureClassifier
 
 
 def test_failure_category_values():

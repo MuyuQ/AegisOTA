@@ -2,9 +2,9 @@
 
 import pytest
 
-from app.faults.reboot_interrupted import RebootInterruptedFault
-from app.executors.run_context import RunContext
 from app.executors.mock_executor import MockADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.reboot_interrupted import RebootInterruptedFault
 
 
 @pytest.fixture

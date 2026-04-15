@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
-from app.models.device import Device, DeviceLease, DeviceStatus, DevicePool, LeaseStatus
-from app.models.run import UpgradePlan, RunSession, RunStatus, UpgradeType
-from app.models.enums import RunPriority, PoolPurpose
+from app.models.device import Device, DeviceLease, DevicePool, DeviceStatus, LeaseStatus
+from app.models.enums import PoolPurpose, RunPriority
+from app.models.run import RunSession, RunStatus, UpgradePlan, UpgradeType
 from app.services.preemption_service import PreemptionService
 
 
@@ -16,10 +16,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    yield session
-    session.close()
+    session_factory = sessionmaker(bind=engine)
+    session = session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 @pytest.fixture
@@ -106,7 +109,9 @@ def test_find_preemptible_runs(preemption_service, test_db, setup_pool_and_devic
     assert run2.id in run_ids
 
 
-def test_find_preemptible_runs_excludes_non_preemptible(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_find_preemptible_runs_excludes_non_preemptible(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试不可抢占的任务不会被返回。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -207,7 +212,9 @@ def test_preempt_run_success(preemption_service, test_db, setup_pool_and_devices
     assert device.current_run_id is None
 
 
-def test_preempt_run_only_normal_priority(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_preempt_run_only_normal_priority(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试只抢占 NORMAL 优先级任务（allow_preempt_high=False）。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -259,7 +266,9 @@ def test_preempt_run_only_normal_priority(preemption_service, test_db, setup_poo
     assert preemptible_runs[0].priority == RunPriority.NORMAL
 
 
-def test_check_and_execute_preemption_success(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_check_and_execute_preemption_success(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试完整的抢占检查和执行流程。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -313,7 +322,9 @@ def test_check_and_execute_preemption_success(preemption_service, test_db, setup
     assert lease.preempted_by_run_id == emergency_run.id
 
 
-def test_check_and_execute_preemption_not_emergency(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_check_and_execute_preemption_not_emergency(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试非 EMERGENCY 优先级任务不能触发抢占。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -362,7 +373,9 @@ def test_check_and_execute_preemption_not_emergency(preemption_service, test_db,
     assert victim_run.status == RunStatus.RUNNING
 
 
-def test_check_and_execute_preemption_no_victims(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_check_and_execute_preemption_no_victims(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试没有可抢占任务时返回 False。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -426,7 +439,9 @@ def test_check_and_execute_preemption_with_high_priority(
     test_db.commit()
 
     # 执行抢占检查和执行（允许抢占 HIGH）
-    result = preemption_service.check_and_execute_preemption(emergency_run.id, allow_preempt_high=True)
+    result = preemption_service.check_and_execute_preemption(
+        emergency_run.id, allow_preempt_high=True
+    )
 
     assert result is True
 

@@ -103,8 +103,8 @@
                     {% for device in devices %}
                     <tr id="device-row-{{ device.id }}">
                         <td><code>{{ device.serial }}</code></td>
-                        <td>{{ device.brand or '-' }}</td>
-                        <td>{{ device.model or '-' }}</td>
+                        <td class="text-secondary">{{ device.brand or '-' }}</td>
+                        <td class="text-secondary">{{ device.model or '-' }}</td>
                         <td>
                             <span class="status-badge status-{{ device.status|lower }}">
                                 {% if device.status == 'idle' %}空闲
@@ -127,7 +127,7 @@
                         <td>
                             <a href="/devices/{{ device.serial }}" class="btn btn-sm btn-secondary">详情</a>
                             <button class="btn btn-sm btn-danger"
-                                    hx-delete="/api/pools/{{ pool.id }}/devices/{{ device.id }}"
+                                    hx-delete="/api/v1/pools/{{ pool.id }}/devices/{{ device.id }}"
                                     hx-confirm="确定要从池中移除设备 {{ device.serial }} 吗？"
                                     hx-target="#device-row-{{ device.id }}"
                                     hx-swap="outerHTML swap:0.5s">
@@ -174,7 +174,7 @@
         </button>
         {% endif %}
         <button class="btn btn-danger"
-                hx-delete="/api/pools/{{ pool.id }}"
+                hx-delete="/api/v1/pools/{{ pool.id }}"
                 hx-confirm="确定要删除设备池 {{ pool.name }} 吗？此操作不可恢复！"
                 hx-redirect="/pools">
             删除设备池

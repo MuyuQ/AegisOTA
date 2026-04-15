@@ -1,0 +1,133 @@
+/**
+ * AegisOTA Theme Variables
+ * Modern color system based on Material Design style
+ */
+
+/* ============================================
+   Light Mode Variables (Default)
+   ============================================ */
+:root {
+    /* Primary colors - Modern Indigo/Purple */
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-light: #e0e7ff;
+
+    /* Accent color - Purple */
+    --accent-color: #8b5cf6;
+    --accent-hover: #7c3aed;
+    --accent-light: #ede9fe;
+
+    /* Secondary */
+    --secondary-color: #64748b;
+    --secondary-light: #f1f5f9;
+
+    /* Status colors */
+    --success-color: #10b981;
+    --success-light: #d1fae5;
+    --warning-color: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger-color: #ef4444;
+    --danger-light: #fee2e2;
+    --info-color: #3b82f6;
+    --info-light: #dbeafe;
+
+    /* Background colors */
+    --background-color: #f8fafc;
+    --surface-color: #f1f5f9;
+    --card-background: #ffffff;
+    --border-color: #e2e8f0;
+
+    /* Text color hierarchy */
+    --text-color: #1e293b;           /* Primary text - titles, important content */
+    --text-secondary: #475569;       /* Secondary text - descriptions */
+    --text-tertiary: #94a3b8;        /* Tertiary text - timestamps, metadata */
+    --text-muted: #cbd5e1;           /* Muted text - placeholders, disabled */
+    --text-inverse: #f8fafc;         /* Inverse text - on dark backgrounds */
+}
+
+/* ============================================
+   Dark Mode - System Preference
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #818cf8;
+        --primary-hover: #6366f1;
+        --primary-light: #1e1b4b;
+
+        --accent-color: #a78bfa;
+        --accent-hover: #8b5cf6;
+        --accent-light: #2e1065;
+
+        --secondary-color: #94a3b8;
+        --secondary-light: #1e293b;
+
+        --success-color: #34d399;
+        --success-light: #064e3b;
+        --warning-color: #fbbf24;
+        --warning-light: #78350f;
+        --danger-color: #f87171;
+        --danger-light: #7f1d1d;
+        --info-color: #60a5fa;
+        --info-light: #1e3a8a;
+
+        --background-color: #0f172a;
+        --surface-color: #1e293b;
+        --card-background: #1e293b;
+        --border-color: #334155;
+
+        --text-color: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
+        --text-muted: #64748b;
+        --text-inverse: #0f172a;
+    }
+}
+
+/* ============================================
+   Dark Mode - Manual Toggle
+   ============================================ */
+[data-theme="dark"] {
+    --primary-color: #818cf8;
+    --primary-hover: #6366f1;
+    --primary-light: #1e1b4b;
+
+    --accent-color: #a78bfa;
+    --accent-hover: #8b5cf6;
+    --accent-light: #2e1065;
+
+    --secondary-color: #94a3b8;
+    --secondary-light: #1e293b;
+
+    --success-color: #34d399;
+    --success-light: #064e3b;
+    --warning-color: #fbbf24;
+    --warning-light: #78350f;
+    --danger-color: #f87171;
+    --danger-light: #7f1d1d;
+    --info-color: #60a5fa;
+    --info-light: #1e3a8a;
+
+    --background-color: #0f172a;
+    --surface-color: #1e293b;
+    --card-background: #1e293b;
+    --border-color: #334155;
+
+    --text-color: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --text-muted: #64748b;
+    --text-inverse: #0f172a;
+}
+
+/* ============================================
+   Text Utility Classes
+   ============================================ */
+.text-primary { color: var(--text-color) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+.text-tertiary { color: var(--text-tertiary) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-accent { color: var(--accent-color) !important; }
+.text-success { color: var(--success-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-danger { color: var(--danger-color) !important; }
+.text-info { color: var(--info-color) !important; }

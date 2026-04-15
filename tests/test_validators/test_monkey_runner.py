@@ -1,9 +1,7 @@
 """Monkey 执行器测试。"""
 
-import pytest
-
-from app.validators.monkey_runner import MonkeyRunner, MonkeyResult
 from app.executors.mock_executor import MockADBExecutor
+from app.validators.monkey_runner import MonkeyResult, MonkeyRunner
 
 
 def test_monkey_runner_init():
@@ -24,7 +22,7 @@ def test_monkey_runner_execute_success():
     executor = MockADBExecutor()
     executor.set_response(
         "shell monkey",
-        stdout="Events injected: 1000\n:Dropped: 0\n:Crashed: 0\n## Network stats: 0\n"
+        stdout="Events injected: 1000\n:Dropped: 0\n:Crashed: 0\n## Network stats: 0\n",
     )
 
     runner = MonkeyRunner(executor=executor)
@@ -54,8 +52,7 @@ def test_monkey_runner_with_crash():
     """测试 Monkey 发现崩溃。"""
     executor = MockADBExecutor()
     executor.set_response(
-        "shell monkey",
-        stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n"
+        "shell monkey", stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n"
     )
 
     runner = MonkeyRunner(executor=executor)

@@ -35,9 +35,9 @@
                                 {{ pool.purpose }}
                             </span>
                         </td>
-                        <td>{{ (pool.reserved_ratio * 100)|int }}%</td>
-                        <td>{{ pool.total_devices }}</td>
-                        <td>{{ pool.available_devices }}</td>
+                        <td class="text-tertiary">{{ (pool.reserved_ratio * 100)|int }}%</td>
+                        <td class="text-tertiary">{{ pool.total_devices }}</td>
+                        <td class="text-tertiary">{{ pool.available_devices }}</td>
                         <td>
                             <span class="status-badge status-{{ 'active' if pool.enabled else 'inactive' }}">
                                 {{ '启用' if pool.enabled else '禁用' }}
@@ -111,7 +111,7 @@ function createPool(event) {
         reserved_ratio: parseFloat(form.reserved_ratio.value),
     };
 
-    fetch('/api/pools', {
+    fetch('/api/v1/pools', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -130,7 +130,7 @@ function showPoolDetail(poolId) {
 
 function deletePool(poolId) {
     if (confirm('确定要删除这个设备池吗？')) {
-        fetch('/api/pools/' + poolId, {
+        fetch('/api/v1/pools/' + poolId, {
             method: 'DELETE',
         }).then(response => {
             if (response.ok) {
@@ -141,7 +141,7 @@ function deletePool(poolId) {
 }
 
 function initDefaultPools() {
-    fetch('/api/pools/init', {
+    fetch('/api/v1/pools/init', {
         method: 'POST',
     }).then(response => {
         if (response.ok) {

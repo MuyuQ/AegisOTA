@@ -1,8 +1,9 @@
 """Mock 命令执行器（用于测试）。"""
 
 import re
-from typing import Optional, Dict, Tuple, List, Union
-from app.executors.command_runner import CommandRunner, CommandResult
+from typing import Dict, List, Optional, Tuple, Union
+
+from app.executors.command_runner import CommandResult, CommandRunner
 
 
 class MockExecutor(CommandRunner):
@@ -94,19 +95,21 @@ class MockExecutor(CommandRunner):
 [ro.build.version.release]: [14]
 [ro.build.fingerprint]: [Google/oriole/oriole:14/AP1A.240305.019]
 [sys.boot_completed]: [1]
-"""
+""",
         )
 
         # 电量响应（匹配任何 dumpsys battery 命令）
         executor.set_response(
-            "dumpsys battery",
-            stdout="Current Battery Service state:\n  level: 85\n"
+            "dumpsys battery", stdout="Current Battery Service state:\n  level: 85\n"
         )
 
         # 存储响应（匹配任何 df /data 命令）
         executor.set_response(
             "df /data",
-            stdout="Filesystem      Size  Used Avail Use% Mounted on\n/dev/block/dm-0  64G   32G   32G  50% /data\n"
+            stdout=(
+                "Filesystem      Size  Used Avail Use% Mounted on\n"
+                "/dev/block/dm-0  64G   32G   32G  50% /data\n"
+            ),
         )
 
         return executor
@@ -120,10 +123,7 @@ class MockExecutor(CommandRunner):
         executor.set_response("adb push", stdout="push success\n")
 
         # 升级命令成功
-        executor.set_response(
-            "adb shell am broadcast",
-            stdout="Broadcast completed: result=0\n"
-        )
+        executor.set_response("adb shell am broadcast", stdout="Broadcast completed: result=0\n")
 
         return executor
 
@@ -173,10 +173,12 @@ class MockADBExecutor:
             if line and not line.startswith("List of devices"):
                 parts = line.split("\t")
                 if len(parts) >= 2:
-                    devices.append({
-                        "serial": parts[0],
-                        "status": parts[1],
-                    })
+                    devices.append(
+                        {
+                            "serial": parts[0],
+                            "status": parts[1],
+                        }
+                    )
 
         return devices
 
@@ -307,12 +309,17 @@ class MockADBExecutor:
         if success:
             executor.set_response(
                 "shell monkey",
-                stdout="Events injected: 1000\n:Dropped: 0\n:Crashed: 0\n## Network stats: elapsed time=5s\n"
+                stdout=(
+                    "Events injected: 1000\n"
+                    ":Dropped: 0\n"
+                    ":Crashed: 0\n"
+                    "## Network stats: elapsed time=5s\n"
+                ),
             )
         else:
             executor.set_response(
                 "shell monkey",
-                stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n"
+                stdout=("Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n"),
             )
         return executor
 

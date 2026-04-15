@@ -1,20 +1,20 @@
-"""设备池工作流集成测试。"""
+"""设备池工作流集成测试"""
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.database import SessionLocal, engine, init_db
 from app.main import app
-from app.database import SessionLocal, get_db, init_db, engine
-from app.models.device import Device, DevicePool, DeviceStatus, DeviceLease
+from app.models.device import Device, DeviceLease, DevicePool, DeviceStatus
+from app.models.enums import LeaseStatus, PoolPurpose, RunPriority, RunStatus
 from app.models.run import RunSession, UpgradePlan
-from app.models.enums import PoolPurpose, RunPriority, RunStatus, LeaseStatus
 from app.services.pool_service import PoolService
 from app.services.preemption_service import PreemptionService
 
 
 @pytest.fixture
 def test_db():
-    """创建测试数据库。"""
+    """创建测试数据库"""
     # 确保数据库表已创建
     init_db(engine)
 
@@ -36,17 +36,20 @@ def client(test_db):
 
 
 class TestPoolWorkflow:
-    """设备池完整工作流测试。"""
+    """设备池完整工作流测试"""
 
     def test_full_pool_workflow(self, client, test_db):
-        """测试完整的设备池工作流。"""
+        """测试完整的设备池工作流"""
         # 1. 创建默认设备池
-        response = client.post("/api/pools", json={
-            "name": "workflow_pool",
-            "purpose": "stable",
-            "reserved_ratio": 0.2,
-            "max_parallel": 5,
-        })
+        response = client.post(
+            "/api/v1/v1/pools",
+            json={
+                "name": "workflow_pool",
+                "purpose": "stable",
+                "reserved_ratio": 0.2,
+                "max_parallel": 5,
+            },
+        )
         assert response.status_code == 200
         pool_id = response.json()["id"]
 
@@ -56,7 +59,7 @@ class TestPoolWorkflow:
         test_db.commit()
 
         # 3. 验证池容量
-        response = client.get(f"/api/pools/{pool_id}/capacity")
+        response = client.get(f"/api/v1/v1/pools/{pool_id}/capacity")
         assert response.status_code == 200
         assert response.json()["available"] == 1
 
@@ -66,20 +69,22 @@ class TestPoolWorkflow:
         test_db.commit()
 
         # 5. 验证设备在池中
-        response = client.get(f"/api/pools/{pool_id}/devices")
+        response = client.get(f"/api/v1/v1/pools/{pool_id}/devices")
         assert response.status_code == 200
         assert len(response.json()) == 1
         assert response.json()[0]["serial"] == "WORKFLOW001"
 
 
 class TestPriorityPreemptionWorkflow:
-    """优先级抢占工作流测试。"""
+    """优先级抢占工作流测试"""
 
     def test_emergency_preemption(self, test_db):
-        """测试 emergency 任务抢占流程。"""
+        """测试 emergency 任务抢占流程"""
         # 1. 创建设备池和设备
         pool_service = PoolService(test_db)
-        pool = pool_service.create_pool(name="preempt_workflow", purpose=PoolPurpose.STABLE, max_parallel=1)
+        pool = pool_service.create_pool(
+            name="preempt_workflow", purpose=PoolPurpose.STABLE, max_parallel=1
+        )
 
         device = Device(serial="PREEMPT_W001", status=DeviceStatus.BUSY, pool_id=pool.id)
         test_db.add(device)
@@ -135,9 +140,11 @@ class TestPriorityPreemptionWorkflow:
         assert device.status == DeviceStatus.IDLE
 
     def test_pool_capacity_calculation(self, test_db):
-        """测试池容量计算。"""
+        """测试池容量计算"""
         pool_service = PoolService(test_db)
-        pool = pool_service.create_pool(name="capacity_test", purpose=PoolPurpose.STABLE, max_parallel=10)
+        pool = pool_service.create_pool(
+            name="capacity_test", purpose=PoolPurpose.STABLE, max_parallel=10
+        )
 
         # 添加不同状态的设备
         for i in range(5):
@@ -162,7 +169,7 @@ class TestPriorityPreemptionWorkflow:
         assert capacity["offline"] == 2
 
     def test_default_pool_creation(self, test_db):
-        """测试默认设备池创建。"""
+        """测试默认设备池创建"""
         pool_service = PoolService(test_db)
         pools = pool_service.create_default_pools()
 

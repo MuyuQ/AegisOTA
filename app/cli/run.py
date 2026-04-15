@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from app.database import SessionLocal, init_db
-from app.models import RunSession, RunStatus, Device, DeviceStatus
+from app.models import Device, DeviceStatus, RunSession, RunStatus
 from app.services.run_service import RunService
 
 app = typer.Typer(help="任务管理命令")
@@ -20,9 +20,7 @@ console = Console()
 @app.command("submit")
 def submit_run(
     plan_id: int = typer.Argument(..., help="升级计划 ID"),
-    device_serial: Optional[str] = typer.Option(
-        None, "--device", "-d", help="指定设备序列号"
-    ),
+    device_serial: Optional[str] = typer.Option(None, "--device", "-d", help="指定设备序列号"),
 ):
     """提交升级任务。
 
@@ -70,11 +68,14 @@ def submit_run(
         device.status = DeviceStatus.BUSY
         db.commit()
 
-        typer.echo(f"任务已创建:")
+        typer.echo("任务已创建:")
         typer.echo(f"  任务 ID: {run_session.id}")
         typer.echo(f"  升级计划: {plan.name}")
         typer.echo(f"  设备: {device.serial}")
-        typer.echo(f"  状态: {run_session.status.value if hasattr(run_session.status, 'value') else run_session.status}")
+        status_val = (
+            run_session.status.value if hasattr(run_session.status, "value") else run_session.status
+        )
+        typer.echo(f"  状态: {status_val}")
 
     finally:
         db.close()
@@ -82,9 +83,7 @@ def submit_run(
 
 @app.command("list")
 def list_runs(
-    status: Optional[str] = typer.Option(
-        None, "--status", "-s", help="按状态筛选任务"
-    ),
+    status: Optional[str] = typer.Option(None, "--status", "-s", help="按状态筛选任务"),
     limit: int = typer.Option(20, "--limit", "-l", help="显示数量限制"),
 ):
     """列出所有任务。

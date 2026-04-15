@@ -1,7 +1,7 @@
 """失败分类模块。"""
 
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from app.models.run import StepName
 
@@ -67,13 +67,29 @@ CLASSIFICATION_RULES = {
 
 # 建议模板
 RECOMMENDATIONS = {
-    FailureCategory.PACKAGE_ISSUE: "检查升级包是否完整，验证包签名和版本信息。建议重新生成或下载升级包。",
-    FailureCategory.DEVICE_ENV_ISSUE: "检查设备状态：电量、存储空间、网络连接。建议恢复设备环境后重试。",
-    FailureCategory.BOOT_FAILURE: "检查设备启动日志（logcat），确认是否存在 watchdog 重启或关键进程异常。建议隔离设备进行人工排查。",
-    FailureCategory.VALIDATION_FAILURE: "检查升级后版本信息，确认升级是否正确完成。可能需要重新执行升级或回滚。",
-    FailureCategory.MONKEY_INSTABILITY: "Monkey 测试发现系统不稳定，检查崩溃日志和应用异常。建议进行更深入的系统稳定性测试。",
-    FailureCategory.PERFORMANCE_SUSPECT: "性能指标异常，检查内存泄漏或 CPU 占用过高的问题。建议进行性能分析。",
-    FailureCategory.ADB_TRANSPORT_ISSUE: "ADB 连接异常，检查 USB 连接或网络 adb 配置。建议检查设备连接状态。",
+    FailureCategory.PACKAGE_ISSUE: (
+        "检查升级包是否完整，验证包签名和版本信息。建议重新生成或下载升级包。"
+    ),
+    FailureCategory.DEVICE_ENV_ISSUE: (
+        "检查设备状态：电量、存储空间、网络连接。建议恢复设备环境后重试。"
+    ),
+    FailureCategory.BOOT_FAILURE: (
+        "检查设备启动日志（logcat），"
+        "确认是否存在 watchdog 重启或关键进程异常。"
+        "建议隔离设备进行人工排查。"
+    ),
+    FailureCategory.VALIDATION_FAILURE: (
+        "检查升级后版本信息，确认升级是否正确完成。可能需要重新执行升级或回滚。"
+    ),
+    FailureCategory.MONKEY_INSTABILITY: (
+        "Monkey 测试发现系统不稳定，检查崩溃日志和应用异常。建议进行更深入的系统稳定性测试。"
+    ),
+    FailureCategory.PERFORMANCE_SUSPECT: (
+        "性能指标异常，检查内存泄漏或 CPU 占用过高的问题。建议进行性能分析。"
+    ),
+    FailureCategory.ADB_TRANSPORT_ISSUE: (
+        "ADB 连接异常，检查 USB 连接或网络 adb 配置。建议检查设备连接状态。"
+    ),
     FailureCategory.UNKNOWN: "未知错误，建议查看详细日志进行人工分析。",
 }
 

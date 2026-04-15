@@ -31,7 +31,7 @@
             </tr>
             <tr>
                 <th>根因</th>
-                <td><strong>{{ diagnosis.root_cause }}</strong></td>
+                <td><strong class="text-secondary">{{ diagnosis.root_cause }}</strong></td>
             </tr>
             <tr>
                 <th>置信度</th>
@@ -43,7 +43,7 @@
                             </div>
                         </div>
                         <span class="confidence-badge confidence-{{ diagnosis.confidence_level }}">
-                            {{ (diagnosis.confidence * 100)|round|int }}%
+                            <span class="text-accent">{{ (diagnosis.confidence * 100)|round|int }}%</span>
                         </span>
                     </div>
                 </td>
@@ -55,25 +55,25 @@
             {% if diagnosis.next_action %}
             <tr>
                 <th>建议操作</th>
-                <td style="color: var(--primary-color);">{{ diagnosis.next_action }}</td>
+                <td class="text-accent">{{ diagnosis.next_action }}</td>
             </tr>
             {% endif %}
             <tr>
                 <th>设备 SN</th>
-                <td><code>{{ diagnosis.device_serial }}</code></td>
+                <td class="text-tertiary"><code>{{ diagnosis.device_serial }}</code></td>
             </tr>
             <tr>
                 <th>诊断时间</th>
-                <td>{{ diagnosis.created_at_display }}</td>
+                <td class="text-tertiary">{{ diagnosis.created_at_display }}</td>
             </tr>
         </table>
 
         <!-- 操作按钮 -->
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <a href="/api/diagnosis/{{ diagnosis.run_id }}/export?format=md" class="btn btn-secondary" target="_blank">
+            <a href="/api/v1/diagnosis/{{ diagnosis.run_id }}/export?format=md" class="btn btn-secondary" target="_blank">
                 导出 Markdown
             </a>
-            <a href="/api/diagnosis/{{ diagnosis.run_id }}/export?format=html" class="btn btn-secondary" target="_blank">
+            <a href="/api/v1/diagnosis/{{ diagnosis.run_id }}/export?format=html" class="btn btn-secondary" target="_blank">
                 导出 HTML
             </a>
             <a href="/runs/{{ diagnosis.run_id }}" class="btn btn-primary">
@@ -219,7 +219,7 @@
 
     <!-- 下载链接 -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-        <a href="/api/reports/{{ diagnosis.run_id }}/artifacts" class="btn btn-sm btn-secondary" target="_blank">
+        <a href="/api/v1/reports/{{ diagnosis.run_id }}/artifacts" class="btn btn-sm btn-secondary" target="_blank">
             下载全部日志文件
         </a>
     </div>

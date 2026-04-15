@@ -4,7 +4,6 @@
 """
 
 import hashlib
-from datetime import datetime
 from typing import Optional
 
 from rapidfuzz import fuzz
@@ -149,14 +148,16 @@ class SimilarCaseService:
         # 转换为字典列表
         similar_cases = []
         for candidate, score in top_cases:
-            similar_cases.append({
-                "run_id": candidate.run_id,
-                "device_serial": candidate.device_serial,
-                "category": candidate.category,
-                "root_cause": candidate.root_cause,
-                "similarity": score,
-                "created_at": candidate.created_at,
-            })
+            similar_cases.append(
+                {
+                    "run_id": candidate.run_id,
+                    "device_serial": candidate.device_serial,
+                    "category": candidate.category,
+                    "root_cause": candidate.root_cause,
+                    "similarity": score,
+                    "created_at": candidate.created_at,
+                }
+            )
 
         return similar_cases
 
@@ -258,9 +259,7 @@ class SimilarCaseService:
             统计信息字典，包含总数、分类分布等
         """
         # 总数
-        total = self.session.execute(
-            select(SimilarCaseIndex).where(True)
-        ).scalars().all()
+        total = self.session.execute(select(SimilarCaseIndex).where(True)).scalars().all()
         total_count = len(total)
 
         # 按分类统计

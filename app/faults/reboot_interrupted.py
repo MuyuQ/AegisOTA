@@ -1,11 +1,11 @@
 """重启中断注入插件。"""
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class RebootInterruptedFault(FaultPlugin):
@@ -28,7 +28,9 @@ class RebootInterruptedFault(FaultPlugin):
         interrupt_type: Optional[str] = None,
     ):
         super().__init__(executor)
-        self.interrupt_after_seconds = interrupt_after_seconds or self.DEFAULT_INTERRUPT_AFTER_SECONDS
+        self.interrupt_after_seconds = (
+            interrupt_after_seconds or self.DEFAULT_INTERRUPT_AFTER_SECONDS
+        )
         self.interrupt_type = interrupt_type or self.DEFAULT_INTERRUPT_TYPE
 
     def set_parameters(self, params: Dict[str, Any]):

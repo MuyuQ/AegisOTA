@@ -48,9 +48,7 @@ class DevicePool(Base):
     )
 
     # 关系
-    devices: Mapped[list["Device"]] = relationship(
-        "Device", back_populates="pool"
-    )
+    devices: Mapped[list["Device"]] = relationship("Device", back_populates="pool")
 
     def get_tag_selector(self) -> dict[str, Any]:
         """获取标签选择器配置。"""
@@ -69,7 +67,6 @@ class DevicePool(Base):
         """获取池中可用设备数量。"""
         return len([d for d in self.devices if d.status == DeviceStatus.IDLE])
 
-    
 
 class Device(Base):
     """设备实体。"""
@@ -158,9 +155,7 @@ class DeviceLease(Base):
     )
 
     # 租约时间
-    leased_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
+    leased_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     expired_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     released_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
@@ -176,9 +171,7 @@ class DeviceLease(Base):
 
     # 关系
     device: Mapped["Device"] = relationship("Device", back_populates="leases")
-    run_session: Mapped[Optional["RunSession"]] = relationship(
-        "RunSession", back_populates="lease"
-    )
+    run_session: Mapped[Optional["RunSession"]] = relationship("RunSession", back_populates="lease")
 
     def is_active(self) -> bool:
         """检查租约是否有效。"""

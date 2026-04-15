@@ -2,10 +2,10 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
 
 
 @dataclass
@@ -64,7 +64,7 @@ class FaultPlugin(ABC):
 
     def get_parameters(self) -> Dict[str, Any]:
         """获取插件参数（从 fault profile）。"""
-        return getattr(self, '_parameters', {})
+        return getattr(self, "_parameters", {})
 
     def set_parameters(self, params: Dict[str, Any]):
         """设置插件参数。"""
@@ -87,5 +87,5 @@ class FaultPlugin(ABC):
                 "fault_type": self.fault_type,
                 "fault_stage": self.fault_stage,
                 "extra": extra or {},
-            }
+            },
         )

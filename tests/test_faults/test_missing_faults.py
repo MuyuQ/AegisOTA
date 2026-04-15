@@ -4,10 +4,10 @@ import pytest
 
 from app.executors.mock_executor import MockADBExecutor
 from app.executors.run_context import RunContext
-from app.faults.package_corrupted import PackageCorruptedFault
 from app.faults.low_battery import LowBatteryFault
-from app.faults.post_boot_watchdog_failure import PostBootWatchdogFailureFault
+from app.faults.package_corrupted import PackageCorruptedFault
 from app.faults.performance_regression import PerformanceRegressionFault
+from app.faults.post_boot_watchdog_failure import PostBootWatchdogFailureFault
 
 
 @pytest.fixture

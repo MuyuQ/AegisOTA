@@ -7,8 +7,8 @@ from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.models.device import Device, DeviceLease, DeviceStatus, LeaseStatus
-from app.models.run import RunSession, RunStatus
 from app.models.enums import RunPriority
+from app.models.run import RunSession, RunStatus
 
 
 class PreemptionService:
@@ -37,7 +37,7 @@ class PreemptionService:
         # 构建查询
         query = self.db.query(RunSession).filter(
             RunSession.pool_id == pool_id,
-            RunSession.preemptible == True,
+            RunSession.preemptible,
             RunSession.status.in_([RunStatus.RESERVED, RunStatus.RUNNING]),
         )
 
@@ -88,10 +88,12 @@ class PreemptionService:
 
             # 使用 SELECT FOR UPDATE 锁定租约行，防止并发竞态
             lease = self.db.execute(
-                select(DeviceLease).where(
+                select(DeviceLease)
+                .where(
                     DeviceLease.run_id == victim_run_id,
                     DeviceLease.lease_status == LeaseStatus.ACTIVE,
-                ).with_for_update()
+                )
+                .with_for_update()
             ).scalar_one_or_none()
 
             if not lease:

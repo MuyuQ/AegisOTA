@@ -1,9 +1,14 @@
 """异常注入相关数据模型。"""
 
+from __future__ import annotations
+
 import json
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from app.models.run import UpgradePlan
 
 from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,12 +49,8 @@ class FaultProfile(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
 
     # 故障配置
-    fault_stage: Mapped[FaultStage] = mapped_column(
-        String(32), nullable=False, index=True
-    )
-    fault_type: Mapped[FaultType] = mapped_column(
-        String(64), nullable=False, index=True
-    )
+    fault_stage: Mapped[FaultStage] = mapped_column(String(32), nullable=False, index=True)
+    fault_type: Mapped[FaultType] = mapped_column(String(64), nullable=False, index=True)
 
     # 参数配置（JSON 存储）
     parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

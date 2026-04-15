@@ -75,10 +75,10 @@ class DebugFormatter(logging.Formatter):
     """开发模式彩色格式化器。"""
 
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
@@ -126,9 +126,9 @@ class ContextLogger:
             self._logger.name,
             level,
             None,  # fn
-            0,     # lno
+            0,  # lno
             message,
-            (),    # args
+            (),  # args
             None,  # exc_info
         )
         if extra:

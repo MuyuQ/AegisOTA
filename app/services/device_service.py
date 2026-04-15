@@ -3,12 +3,11 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from app.config import get_settings
-from app.models.device import Device, DeviceLease, DeviceStatus
 from app.executors.adb_executor import ADBExecutor
 from app.executors.command_runner import CommandRunner
+from app.models.device import Device, DeviceLease, DeviceStatus
 
 
 class DeviceService:
@@ -20,7 +19,6 @@ class DeviceService:
         runner: Optional[CommandRunner] = None,
     ):
         self.db = db
-        settings = get_settings()
         self.runner = runner
         self.executor = ADBExecutor(runner=self.runner)
 
@@ -154,11 +152,11 @@ class DeviceService:
 
         # 释放租约
         if device.current_run_id:
-            lease = self.db.query(DeviceLease).filter_by(
-                device_id=device.id,
-                run_id=device.current_run_id,
-                lease_status="active"
-            ).first()
+            lease = (
+                self.db.query(DeviceLease)
+                .filter_by(device_id=device.id, run_id=device.current_run_id, lease_status="active")
+                .first()
+            )
             if lease:
                 lease.lease_status = "released"
                 lease.released_at = datetime.now(timezone.utc)
@@ -212,7 +210,7 @@ class DeviceService:
         status: Optional[DeviceStatus] = None,
     ) -> List[Device]:
         """列出设备。"""
-        query = self.db.query(Device)
+        query = self.db.query(Device).options(selectinload(Device.pool))
 
         if status:
             query = query.filter(Device.status == status)

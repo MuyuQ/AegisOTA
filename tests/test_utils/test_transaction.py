@@ -1,15 +1,15 @@
 """事务管理工具测试。"""
 
 import pytest
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import Session, declarative_base
 
 from app.utils.transaction import (
-    transaction,
-    with_transaction,
     TransactionalMixin,
     safe_commit,
     safe_rollback,
+    transaction,
+    with_transaction,
 )
 
 Base = declarative_base()
@@ -17,6 +17,7 @@ Base = declarative_base()
 
 class TestModel(Base):
     """测试用模型。"""
+
     __tablename__ = "test_models"
     id = Column(Integer, primary_key=True)
     name = Column(String(50))
@@ -27,9 +28,13 @@ def test_db():
     """创建测试数据库。"""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    session = Session(bind=engine)
-    yield session
-    session.close()
+    session_factory = Session(bind=engine)
+    session = session_factory
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
 
 
 class TestTransactionContext:
@@ -83,6 +88,7 @@ class TestTransactionDecorator:
 
     def test_decorator_with_db_kwarg(self, test_db):
         """测试装饰器处理 db 关键字参数。"""
+
         @with_transaction()
         def create_obj(db, name):
             obj = TestModel(name=name)
@@ -98,6 +104,7 @@ class TestTransactionDecorator:
 
     def test_decorator_with_db_in_args(self, test_db):
         """测试装饰器处理 db 位置参数。"""
+
         @with_transaction()
         def create_obj(db, name):
             obj = TestModel(name=name)
@@ -112,6 +119,7 @@ class TestTransactionDecorator:
 
     def test_decorator_rollback_on_exception(self, test_db):
         """测试装饰器异常时回滚。"""
+
         @with_transaction()
         def create_obj(db, name, fail=False):
             obj = TestModel(name=name)
@@ -150,6 +158,7 @@ class TestTransactionDecorator:
 
     def test_decorator_requires_db_parameter(self, test_db):
         """测试装饰器要求 db 参数。"""
+
         @with_transaction()
         def no_db_param():
             return "ok"

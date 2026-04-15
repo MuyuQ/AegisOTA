@@ -1,9 +1,6 @@
 """异常注入基类测试。"""
 
-import pytest
-
 from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 
 
 def test_fault_result_creation():
@@ -35,30 +32,32 @@ def test_fault_result_failure():
 def test_fault_plugin_abstract():
     """测试 FaultPlugin 是抽象类。"""
     from abc import ABC
+
     assert FaultPlugin.__bases__[0] is ABC
 
 
 def test_fault_plugin_interface():
     """测试 FaultPlugin 接口方法。"""
-    import inspect
     # 检查抽象方法（使用 inspect.getattr_static 更合适）
     abstract_methods = [
-        name for name in dir(FaultPlugin)
-        if getattr(getattr(FaultPlugin, name, None), '__isabstractmethod__', False)
+        name
+        for name in dir(FaultPlugin)
+        if getattr(getattr(FaultPlugin, name, None), "__isabstractmethod__", False)
     ]
-    assert 'inject' in abstract_methods
+    assert "inject" in abstract_methods
 
 
 def test_fault_plugin_lifecycle():
     """测试异常插件生命周期。"""
     # 检查生命周期方法存在
-    assert hasattr(FaultPlugin, 'prepare')
-    assert hasattr(FaultPlugin, 'inject')
-    assert hasattr(FaultPlugin, 'cleanup')
+    assert hasattr(FaultPlugin, "prepare")
+    assert hasattr(FaultPlugin, "inject")
+    assert hasattr(FaultPlugin, "cleanup")
 
 
 def test_fault_plugin_metadata():
     """测试异常插件元数据。"""
+
     class TestFault(FaultPlugin):
         fault_type = "test_fault"
         fault_stage = "precheck"

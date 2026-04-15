@@ -4,7 +4,7 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 
 @dataclass

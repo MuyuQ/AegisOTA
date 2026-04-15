@@ -2,9 +2,9 @@
 
 import pytest
 
-from app.faults.monkey_after_upgrade import MonkeyAfterUpgradeFault
-from app.executors.run_context import RunContext
 from app.executors.mock_executor import MockADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.monkey_after_upgrade import MonkeyAfterUpgradeFault
 
 
 @pytest.fixture
@@ -13,7 +13,9 @@ def mock_executor():
     executor = MockADBExecutor()
     executor.set_response(
         "monkey",
-        stdout="Events injected: 1000\n:Dropped: 0\n:Crashed: 0\n## Network stats: elapsed time=5s\n"
+        stdout=(
+            "Events injected: 1000\n:Dropped: 0\n:Crashed: 0\n## Network stats: elapsed time=5s\n"
+        ),
     )
     return executor
 
@@ -62,7 +64,12 @@ def test_monkey_plugin_with_crash(run_context, tmp_path):
     executor = MockADBExecutor()
     executor.set_response(
         "monkey",
-        stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted due to crash\n## Network stats: elapsed time=5s\n"
+        stdout=(
+            "Events injected: 500\n"
+            ":Crashed: 1\n"
+            "** Monkey aborted due to crash\n"
+            "## Network stats: elapsed time=5s\n"
+        ),
     )
 
     plugin = MonkeyAfterUpgradeFault(executor=executor)

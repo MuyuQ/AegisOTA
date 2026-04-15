@@ -13,7 +13,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,13 +37,21 @@ class NormalizedEvent(Base):
     )
 
     # 来源信息
-    source_type: Mapped[str] = mapped_column(String(32), nullable=False)  # recovery_log/update_engine/logcat/monkey
+    source_type: Mapped[str] = mapped_column(
+        String(32), nullable=False
+    )  # recovery_log/update_engine/logcat/monkey
 
     # 事件属性
-    stage: Mapped[str] = mapped_column(String(32), nullable=False)  # precheck/apply_update/reboot_wait/post_validate
-    event_type: Mapped[str] = mapped_column(String(32), nullable=False)  # error_signal/status_transition/progress_signal
+    stage: Mapped[str] = mapped_column(
+        String(32), nullable=False
+    )  # precheck/apply_update/reboot_wait/post_validate
+    event_type: Mapped[str] = mapped_column(
+        String(32), nullable=False
+    )  # error_signal/status_transition/progress_signal
     severity: Mapped[str] = mapped_column(String(16), nullable=False)  # info/warning/error/critical
-    normalized_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)  # 标准化错误码
+    normalized_code: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )  # 标准化错误码
 
     # 原始数据
     raw_line: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -90,7 +97,11 @@ class DiagnosticResult(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
     )
     device_serial: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
@@ -99,7 +110,9 @@ class DiagnosticResult(Base):
     category: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # 故障分类
     root_cause: Mapped[str] = mapped_column(String(64), nullable=False, index=True)  # 根因标识
     confidence: Mapped[float] = mapped_column(Float, nullable=False)  # 置信度 0.0-1.0
-    result_status: Mapped[str] = mapped_column(String(16), nullable=False)  # passed/failed/transient_failure
+    result_status: Mapped[str] = mapped_column(
+        String(16), nullable=False
+    )  # passed/failed/transient_failure
 
     # 关键信息（JSON 数组，关键日志行）
     key_evidence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -146,7 +159,11 @@ class DiagnosticResult(Base):
 
 
 # 复合索引：按分类和根因查询
-Index("ix_diagnostic_results_category_root_cause", DiagnosticResult.category, DiagnosticResult.root_cause)
+Index(
+    "ix_diagnostic_results_category_root_cause",
+    DiagnosticResult.category,
+    DiagnosticResult.root_cause,
+)
 
 
 class RuleHit(Base):
@@ -179,7 +196,9 @@ class RuleHit(Base):
     )
 
     # 关系
-    result: Mapped["DiagnosticResult"] = relationship("DiagnosticResult", back_populates="rule_hits")
+    result: Mapped["DiagnosticResult"] = relationship(
+        "DiagnosticResult", back_populates="rule_hits"
+    )
 
     def get_matched_codes(self) -> list[str]:
         """获取匹配的事件码列表。"""
@@ -299,7 +318,11 @@ class SimilarCaseIndex(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
     )
     device_serial: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 

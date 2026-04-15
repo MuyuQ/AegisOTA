@@ -1,9 +1,8 @@
 """数据库连接测试。"""
 
-import pytest
 from sqlalchemy import inspect
 
-from app.database import Base, engine, get_db
+from app.database import Base
 
 
 def test_base_has_metadata():
@@ -17,10 +16,10 @@ def test_get_db_returns_session():
     from sqlalchemy.orm import sessionmaker
 
     test_engine = create_engine("sqlite:///:memory:")
-    TestSession = sessionmaker(bind=test_engine)
+    test_session_factory = sessionmaker(bind=test_engine)
 
     def test_get_db():
-        session = TestSession()
+        session = test_session_factory()
         try:
             yield session
         finally:
@@ -30,16 +29,21 @@ def test_get_db_returns_session():
     session = next(gen)
     assert session is not None
     gen.close()
+    test_engine.dispose()
 
 
 def test_tables_created_on_init():
     """测试表在初始化时创建。"""
-    from app.database import init_db
     from sqlalchemy import create_engine
 
-    test_engine = create_engine("sqlite:///:memory:")
-    init_db(test_engine)
+    from app.database import init_db
 
-    inspector = inspect(test_engine)
-    table_names = inspector.get_table_names()
-    assert isinstance(table_names, list)
+    test_engine = create_engine("sqlite:///:memory:")
+    try:
+        init_db(test_engine)
+
+        inspector = inspect(test_engine)
+        table_names = inspector.get_table_names()
+        assert isinstance(table_names, list)
+    finally:
+        test_engine.dispose()

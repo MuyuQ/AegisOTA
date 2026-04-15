@@ -1,15 +1,15 @@
 """调度与并发控制服务。"""
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
+from typing import List, Optional
 
-from sqlalchemy.orm import Session
 from sqlalchemy import and_, select
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models.device import Device, DeviceLease, DeviceStatus, LeaseStatus, DevicePool
-from app.models.run import RunSession, RunStatus, UpgradePlan
+from app.models.device import Device, DeviceLease, DevicePool, DeviceStatus, LeaseStatus
 from app.models.enums import RunPriority
+from app.models.run import RunSession, RunStatus, UpgradePlan
 from app.services.device_service import DeviceService
 
 
@@ -44,10 +44,12 @@ class SchedulerService:
 
             # 检查是否有活跃租约（在锁定状态下）
             active_lease = self.db.execute(
-                select(DeviceLease).where(
+                select(DeviceLease)
+                .where(
                     DeviceLease.device_id == device_id,
                     DeviceLease.lease_status == LeaseStatus.ACTIVE,
-                ).with_for_update()
+                )
+                .with_for_update()
             ).scalar_one_or_none()
 
             if active_lease:
@@ -85,11 +87,13 @@ class SchedulerService:
         try:
             # 使用 SELECT FOR UPDATE 锁定租约行
             lease = self.db.execute(
-                select(DeviceLease).where(
+                select(DeviceLease)
+                .where(
                     DeviceLease.device_id == device_id,
                     DeviceLease.run_id == run_id,
                     DeviceLease.lease_status == LeaseStatus.ACTIVE,
-                ).with_for_update()
+                )
+                .with_for_update()
             ).scalar_one_or_none()
 
             if not lease:
@@ -166,9 +170,7 @@ class SchedulerService:
 
     def get_next_run_to_schedule(self, pool_id: Optional[int] = None) -> Optional[RunSession]:
         """获取下一个待调度的任务（按优先级和 FIFO 排序）。"""
-        query = self.db.query(RunSession).filter(
-            RunSession.status == RunStatus.QUEUED
-        )
+        query = self.db.query(RunSession).filter(RunSession.status == RunStatus.QUEUED)
 
         # 如果指定了池 ID，只查询该池的任务
         if pool_id is not None:
@@ -200,20 +202,16 @@ class SchedulerService:
         devices = self.db.query(Device).filter_by(pool_id=pool_id).all()
 
         # 计算可用设备数（只有 IDLE 状态的设备）
-        available_devices = len([
-            d for d in devices
-            if d.status == DeviceStatus.IDLE
-        ])
+        available_devices = len([d for d in devices if d.status == DeviceStatus.IDLE])
 
         # 计算保留容量
         reserved_count = int(pool.max_parallel * pool.reserved_ratio)
         usable_count = pool.max_parallel - reserved_count
 
         # 计算当前正在使用的设备数（BUSY 或 RESERVED 状态）
-        used_count = len([
-            d for d in devices
-            if d.status in (DeviceStatus.BUSY, DeviceStatus.RESERVED)
-        ])
+        used_count = len(
+            [d for d in devices if d.status in (DeviceStatus.BUSY, DeviceStatus.RESERVED)]
+        )
 
         # 返回可用容量（不能超过保留后可用的数量）
         remaining = usable_count - used_count
@@ -282,9 +280,7 @@ class SchedulerService:
         )
 
         if min_battery:
-            query = query.filter(
-                Device.battery_level >= min_battery
-            )
+            query = query.filter(Device.battery_level >= min_battery)
 
         return query.first()
 
@@ -316,20 +312,27 @@ class SchedulerService:
 
     def get_next_run_to_execute(self) -> Optional[RunSession]:
         """获取下一个待执行的任务。"""
-        run = self.db.query(RunSession).filter(
-            RunSession.status == RunStatus.RESERVED
-        ).order_by(RunSession.created_at).first()
+        run = (
+            self.db.query(RunSession)
+            .filter(RunSession.status == RunStatus.RESERVED)
+            .order_by(RunSession.created_at)
+            .first()
+        )
 
         return run
 
     def cleanup_expired_leases(self) -> List[DeviceLease]:
         """清理过期租约。"""
-        expired_leases = self.db.query(DeviceLease).filter(
-            and_(
-                DeviceLease.lease_status == LeaseStatus.ACTIVE,
-                DeviceLease.expired_at < datetime.now(timezone.utc)
+        expired_leases = (
+            self.db.query(DeviceLease)
+            .filter(
+                and_(
+                    DeviceLease.lease_status == LeaseStatus.ACTIVE,
+                    DeviceLease.expired_at < datetime.now(timezone.utc),
+                )
             )
-        ).all()
+            .all()
+        )
 
         for lease in expired_leases:
             lease.lease_status = LeaseStatus.EXPIRED
@@ -351,12 +354,18 @@ class SchedulerService:
 
     def get_concurrent_run_count(self) -> int:
         """获取当前并发运行的任务数。"""
-        return self.db.query(RunSession).filter(
-            RunSession.status.in_([
-                RunStatus.RUNNING,
-                RunStatus.VALIDATING,
-            ])
-        ).count()
+        return (
+            self.db.query(RunSession)
+            .filter(
+                RunSession.status.in_(
+                    [
+                        RunStatus.RUNNING,
+                        RunStatus.VALIDATING,
+                    ]
+                )
+            )
+            .count()
+        )
 
     def can_start_new_run(self) -> bool:
         """检查是否可以启动新任务。"""

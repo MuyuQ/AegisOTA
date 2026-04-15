@@ -1,6 +1,7 @@
 """Worker CLI 命令。"""
 
 import signal
+
 import typer
 
 from app.database import SessionLocal
@@ -25,7 +26,9 @@ def signal_handler(signum, frame):
 def worker_start(
     poll_interval: int = typer.Option(5, "--poll", "-p", help="轮询间隔（秒）"),
     max_concurrent: int = typer.Option(5, "--concurrent", "-c", help="最大并发任务数"),
-    max_iterations: int = typer.Option(-1, "--max-iterations", "-n", help="最大迭代次数（-1 为无限）"),
+    max_iterations: int = typer.Option(
+        -1, "--max-iterations", "-n", help="最大迭代次数（-1 为无限）"
+    ),
     daemon: bool = typer.Option(False, "--daemon", "-d", help="守护进程模式"),
 ):
     """启动任务执行 Worker。"""
@@ -62,6 +65,7 @@ def worker_start(
         try:
             while _worker.running:
                 import time
+
                 time.sleep(1)
         except KeyboardInterrupt:
             _worker.stop()

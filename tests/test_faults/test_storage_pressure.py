@@ -2,9 +2,9 @@
 
 import pytest
 
-from app.faults.storage_pressure import StoragePressureFault
-from app.executors.run_context import RunContext
 from app.executors.mock_executor import MockADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.storage_pressure import StoragePressureFault
 
 
 @pytest.fixture
@@ -13,8 +13,7 @@ def mock_executor():
     executor = MockADBExecutor()
     # df 输出只返回数据行（模拟 | tail -1 的效果）
     executor.set_response(
-        "df /data",
-        stdout="/dev/block/dm-0  65536   32768     32768  50% /data\n"
+        "df /data", stdout="/dev/block/dm-0  65536   32768     32768  50% /data\n"
     )
     # dd 命令返回空输出（成功）
     executor.set_response("dd if=/dev/zero", stdout="")

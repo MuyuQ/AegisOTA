@@ -58,6 +58,7 @@ def with_transaction(auto_commit: bool = True) -> Callable[[Callable[..., T]], C
     Note:
         被装饰的方法必须接收一个名为 'db' 的 Session 参数。
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
@@ -94,6 +95,7 @@ def with_transaction(auto_commit: bool = True) -> Callable[[Callable[..., T]], C
                 raise
 
         return wrapper
+
     return decorator
 
 
@@ -104,12 +106,7 @@ class TransactionalMixin:
     """
 
     def _execute_in_transaction(
-        self,
-        db: Session,
-        operation: Callable[..., T],
-        *args,
-        auto_commit: bool = True,
-        **kwargs
+        self, db: Session, operation: Callable[..., T], *args, auto_commit: bool = True, **kwargs
     ) -> T:
         """在事务中执行操作。
 

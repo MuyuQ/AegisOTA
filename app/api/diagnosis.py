@@ -4,31 +4,31 @@
 """
 
 from datetime import datetime
-from pathlib import Path
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.diagnosis.loader import DiagnosticRule as DiagnosticRulePydantic
 from app.diagnosis.similar import SimilarCaseService
 from app.executors.adb_executor import ADBExecutor
 from app.models.diagnostic import (
     DiagnosticResult,
-    DiagnosticRule as DiagnosticRuleModel,
     NormalizedEvent,
     RuleHit,
     SimilarCaseIndex,
+)
+from app.models.diagnostic import (
+    DiagnosticRule as DiagnosticRuleModel,
 )
 from app.models.run import RunSession
 from app.services.diagnosis_service import DiagnosisService
 from app.services.log_export_service import LogExportService
 
-router = APIRouter(prefix="/api/diagnosis", tags=["diagnosis"])
+router = APIRouter(prefix="/api/v1/diagnosis", tags=["diagnosis"])
 
 
 # === Pydantic 响应模型 ===
@@ -338,9 +338,7 @@ async def trigger_diagnosis(
     对指定任务执行诊断流程，包括日志解析、规则匹配和结果生成。
     """
     # 检查任务是否存在
-    run_session = db.execute(
-        select(RunSession).where(RunSession.id == run_id)
-    ).scalar_one_or_none()
+    run_session = db.execute(select(RunSession).where(RunSession.id == run_id)).scalar_one_or_none()
 
     if not run_session:
         raise HTTPException(status_code=404, detail="Run session not found")
@@ -375,9 +373,7 @@ async def export_logs_from_device(
     使用 ADB 从设备拉取 recovery、update_engine、logcat 等日志文件。
     """
     # 检查任务是否存在
-    run_session = db.execute(
-        select(RunSession).where(RunSession.id == run_id)
-    ).scalar_one_or_none()
+    run_session = db.execute(select(RunSession).where(RunSession.id == run_id)).scalar_one_or_none()
 
     if not run_session:
         raise HTTPException(status_code=404, detail="Run session not found")
@@ -390,10 +386,7 @@ async def export_logs_from_device(
         device_serial = run_session.assigned_device_serial
 
     if not device_serial:
-        raise HTTPException(
-            status_code=400,
-            detail="No device associated with this run session"
-        )
+        raise HTTPException(status_code=400, detail="No device associated with this run session")
 
     # 执行日志导出
     service = LogExportService(db, ADBExecutor())
@@ -449,6 +442,7 @@ async def export_diagnosis_report(
 
     # 保存临时文件
     from app.config import get_settings
+
     settings = get_settings()
     temp_dir = settings.ARTIFACTS_DIR / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -492,20 +486,24 @@ def _generate_markdown_report(
     ]
 
     if result.next_action:
-        lines.extend([
-            "## 建议操作",
-            "",
-            result.next_action,
-            "",
-        ])
+        lines.extend(
+            [
+                "## 建议操作",
+                "",
+                result.next_action,
+                "",
+            ]
+        )
 
     # 关键证据
     key_evidence = result.get_key_evidence()
     if key_evidence:
-        lines.extend([
-            "## 关键证据",
-            "",
-        ])
+        lines.extend(
+            [
+                "## 关键证据",
+                "",
+            ]
+        )
         for i, evidence in enumerate(key_evidence, 1):
             raw_line = evidence.get("raw_line", "")
             lines.append(f"{i}. `{raw_line}`")
@@ -513,12 +511,14 @@ def _generate_markdown_report(
 
     # 规则命中记录
     if rule_hits:
-        lines.extend([
-            "## 规则命中记录",
-            "",
-            "| 规则ID | 规则名称 | 优先级 | 匹配事件码 |",
-            "|--------|----------|--------|------------|",
-        ])
+        lines.extend(
+            [
+                "## 规则命中记录",
+                "",
+                "| 规则ID | 规则名称 | 优先级 | 匹配事件码 |",
+                "|--------|----------|--------|------------|",
+            ]
+        )
         for rh in rule_hits:
             codes = ", ".join(rh.get_matched_codes())
             lines.append(f"| {rh.rule_id} | {rh.rule_name} | {rh.priority} | {codes} |")
@@ -527,12 +527,14 @@ def _generate_markdown_report(
     # 相似案例
     similar_cases = result.get_similar_cases()
     if similar_cases:
-        lines.extend([
-            "## 相似历史案例",
-            "",
-            "| 任务ID | 设备SN | 分类 | 根因 | 相似度 |",
-            "|--------|--------|------|------|--------|",
-        ])
+        lines.extend(
+            [
+                "## 相似历史案例",
+                "",
+                "| 任务ID | 设备SN | 分类 | 根因 | 相似度 |",
+                "|--------|--------|------|------|--------|",
+            ]
+        )
         for case in similar_cases:
             lines.append(
                 f"| {case['run_id']} | {case['device_serial']} | "
@@ -543,12 +545,14 @@ def _generate_markdown_report(
 
     # 标准化事件
     if events:
-        lines.extend([
-            "## 标准化事件",
-            "",
-            "| 来源 | 阶段 | 类型 | 严重性 | 事件码 |",
-            "|------|------|------|--------|--------|",
-        ])
+        lines.extend(
+            [
+                "## 标准化事件",
+                "",
+                "| 来源 | 阶段 | 类型 | 严重性 | 事件码 |",
+                "|------|------|------|--------|--------|",
+            ]
+        )
         for e in events[:20]:  # 限制显示数量
             lines.append(
                 f"| {e.source_type} | {e.stage} | {e.event_type} | "
@@ -667,7 +671,7 @@ def _generate_html_report(
         <p><strong>根因标识:</strong> {result.root_cause}</p>
         <p><strong>置信度:</strong> {result.confidence:.1%}</p>
         <p><strong>诊断状态:</strong> {result.result_status}</p>
-        <p><strong>诊断时间:</strong> {result.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <p><strong>诊断时间:</strong> {result.created_at.strftime("%Y-%m-%d %H:%M:%S")}</p>
     </div>
 
     <h2>诊断结论</h2>
@@ -700,9 +704,7 @@ async def list_rules(
 
     支持按启用状态和故障分类过滤。
     """
-    stmt = select(DiagnosticRuleModel).order_by(
-        DiagnosticRuleModel.priority.desc()
-    )
+    stmt = select(DiagnosticRuleModel).order_by(DiagnosticRuleModel.priority.desc())
 
     if enabled is not None:
         stmt = stmt.where(DiagnosticRuleModel.enabled == enabled)
@@ -741,15 +743,12 @@ async def create_rule(
     """创建诊断规则。"""
     # 检查 rule_id 是否已存在
     existing = db.execute(
-        select(DiagnosticRuleModel).where(
-            DiagnosticRuleModel.rule_id == request.rule_id
-        )
+        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == request.rule_id)
     ).scalar_one_or_none()
 
     if existing:
         raise HTTPException(
-            status_code=400,
-            detail=f"Rule with rule_id '{request.rule_id}' already exists"
+            status_code=400, detail=f"Rule with rule_id '{request.rule_id}' already exists"
         )
 
     # 创建新规则
@@ -800,9 +799,7 @@ async def update_rule(
     """更新诊断规则。"""
     # 查找规则
     rule = db.execute(
-        select(DiagnosticRuleModel).where(
-            DiagnosticRuleModel.rule_id == rule_id
-        )
+        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == rule_id)
     ).scalar_one_or_none()
 
     if not rule:
@@ -862,9 +859,7 @@ async def delete_rule(
     """删除诊断规则。"""
     # 查找规则
     rule = db.execute(
-        select(DiagnosticRuleModel).where(
-            DiagnosticRuleModel.rule_id == rule_id
-        )
+        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == rule_id)
     ).scalar_one_or_none()
 
     if not rule:
@@ -930,24 +925,19 @@ async def search_similar_cases(
 
         # 搜索诊断结果的关键证据
         if run_ids:
-            results = db.execute(
-                select(DiagnosticResult).where(
-                    DiagnosticResult.run_id.in_(run_ids)
-                )
-            ).scalars().all()
+            results = (
+                db.execute(select(DiagnosticResult).where(DiagnosticResult.run_id.in_(run_ids)))
+                .scalars()
+                .all()
+            )
 
             # 过滤包含关键词的结果
             filtered_indices = []
             for idx in indices:
-                result = next(
-                    (r for r in results if r.run_id == idx.run_id),
-                    None
-                )
+                result = next((r for r in results if r.run_id == idx.run_id), None)
                 if result:
                     key_evidence = result.get_key_evidence()
-                    evidence_text = " ".join(
-                        e.get("raw_line", "") for e in key_evidence
-                    )
+                    evidence_text = " ".join(e.get("raw_line", "") for e in key_evidence)
                     if keywords.lower() in evidence_text.lower():
                         filtered_indices.append(idx)
 

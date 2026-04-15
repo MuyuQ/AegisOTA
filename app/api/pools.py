@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Form, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -11,8 +11,7 @@ from app.models.device import Device
 from app.models.enums import PoolPurpose
 from app.services.pool_service import PoolService
 
-
-router = APIRouter(prefix="/api/pools", tags=["pools"])
+router = APIRouter(prefix="/api/v1/pools", tags=["pools"])
 
 
 class PoolCreate(BaseModel):
@@ -111,7 +110,7 @@ async def create_pool(
     except ValueError:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid purpose '{request.purpose}'. Valid values: stable, stress, emergency"
+            detail=f"Invalid purpose '{request.purpose}'. Valid values: stable, stress, emergency",
         )
 
     try:

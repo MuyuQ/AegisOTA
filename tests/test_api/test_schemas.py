@@ -1,11 +1,9 @@
 """API schemas 测试。"""
 
-import pytest
-
 from app.api.schemas import (
-    PaginationInfo,
-    PaginatedResponse,
     ErrorResponse,
+    PaginatedResponse,
+    PaginationInfo,
     SuccessResponse,
 )
 

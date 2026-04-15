@@ -1,10 +1,10 @@
 """低电量注入插件。"""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from app.faults.base import FaultPlugin, FaultResult
-from app.executors.run_context import RunContext
 from app.executors.adb_executor import ADBExecutor
+from app.executors.run_context import RunContext
+from app.faults.base import FaultPlugin, FaultResult
 
 
 class LowBatteryFault(FaultPlugin):
@@ -50,6 +50,7 @@ class LowBatteryFault(FaultPlugin):
         )
 
         import re
+
         match = re.search(r"level: (\d+)", result.stdout)
         if match:
             self._original_level = int(match.group(1))
@@ -111,7 +112,11 @@ class LowBatteryFault(FaultPlugin):
         restore_level = self._original_level or self.DEFAULT_RESTORE_LEVEL
 
         result = self.executor.shell(
-            f"dumpsys battery reset && dumpsys battery set level {restore_level} && dumpsys battery plug",
+            (
+                f"dumpsys battery reset && "
+                f"dumpsys battery set level {restore_level} && "
+                f"dumpsys battery plug"
+            ),
             device=context.device_serial,
         )
 

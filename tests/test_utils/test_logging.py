@@ -1,16 +1,15 @@
 """结构化日志测试。"""
 
-import logging
-import pytest
 import json
+import logging
 
 from app.utils.logging import (
-    setup_logging,
-    StructuredFormatter,
-    DebugFormatter,
     ContextLogger,
+    DebugFormatter,
     RunLogger,
+    StructuredFormatter,
     get_logger,
+    setup_logging,
 )
 
 

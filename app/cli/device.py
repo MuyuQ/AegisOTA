@@ -10,12 +10,29 @@ from rich.console import Console
 from rich.table import Table
 
 from app.database import SessionLocal, init_db
+from app.executors.mock_executor import MockExecutor
 from app.models import Device, DeviceStatus
 from app.services.device_service import DeviceService
-from app.executors.mock_executor import MockExecutor
 
 app = typer.Typer(help="设备管理命令")
 console = Console()
+
+
+def get_device_status_info(device):
+    """获取设备状态信息。"""
+    status_value = device.status.value if hasattr(device.status, "value") else str(device.status)
+    status_style = {
+        DeviceStatus.IDLE: "green",
+        DeviceStatus.BUSY: "yellow",
+        DeviceStatus.OFFLINE: "red",
+        DeviceStatus.QUARANTINED: "red",
+        DeviceStatus.RECOVERING: "blue",
+    }.get(
+        device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status),
+        "white",
+    )
+
+    return status_value, status_style
 
 
 @app.command("sync")
@@ -46,15 +63,7 @@ def sync_devices():
             table.add_column("最后在线", style="magenta")
 
             for device in devices:
-                # 获取状态值（处理枚举或字符串）
-                status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
-                status_style = {
-                    DeviceStatus.IDLE: "green",
-                    DeviceStatus.BUSY: "yellow",
-                    DeviceStatus.OFFLINE: "red",
-                    DeviceStatus.QUARANTINED: "red",
-                    DeviceStatus.RECOVERING: "blue",
-                }.get(device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status), "white")
+                status_value, status_style = get_device_status_info(device)
 
                 table.add_row(
                     device.serial,
@@ -74,9 +83,7 @@ def sync_devices():
 
 @app.command("list")
 def list_devices(
-    status: Optional[str] = typer.Option(
-        None, "--status", "-s", help="按状态筛选设备"
-    ),
+    status: Optional[str] = typer.Option(None, "--status", "-s", help="按状态筛选设备"),
     tag: Optional[str] = typer.Option(None, "--tag", "-t", help="按标签筛选设备"),
 ):
     """列出所有设备。
@@ -121,15 +128,7 @@ def list_devices(
         table.add_column("标签", style="white")
 
         for device in devices:
-            # 获取状态值（处理枚举或字符串）
-            status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
-            status_style = {
-                DeviceStatus.IDLE: "green",
-                DeviceStatus.BUSY: "yellow",
-                DeviceStatus.OFFLINE: "red",
-                DeviceStatus.QUARANTINED: "red",
-                DeviceStatus.RECOVERING: "blue",
-            }.get(device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status), "white")
+            status_value, status_style = get_device_status_info(device)
 
             table.add_row(
                 str(device.id),
@@ -153,9 +152,7 @@ def list_devices(
 @app.command("quarantine")
 def quarantine_device(
     serial: str = typer.Argument(..., help="设备序列号"),
-    reason: str = typer.Option(
-        "手动隔离", "--reason", "-r", help="隔离原因"
-    ),
+    reason: str = typer.Option("手动隔离", "--reason", "-r", help="隔离原因"),
 ):
     """隔离设备。
 
@@ -199,7 +196,7 @@ def recover_device(
             typer.echo(f"设备不存在: {serial}", err=True)
             raise typer.Exit(1)
 
-        status_value = device.status.value if hasattr(device.status, 'value') else str(device.status)
+        status_value, _ = get_device_status_info(device)
         typer.echo(f"设备 {serial} 已恢复，当前状态: {status_value}")
 
     finally:

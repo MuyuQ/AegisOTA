@@ -6,7 +6,7 @@
 import re
 from typing import Optional
 
-from app.parsers.base import BaseParser, Stage, SourceType, EventType, Severity
+from app.parsers.base import BaseParser, EventType, Severity, SourceType, Stage
 
 
 class MonkeyParser(BaseParser):
