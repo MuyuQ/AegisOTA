@@ -58,22 +58,6 @@ class CommandRunner(ABC):
         """
         pass
 
-    def run_with_retry(
-        self,
-        command: Union[str, List[str]],
-        max_retries: int = 3,
-        retry_delay: int = 1,
-        timeout: Optional[int] = None,
-    ) -> CommandResult:
-        """带重试的命令执行。"""
-        for attempt in range(max_retries):
-            result = self.run(command, timeout=timeout)
-            if result.success:
-                return result
-            if attempt < max_retries - 1:
-                time.sleep(retry_delay)
-        return result
-
 
 class ShellCommandRunner(CommandRunner):
     """真实 shell 命令执行器。"""

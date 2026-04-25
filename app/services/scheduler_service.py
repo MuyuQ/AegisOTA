@@ -1,9 +1,9 @@
 """调度与并发控制服务。"""
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Optional
 
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -217,11 +217,6 @@ class SchedulerService:
         remaining = usable_count - used_count
         return max(0, min(remaining, available_devices))
 
-    def get_pool_used_capacity(self, pool_id: int) -> int:
-        """获取设备池的已用容量。"""
-        devices = self.db.query(Device).filter_by(pool_id=pool_id).all()
-        return len([d for d in devices if d.status == DeviceStatus.BUSY])
-
     def allocate_device_for_run(
         self,
         run_id: int,
@@ -320,37 +315,6 @@ class SchedulerService:
         )
 
         return run
-
-    def cleanup_expired_leases(self) -> List[DeviceLease]:
-        """清理过期租约。"""
-        expired_leases = (
-            self.db.query(DeviceLease)
-            .filter(
-                and_(
-                    DeviceLease.lease_status == LeaseStatus.ACTIVE,
-                    DeviceLease.expired_at < datetime.now(timezone.utc),
-                )
-            )
-            .all()
-        )
-
-        for lease in expired_leases:
-            lease.lease_status = LeaseStatus.EXPIRED
-
-            # 设备进入恢复状态
-            device = self.db.query(Device).filter_by(id=lease.device_id).first()
-            if device:
-                device.status = DeviceStatus.RECOVERING
-                device.current_run_id = None
-
-            # 任务进入失败状态
-            run = self.db.query(RunSession).filter_by(id=lease.run_id).first()
-            if run:
-                run.status = RunStatus.FAILED
-                run.failure_category = "lease_expired"
-
-        self.db.commit()
-        return expired_leases
 
     def get_concurrent_run_count(self) -> int:
         """获取当前并发运行的任务数。"""

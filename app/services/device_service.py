@@ -93,10 +93,6 @@ class DeviceService:
         """通过序列号获取设备。"""
         return self.db.query(Device).filter_by(serial=serial).first()
 
-    def get_device_by_id(self, device_id: int) -> Optional[Device]:
-        """通过 ID 获取设备。"""
-        return self.db.query(Device).filter_by(id=device_id).first()
-
     def get_available_devices(
         self,
         tags: Optional[List[str]] = None,

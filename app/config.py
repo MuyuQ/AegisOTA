@@ -73,14 +73,6 @@ class Settings(BaseSettings):
         (self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
         (self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
 
-    def get_full_package_path(self) -> Path:
-        """获取全量包目录路径。"""
-        return self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR
-
-    def get_incremental_package_path(self) -> Path:
-        """获取差分包目录路径。"""
-        return self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR
-
 
 @lru_cache
 def get_settings() -> Settings:

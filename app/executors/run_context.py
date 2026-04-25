@@ -78,7 +78,3 @@ class RunContext:
     def set_step_result(self, step_name: str, result: Dict[str, Any]):
         """设置步骤结果。"""
         self.step_results[step_name] = result
-
-    def get_step_result(self, step_name: str) -> Optional[Dict[str, Any]]:
-        """获取步骤结果。"""
-        return self.step_results.get(step_name)
