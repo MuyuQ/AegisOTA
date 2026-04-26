@@ -255,12 +255,19 @@ class SchedulerService:
         if not device:
             return None
 
-        # 更新设备状态为 RESERVED
-        device.status = DeviceStatus.RESERVED
-        device.current_run_id = run.id
+        # 通过 acquire_device_lease 创建正式租约并更新 run.device_id
+        lease = self.acquire_device_lease(
+            device_id=device.id,
+            run_id=run_id,
+            preemptible=True,
+        )
+        if not lease:
+            # 租约获取失败（设备可能被其他请求抢占）
+            return None
 
-        # 更新任务状态为 ALLOCATING
-        run.status = RunStatus.ALLOCATING
+        # 更新任务状态为 RUNNING（已完成分配，直接进入执行）
+        run.status = RunStatus.RUNNING
+        run.device_id = device.id
 
         self.db.commit()
         return device

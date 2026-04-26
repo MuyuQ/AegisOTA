@@ -71,6 +71,9 @@ class RunService:
         created_by: Optional[str] = None,
     ) -> UpgradePlan:
         """创建升级计划。"""
+        # 校验包路径合法性
+        self.validate_package_path(package_path)
+
         plan = UpgradePlan(
             name=name,
             upgrade_type=upgrade_type,
@@ -117,6 +120,7 @@ class RunService:
         if upgrade_type is not None:
             plan.upgrade_type = upgrade_type
         if package_path is not None:
+            self.validate_package_path(package_path)
             plan.package_path = package_path
         if source_build is not None:
             plan.source_build = source_build
