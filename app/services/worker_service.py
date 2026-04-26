@@ -64,22 +64,37 @@ class WorkerService:
             self._thread = None
 
     def _run_loop(self):
-        """主循环。"""
+        """主循环。
+
+        在后台线程中创建独立的数据库会话，避免跨线程复用 Session。
+        """
+        from app.database import SessionLocal
+
         iterations = 0
 
-        while self.running:
-            if self.max_iterations > 0 and iterations >= self.max_iterations:
-                break
+        # 在当前线程创建独立 session
+        thread_db = SessionLocal()
+        try:
+            # 用线程 session 重新初始化依赖的服务
+            self.db = thread_db
+            self.scheduler = SchedulerService(thread_db)
+            self.run_service = RunService(thread_db)
 
-            try:
-                self.process_one_iteration()
-            except Exception as e:
-                print(f"Worker iteration error: {e}")
+            while self.running:
+                if self.max_iterations > 0 and iterations >= self.max_iterations:
+                    break
 
-            iterations += 1
+                try:
+                    self.process_one_iteration()
+                except Exception as e:
+                    print(f"Worker iteration error: {e}")
 
-            if self.running:
-                time.sleep(self.poll_interval)
+                iterations += 1
+
+                if self.running:
+                    time.sleep(self.poll_interval)
+        finally:
+            thread_db.close()
 
     def process_one_iteration(self) -> Optional[RunSession]:
         """处理一个任务。"""

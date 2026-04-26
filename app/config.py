@@ -73,6 +73,14 @@ class Settings(BaseSettings):
         (self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
         (self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
 
+        # P0-6: API Key 认证启用但无 key 时 fail fast（除非 DEBUG 模式）
+        if self.API_KEY_ENABLED and not self.API_KEYS and not self.DEBUG:
+            raise RuntimeError(
+                "API_KEY_ENABLED=True 但 API_KEYS 为空。"
+                "请通过 AEGISOTA_API_KEYS 环境变量配置有效 API Keys，"
+                "或设置 AEGISOTA_DEBUG=True 跳过认证（仅开发环境）。"
+            )
+
     def get_full_package_path(self) -> Path:
         """获取全量包目录路径。"""
         return self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR

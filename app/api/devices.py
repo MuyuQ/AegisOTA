@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -505,7 +505,7 @@ async def get_device_health_detail(
     run_stats = (
         db.query(
             func.count(RunSession.id),
-            func.sum(func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
+            func.sum(case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
         )
         .filter(RunSession.device_id == device.id)
         .first()
