@@ -379,6 +379,376 @@ alembic upgrade head
 - 调整调度策略：优先查看 `run_service`、`scheduler_service`、`worker_service` 和 `preemption_service`。
 - 调整诊断能力：同步维护 `app/rules/core_rules.yaml`、解析器、诊断服务和报告模板。
 
+## 端到端使用示例
+
+以下示例演示从设备连接到任务执行、故障注入、报告生成的完整流程。
+
+### 1. 连接设备并同步
+
+```bash
+# 确认 ADB 已识别设备
+adb devices
+
+# 同步设备到平台
+labctl device sync
+
+# 查看设备列表
+labctl device list
+```
+
+### 2. 初始化设备池
+
+```bash
+# 初始化默认设备池
+labctl pool init
+
+# 创建设备池
+labctl pool create --name stable --purpose stable --reserved-ratio 0.2 --max-parallel 5
+```
+
+### 3. 创建升级计划并下发任务
+
+```bash
+# 通过 REST 接口创建升级计划
+curl -X POST http://localhost:8000/api/v1/runs/plans \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Android 15 全量升级",
+    "upgrade_type": "full",
+    "package_path": "ota_packages/full/update.zip",
+    "target_build": "android15-userdebug",
+    "default_pool_id": 1,
+    "parallelism": 1
+  }'
+
+# 创建任务（指定设备序列号）
+curl -X POST http://localhost:8000/api/v1/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_id": 1,
+    "device_serial": "ABC123XYZ"
+  }'
+```
+
+### 4. 启动后台执行器
+
+```bash
+# 启动持续监听任务的 worker
+labctl worker start
+```
+
+### 5. 注入故障（可选）
+
+在升级计划中指定故障类型，例如在升级后执行 Monkey 压测：
+
+```json
+{
+  "plan_id": 1,
+  "device_serial": "ABC123XYZ",
+  "options": {
+    "fault_plugins": ["monkey_after_upgrade", "storage_pressure"]
+  }
+}
+```
+
+### 6. 查看任务状态与报告
+
+```bash
+# 查看任务列表
+labctl run list
+
+# 导出 Markdown 报告
+labctl report export 1 --format markdown --output report.md
+
+# 导出 HTML 报告
+labctl report export 1 --format html --output report.html
+```
+
+## 环境变量配置示例
+
+在项目根目录创建 `.env` 文件，填入以下配置：
+
+```env
+# 数据库配置
+AEGISOTA_DATABASE_URL=sqlite:///./aegisota.db
+
+# 产物与 OTA 包存储路径
+AEGISOTA_ARTIFACTS_DIR=artifacts
+AEGISOTA_OTA_PACKAGES_DIR=ota_packages
+
+# 任务并发与租约
+AEGISOTA_MAX_CONCURRENT_RUNS=5
+AEGISOTA_LEASE_DEFAULT_DURATION=3600
+
+# API 密钥配置
+AEGISOTA_API_KEY_ENABLED=true
+AEGISOTA_API_KEYS=your-secret-key-here,another-key-if-needed
+
+# 日志级别
+AEGISOTA_LOG_LEVEL=INFO
+
+# 可选：ADB 路径（如未加入系统 PATH）
+# AEGISOTA_ADB_PATH=/path/to/adb
+
+# 可选：设备标签过滤
+# AEGISOTA_DEVICE_TAG_FILTER=android14,pixel
+
+# 可选：任务轮询间隔（秒）
+# AEGISOTA_WORKER_POLL_INTERVAL=5
+```
+
+应用启动时会自动加载 `.env` 文件，所有配置均通过 `app.config.Settings` 管理。
+
+## ADB 验证步骤
+
+在执行 OTA 任务之前，请确保 ADB 连接正常：
+
+### 1. 检查设备连接
+
+```bash
+adb devices
+```
+
+预期输出：
+
+```text
+List of devices attached
+ABC123XYZ    device
+DEF456UVW    device
+```
+
+### 2. 验证设备信息
+
+```bash
+# 查看设备型号
+adb -s ABC123XYZ shell getprop ro.product.model
+
+# 查看系统版本
+adb -s ABC123XYZ shell getprop ro.build.version.release
+
+# 查看电量状态
+adb -s ABC123XYZ dumpsys battery
+
+# 查看存储使用情况
+adb -s ABC123XYZ shell df /data
+```
+
+### 3. 验证 USB 调试授权
+
+如果设备显示 `unauthorized`，请在设备屏幕上点击允许 USB 调试：
+
+```bash
+adb devices
+# 状态应从 unauthorized 变为 device
+```
+
+### 4. 同步设备到平台
+
+```bash
+labctl device sync
+labctl device list
+```
+
+确认设备状态为 `idle` 后即可参与任务调度。
+
+### 5. 常见问题排查
+
+| 问题 | 解决方法 |
+| --- | --- |
+| 设备未显示 | 检查 USB 连接、开发者选项、USB 调试开关 |
+| `no permissions` | 执行 `adb kill-server && adb start-server` |
+| `offline` 状态 | 重新插拔 USB 或在设备上撤销并重新授权调试 |
+| 多设备命令混淆 | 使用 `-s <serial>` 指定目标设备 |
+
+## 系统架构
+
+```mermaid
+graph TB
+    subgraph "用户界面"
+        Web[网页控制台<br/>Jinja2 + HTMX]
+        CLI[labctl CLI<br/>Typer]
+        API_Client[REST API 调用方]
+    end
+
+    subgraph "FastAPI 服务层"
+        Router[路由层]
+        Auth[API Key 中间件]
+        CSRF[CSRF 保护]
+    end
+
+    subgraph "业务服务层"
+        DeviceSvc[设备服务]
+        PoolSvc[设备池服务]
+        RunSvc[任务服务]
+        Scheduler[调度服务]
+        Preemption[抢占服务]
+        Worker[后台执行器]
+    end
+
+    subgraph "OTA 执行引擎"
+        Executor[RunExecutor]
+        Precheck[Precheck]
+        PkgPrep[Package Prepare]
+        Apply[Apply Update]
+        Reboot[Reboot Wait]
+        PostVal[Post Validate]
+        Report[Report Finalize]
+    end
+
+    subgraph "插件体系"
+        Faults[故障注入插件]
+        Validators[验证器]
+        Parsers[日志解析器]
+    end
+
+    subgraph "诊断与报告"
+        DiagEngine[诊断规则引擎]
+        LogParser[日志解析]
+        SimilarCase[相似案例召回]
+        ReportGen[报告生成器]
+    end
+
+    subgraph "持久化"
+        SQLite[(SQLite)]
+        Artifacts[产物存储<br/>artifacts/]
+        OtaPkgs[OTA 包存储]
+    end
+
+    subgraph "外部系统"
+        ADB[ADB / Fastboot]
+        AndroidDevice[Android 设备]
+    end
+
+    Web --> Router
+    CLI --> Router
+    API_Client --> Router
+    Router --> Auth
+    Router --> CSRF
+    Auth --> DeviceSvc
+    Auth --> PoolSvc
+    Auth --> RunSvc
+    Router --> Scheduler
+    Scheduler --> Worker
+    Worker --> Executor
+    RunSvc --> Scheduler
+    Preemption --> PoolSvc
+
+    Executor --> Precheck
+    Precheck --> PkgPrep
+    PkgPrep --> Apply
+    Apply --> Reboot
+    Reboot --> PostVal
+    PostVal --> Report
+
+    Executor --> Faults
+    PostVal --> Validators
+    Executor --> Parsers
+
+    Report --> DiagEngine
+    DiagEngine --> LogParser
+    DiagEngine --> SimilarCase
+    DiagEngine --> ReportGen
+
+    DeviceSvc --> SQLite
+    PoolSvc --> SQLite
+    RunSvc --> SQLite
+    DiagEngine --> SQLite
+    ReportGen --> Artifacts
+    PkgPrep --> OtaPkgs
+
+    Executor --> ADB
+    ADB --> AndroidDevice
+    Validators --> ADB
+    Faults --> ADB
+```
+
+## 贡献指南
+
+感谢你对 AegisOTA 的关注！我们欢迎各种形式的贡献。
+
+### 开发环境搭建
+
+1. **Fork 并克隆仓库**
+
+```bash
+git clone https://github.com/YOUR_USERNAME/AegisOTA.git
+cd AegisOTA
+```
+
+2. **安装依赖**
+
+```bash
+uv sync
+```
+
+3. **运行测试确认环境正常**
+
+```bash
+pytest
+```
+
+### 提交类型
+
+| 类型 | 说明 |
+| --- | --- |
+| `feat` | 新功能 |
+| `fix` | 缺陷修复 |
+| `docs` | 文档更新 |
+| `style` | 代码格式调整（不影响逻辑） |
+| `refactor` | 代码重构 |
+| `test` | 测试相关 |
+| `chore` | 构建、配置、工具链等 |
+
+### 代码规范
+
+- 使用 `snake_case` 命名模块和函数，`PascalCase` 命名类。
+- 新增 Python 代码需包含类型注解。
+- 用户可见文本和文档使用中文。
+- 保持分层清晰：`api → services → executors/models/utils`。
+- 不要绕过 `app.config.Settings`，新配置项使用 `AEGISOTA_` 前缀。
+- 任务产物输出到 `artifacts/` 目录，不写入其他路径。
+
+### 提交前检查
+
+```bash
+# 格式化
+ruff format app tests
+
+# 静态检查
+ruff check app tests
+
+# 类型检查
+mypy app tests
+
+# 运行测试
+pytest
+```
+
+### Pull Request 流程
+
+1. 从 `main` 分支创建特性分支：`git checkout -b feat/your-feature`
+2. 提交更改并编写清晰的 commit message
+3. 确保所有测试通过且 lint 检查无误
+4. 推送到你的 Fork 仓库并提交 Pull Request
+5. 在 PR 中说明变更内容、动机和相关 issue 编号
+
+### 添加新功能
+
+- **故障插件**：在 `app/faults/` 下实现，遵循 `FaultPlugin` 生命周期，并在测试中添加用例。
+- **验证器**：放在 `app/validators/`，返回结构化验证结果。
+- **日志解析器**：放在 `app/parsers/`，输出可诊断的归一化事件。
+- **API 端点**：请求/响应模型放在 `app/api/schemas.py`，路由保持简洁，业务逻辑放入服务层。
+- **调度/执行器变更**：同时审查 `run_service`、`scheduler_service`、`worker_service`、`preemption_service`，注意状态机和租约生命周期。
+
+###  issue 提交
+
+提交 issue 时请包含：
+
+- 问题描述和复现步骤
+- 预期行为与实际行为
+- 相关日志或截图
+- 环境信息（Python 版本、OS、ADB 版本等）
+
 ## 许可证
 
 MIT 许可证

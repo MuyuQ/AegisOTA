@@ -1,33 +1,42 @@
-# agent.md
+# AGENTS.md
 
-This file provides guidance to a coding agent working in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
-## Project Summary
+## Project Overview
 
 AegisOTA is an Android OTA upgrade exception injection and multi-device verification platform.
 
-The repository combines:
+## Technology Stack
 
-- A FastAPI control plane for API and web pages
-- A Typer-based CLI entrypoint exposed as `labctl`
-- A worker/executor layer for OTA task orchestration
-- Fault injection plugins, validators, parsers, diagnosis, and reporting
+- **Language:** Python 3.10+
+- **Web Framework:** FastAPI
+- **Database:** SQLite + SQLAlchemy 2.0
+- **CLI:** Typer
+- **Frontend:** Jinja2 + HTMX
+- **Package Manager:** uv
 
-## Tech Stack
+## Quick Commands
 
-- Python 3.10+
-- FastAPI
-- SQLAlchemy 2.0
-- SQLite
-- Typer
-- Jinja2 + HTMX
-- Pytest
-- Ruff
-- uv
+```bash
+# Run tests
+pytest
 
-## Repo Map
+# Format code
+ruff format app/
 
-```text
+# Lint code
+ruff check app/
+
+# Start dev server
+uvicorn app.main:app --reload
+
+# CLI
+labctl --help
+```
+
+## Architecture
+
+```
 app/
 ├── api/            # REST API and web routes
 ├── cli/            # labctl CLI commands
@@ -52,50 +61,44 @@ artifacts/
 ota_packages/
 ```
 
-## Core Domain Concepts
+## Core Concepts
 
-- Run status flow: `queued -> allocating -> reserved -> running -> validating -> passed|failed|aborted`
-- Execution stages: `precheck -> package_prepare -> apply_update -> reboot_wait -> post_validate`
-- Device pools: `stable`, `stress`, `emergency`
-- Fault plugins typically implement `prepare()`, `inject()`, `cleanup()`
-- Diagnosis is rule-driven and uses parsers plus similarity lookup
+### State Machines
 
-## Important Files
+**Task States:** `queued -> allocating -> reserved -> running -> validating -> passed/failed/aborted`
 
-- `app/main.py`: app wiring, middleware, router registration, static/templates
-- `app/config.py`: environment-driven settings with `AEGISOTA_` prefix
-- `app/executors/run_executor.py`: main OTA execution flow
-- `app/executors/step_handlers.py`: per-stage logic
-- `app/services/run_service.py`: run lifecycle orchestration
-- `app/services/scheduler_service.py`: queueing and scheduling behavior
-- `app/services/preemption_service.py`: device preemption logic
-- `app/diagnosis/engine.py`: diagnosis rule engine
-- `app/reporting/generator.py`: report generation
-- `app/rules/core_rules.yaml`: built-in diagnosis rules
+**Execution Stages:** `precheck -> package_prepare -> apply_update -> reboot_wait -> post_validate`
 
-## Local Commands
+### Device Pools
 
-```bash
-# Install
-uv pip install -e ".[dev]"
+- **stable**: Stable testing pool
+- **stress**: Stress testing pool  
+- **emergency**: Emergency pool with preemption capability
 
-# Run app
-uvicorn app.main:app --reload
+### Fault Injection
 
-# CLI help
-labctl --help
+Plugins implement `prepare()`, `inject()`, `cleanup()` methods.
 
-# Tests
-pytest
-pytest --cov=app
+Built-in faults: `low_battery`, `storage_pressure`, `download_interrupted`, `reboot_interrupted`, `monkey_after_upgrade`, etc.
 
-# Lint / format
-ruff check app tests
-ruff format app tests
+### Diagnosis (TraceLens)
 
-# Database migration
-alembic upgrade head
-```
+- Log parsers: `recovery`, `update_engine`, `logcat`, `monkey`
+- Rule-based diagnostic engine
+- Similar case retrieval using RapidFuzz
+
+## Key Files
+
+- `app/main.py` - app wiring, middleware, router registration, static/templates
+- `app/config.py` - environment-driven settings with `AEGISOTA_` prefix
+- `app/executors/run_executor.py` - main OTA execution flow
+- `app/executors/step_handlers.py` - per-stage logic
+- `app/services/run_service.py` - run lifecycle orchestration
+- `app/services/scheduler_service.py` - queueing and scheduling behavior
+- `app/services/preemption_service.py` - device preemption logic
+- `app/diagnosis/engine.py` - diagnosis rule engine
+- `app/reporting/generator.py` - report generation
+- `app/rules/core_rules.yaml` - built-in diagnosis rules
 
 ## Working Rules
 
@@ -142,6 +145,19 @@ alembic upgrade head
 - Keep rule files, parser output, classifier logic, and report rendering aligned.
 - Update fixtures/tests for realistic logs when behavior changes.
 
+## Testing
+
+```bash
+# All tests
+pytest
+
+# With coverage
+pytest --cov=app
+
+# Specific test file
+pytest tests/test_executors/test_run_executor.py -v
+```
+
 ## Validation Checklist
 
 Before finishing a change, run the smallest relevant test set first, then broaden if needed.
@@ -161,10 +177,3 @@ Run full `pytest` when the change crosses module boundaries.
 - API key auth is only applied to `/api/*` and depends on configured keys; web routes are intentionally looser.
 - The repo may contain a local SQLite database file (`aegisota.db`); do not rely on committed DB state for correctness.
 - There are user changes in the worktree at times; avoid reverting unrelated files.
-
-## Read First For Common Tasks
-
-- New API or page flow: `app/main.py`, `app/api/`, `app/services/`
-- OTA execution changes: `app/executors/`, `app/faults/`, `app/validators/`
-- Diagnosis changes: `app/parsers/`, `app/diagnosis/`, `app/rules/core_rules.yaml`
-- Report/export changes: `app/reporting/`, `app/services/report_service.py`, `app/services/log_export_service.py`
