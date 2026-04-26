@@ -1,6 +1,7 @@
 """任务管理业务逻辑。"""
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session, joinedload
@@ -15,6 +16,48 @@ class RunService:
     def __init__(self, db: Session):
         self.db = db
         self.settings = get_settings()
+
+    def validate_package_path(self, package_path: str) -> None:
+        """校验 OTA 包路径：必须在 OTA_PACKAGES_DIR 内，文件存在，后缀合法。
+
+        Raises:
+            ValueError: 路径校验失败时抛出。
+        """
+        pkg = Path(package_path)
+
+        # 解析为绝对路径并与 OTA_PACKAGES_DIR 比较，防止 ../ 逃逸
+        try:
+            resolved = pkg.resolve()
+        except (OSError, RuntimeError):
+            raise ValueError(f"无效的包路径: {package_path}")
+
+        ota_dir = self.settings.OTA_PACKAGES_DIR.resolve()
+        if not str(resolved).startswith(str(ota_dir)):
+            raise ValueError(
+                f"包路径必须在 OTA_PACKAGES_DIR ({ota_dir}) 内，"
+                f"当前路径: {resolved}"
+            )
+
+        # 检查文件是否存在
+        if not resolved.is_file():
+            raise ValueError(f"OTA 包文件不存在: {resolved}")
+
+        # 检查后缀
+        valid_extensions = {".zip", ".bin", ".img", ".ota"}
+        if resolved.suffix.lower() not in valid_extensions:
+            raise ValueError(
+                f"不支持的包文件格式: {resolved.suffix}，"
+                f"允许的格式: {', '.join(sorted(valid_extensions))}"
+            )
+
+        # 检查文件大小（最大 5GB）
+        max_size = 5 * 1024 * 1024 * 1024
+        file_size = resolved.stat().st_size
+        if file_size > max_size:
+            raise ValueError(
+                f"OTA 包文件过大 ({file_size / 1024 / 1024:.0f} MB)，"
+                f"最大允许 {max_size / 1024 / 1024:.0f} MB"
+            )
 
     def create_upgrade_plan(
         self,
@@ -250,7 +293,7 @@ class RunService:
 
         if status == "running":
             step.started_at = datetime.now(timezone.utc)
-        elif status in ["success", "failure"]:
+        elif status in ("success", "failed"):
             step.ended_at = datetime.now(timezone.utc)
 
         if stdout_path:
