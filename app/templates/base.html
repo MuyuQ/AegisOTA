@@ -5,55 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="AegisOTA - Android OTA 升级异常注入与多设备验证平台">
     <title>{% block title %}AegisOTA{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    <style>
-        /* 无障碍：跳转到主内容链接 */
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: var(--primary-color, #6366f1);
-            color: white;
-            padding: 8px 16px;
-            z-index: 100;
-            transition: top 0.3s;
-        }
-        .skip-link:focus {
-            top: 0;
-        }
-        /* 屏幕阅读器专用样式 */
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-        /* 焦点样式增强 */
-        a:focus-visible,
-        button:focus-visible,
-        input:focus-visible,
-        select:focus-visible,
-        [tabindex]:focus-visible {
-            outline: 2px solid var(--primary-color, #6366f1);
-            outline-offset: 2px;
-        }
-    </style>
 </head>
 <body>
-    <a href="#main-content" class="skip-link">跳转到主内容</a>
-
     {% if csrf_token is defined %}
-    <!-- CSRF Token 隐藏存储 -->
     <input type="hidden" id="csrf-token" value="{{ csrf_token }}" aria-hidden="true">
-
     <script>
-        // HTMX CSRF 保护：自动为所有 POST/PUT/DELETE 请求添加 CSRF token 到请求头
         document.body.addEventListener('htmx:configRequest', function(evt) {
             var method = evt.detail.method.toUpperCase();
             if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
@@ -64,7 +25,6 @@
             }
         });
 
-        // 从 cookie 获取 CSRF token（备用方案）
         function getCsrfTokenFromCookie() {
             var cookies = document.cookie.split(';');
             for (var i = 0; i < cookies.length; i++) {
@@ -78,45 +38,40 @@
     </script>
     {% endif %}
 
-    <nav class="navbar" role="navigation" aria-label="主导航">
+    <nav class="navbar">
         <div class="container">
-            <a href="/" class="navbar-brand" aria-label="AegisOTA 首页">
-                <strong>AegisOTA</strong>
-            </a>
-            <button
-                type="button"
-                class="navbar-toggle"
-                aria-expanded="false"
-                aria-controls="navbar-menu"
-                aria-label="切换导航菜单"
-                onclick="toggleNavbar()">
-                ☰
+            <a href="/" class="navbar-brand">AegisOTA</a>
+            <button type="button" class="navbar-toggle" aria-expanded="false" aria-controls="navbar-menu" aria-label="切换导航菜单" onclick="toggleNavbar()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
             </button>
-            <ul class="navbar-nav" id="navbar-menu" role="menubar">
-                <li role="none"><a href="/" role="menuitem">仪表盘</a></li>
-                <li role="none"><a href="/devices" role="menuitem">设备管理</a></li>
-                <li role="none"><a href="/pools" role="menuitem">设备池</a></li>
-                <li role="none"><a href="/runs" role="menuitem">任务列表</a></li>
-                <li role="none"><a href="/runs/create" role="menuitem">创建任务</a></li>
-                <li role="none"><a href="/plans" role="menuitem">升级计划</a></li>
-                <li role="none"><a href="/diagnosis" role="menuitem">诊断记录</a></li>
-                <li role="none"><a href="/settings" role="menuitem">系统设置</a></li>
+            <ul class="navbar-nav" id="navbar-menu">
+                <li><a href="/">仪表盘</a></li>
+                <li><a href="/devices">设备</a></li>
+                <li><a href="/pools">设备池</a></li>
+                <li><a href="/runs">任务</a></li>
+                <li><a href="/runs/create">创建任务</a></li>
+                <li><a href="/plans">计划</a></li>
+                <li><a href="/diagnosis">诊断</a></li>
+                <li><a href="/settings">设置</a></li>
             </ul>
         </div>
     </nav>
 
-    <main id="main-content" class="main-content" role="main" tabindex="-1">
-        <div class="container">
-            {% block content %}{% endblock %}
-        </div>
+    <main class="main-content">
+        {% block content %}{% endblock %}
     </main>
 
-    <footer role="contentinfo" style="text-align: center; padding: 2rem; color: var(--text-muted);">
-        <p>AegisOTA - Android OTA 升级异常注入与多设备验证平台</p>
+    <footer class="footer">
+        <div class="container">
+            <p>AegisOTA — Android OTA 升级异常注入与多设备验证平台</p>
+        </div>
     </footer>
 
     <script>
-        // 移动端导航切换
         function toggleNavbar() {
             var menu = document.getElementById('navbar-menu');
             var toggle = document.querySelector('.navbar-toggle');
@@ -125,10 +80,13 @@
             menu.classList.toggle('show');
         }
 
-        // 页面加载时聚焦到主内容（如果通过跳转链接到达）
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.location.hash === '#main-content') {
-                document.getElementById('main-content').focus();
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            var menu = document.getElementById('navbar-menu');
+            var toggle = document.querySelector('.navbar-toggle');
+            if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
             }
         });
     </script>

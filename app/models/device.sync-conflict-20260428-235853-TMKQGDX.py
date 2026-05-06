@@ -14,7 +14,6 @@ from sqlalchemy import (
     String,
     Text,
     func,
-    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -191,11 +190,3 @@ class DeviceLease(Base):
 
 # 复合索引
 Index("ix_device_leases_device_id_lease_status", DeviceLease.device_id, DeviceLease.lease_status)
-
-# P1-7: 同一设备只能有一个 active 租约（SQLite 部分唯一索引）
-Index(
-    "ix_device_leases_active_device",
-    DeviceLease.device_id,
-    unique=True,
-    sqlite_where=text("lease_status = 'active'"),
-)

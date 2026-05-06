@@ -1,23 +1,17 @@
 """设备 API 路由。"""
 
-import html as html_module
 from datetime import timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import case, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.device import Device, DeviceStatus
 from app.services.device_service import DeviceService
-
-
-def _e(value: str) -> str:
-    """对字符串进行 HTML 转义，防止 XSS 攻击。"""
-    return html_module.escape(str(value), quote=True) if value is not None else ""
 
 router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
 
@@ -166,12 +160,12 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
     # 构建表格 HTML
     rows_html = ""
     for d in devices_data:
-        status_class = f"status-{_e(d['status'])}"
+        status_class = f"status-{d['status']}"
 
         pool_html = (
             f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
             f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
-            f"{_e(d['pool_name'])}</span></a>"
+            f"{d['pool_name']}</span></a>"
             if d["pool_name"]
             else '<span style="color: var(--text-muted);">-</span>'
         )
@@ -188,27 +182,27 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
         if d["status"] == "quarantined":
             action_btn = (
                 f'<button class="btn btn-sm btn-primary" '
-                f'hx-post="/api/v1/devices/{_e(d["serial"])}/recover/html" '
+                f'hx-post="/api/v1/devices/{d["serial"]}/recover/html" '
                 f'hx-swap="outerHTML" hx-target="closest tr">恢复</button>'
             )
         elif d["status"] == "idle":
             action_btn = (
                 f'<button class="btn btn-sm btn-danger" '
-                f'hx-post="/api/v1/devices/{_e(d["serial"])}/quarantine/html" '
+                f'hx-post="/api/v1/devices/{d["serial"]}/quarantine/html" '
                 f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
             )
 
         rows_html += f'''
         <tr>
-            <td><strong>{_e(d["serial"])}</strong></td>
-            <td>{_e(d["brand"])} {_e(d["model"])}</td>
-            <td>{_e(d["system_version"])}</td>
+            <td><strong>{d["serial"]}</strong></td>
+            <td>{d["brand"]} {d["model"]}</td>
+            <td>{d["system_version"]}</td>
             <td>{pool_html}</td>
-            <td>{_e(d["location"])}</td>
-            <td><span class="status-badge {status_class}">{_e(d["status"])}</span></td>
+            <td>{d["location"]}</td>
+            <td><span class="status-badge {status_class}">{d["status"]}</span></td>
             <td>{d["battery_level"]}%</td>
             <td>
-                <a href="#" hx-get="/api/v1/devices/{_e(d["serial"])}/health-detail"
+                <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                    hx-target="#modal-container" hx-swap="innerHTML"
                    onclick="document.getElementById('modal-container').style.display='flex'"
                    style="text-decoration: none; cursor: pointer;">
@@ -217,7 +211,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
                     </span>
                 </a>
             </td>
-            <td>{_e(d["last_seen_at"])}</td>
+            <td>{d["last_seen_at"]}</td>
             <td>{action_btn}</td>
         </tr>'''
 
@@ -296,7 +290,7 @@ async def quarantine_device_html(
     pool_html = (
         f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
         f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
-        f"{_e(d['pool_name'])}</span></a>"
+        f"{d['pool_name']}</span></a>"
         if d["pool_name"]
         else '<span style="color: var(--text-muted);">-</span>'
     )
@@ -312,15 +306,15 @@ async def quarantine_device_html(
     return HTMLResponse(
         content=f'''
     <tr>
-        <td><strong>{_e(d["serial"])}</strong></td>
-        <td>{_e(d["brand"])} {_e(d["model"])}</td>
-        <td>{_e(d["system_version"])}</td>
+        <td><strong>{d["serial"]}</strong></td>
+        <td>{d["brand"]} {d["model"]}</td>
+        <td>{d["system_version"]}</td>
         <td>{pool_html}</td>
-        <td>{_e(d["location"])}</td>
-        <td><span class="status-badge status-quarantined">{_e(d["status"])}</span></td>
+        <td>{d["location"]}</td>
+        <td><span class="status-badge status-quarantined">{d["status"]}</span></td>
         <td>{d["battery_level"]}%</td>
         <td>
-            <a href="#" hx-get="/api/v1/devices/{_e(d["serial"])}/health-detail"
+            <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                hx-target="#modal-container" hx-swap="innerHTML"
                onclick="document.getElementById('modal-container').style.display='flex'"
                style="text-decoration: none; cursor: pointer;">
@@ -329,10 +323,10 @@ async def quarantine_device_html(
                 </span>
             </a>
         </td>
-        <td>{_e(d["last_seen_at"])}</td>
+        <td>{d["last_seen_at"]}</td>
         <td>
             <button class="btn btn-sm btn-primary"
-                    hx-post="/api/v1/devices/{_e(d["serial"])}/recover/html"
+                    hx-post="/api/v1/devices/{d["serial"]}/recover/html"
                     hx-swap="outerHTML" hx-target="closest tr">恢复</button>
         </td>
     </tr>'''
@@ -390,11 +384,11 @@ async def recover_device_html(
         else "-",
     }
 
-    status_class = f"status-{_e(d['status'])}"
+    status_class = f"status-{d['status']}"
     pool_html = (
         f'<a href="/pools/{d["pool_id"]}" style="text-decoration: none;">'
         f'<span class="status-badge" style="background: var(--primary-color); color: white;">'
-        f"{_e(d['pool_name'])}</span></a>"
+        f"{d['pool_name']}</span></a>"
         if d["pool_name"]
         else '<span style="color: var(--text-muted);">-</span>'
     )
@@ -411,22 +405,22 @@ async def recover_device_html(
     if d["status"] == "idle":
         action_btn = (
             f'<button class="btn btn-sm btn-danger" '
-            f'hx-post="/api/v1/devices/{_e(d["serial"])}/quarantine/html" '
+            f'hx-post="/api/v1/devices/{d["serial"]}/quarantine/html" '
             f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
         )
 
     return HTMLResponse(
         content=f'''
     <tr>
-        <td><strong>{_e(d["serial"])}</strong></td>
-        <td>{_e(d["brand"])} {_e(d["model"])}</td>
-        <td>{_e(d["system_version"])}</td>
+        <td><strong>{d["serial"]}</strong></td>
+        <td>{d["brand"]} {d["model"]}</td>
+        <td>{d["system_version"]}</td>
         <td>{pool_html}</td>
-        <td>{_e(d["location"])}</td>
-        <td><span class="status-badge {status_class}">{_e(d["status"])}</span></td>
+        <td>{d["location"]}</td>
+        <td><span class="status-badge {status_class}">{d["status"]}</span></td>
         <td>{d["battery_level"]}%</td>
         <td>
-            <a href="#" hx-get="/api/v1/devices/{_e(d["serial"])}/health-detail"
+            <a href="#" hx-get="/api/v1/devices/{d["serial"]}/health-detail"
                hx-target="#modal-container" hx-swap="innerHTML"
                onclick="document.getElementById('modal-container').style.display='flex'"
                style="text-decoration: none; cursor: pointer;">
@@ -435,7 +429,7 @@ async def recover_device_html(
                 </span>
             </a>
         </td>
-        <td>{_e(d["last_seen_at"])}</td>
+        <td>{d["last_seen_at"]}</td>
         <td>{action_btn}</td>
     </tr>'''
     )
@@ -511,7 +505,7 @@ async def get_device_health_detail(
     run_stats = (
         db.query(
             func.count(RunSession.id),
-            func.sum(case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
+            func.sum(func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
         )
         .filter(RunSession.device_id == device.id)
         .first()
@@ -607,8 +601,8 @@ async def get_device_health_detail(
         value_class = "health-low" if f["impact"] < 0 else ""
         factor_rows += f'''
         <tr>
-            <td>{_e(f["label"])}</td>
-            <td class="{value_class}">{_e(f["value"])}</td>
+            <td>{f["label"]}</td>
+            <td class="{value_class}">{f["value"]}</td>
         </tr>'''
 
     # 构建 HTML
@@ -637,10 +631,10 @@ async def get_device_health_detail(
 
         <div class="card-header" style="margin-top: 1rem;">设备信息</div>
         <table class="table" style="margin-top: 0.5rem;">
-            <tr><td style="width: 120px;">序列号</td><td><code>{_e(device.serial)}</code></td></tr>
-            <tr><td>品牌/型号</td><td>{_e(device.brand or "-")} {_e(device.model or "-")}</td></tr>
-            <tr><td>系统版本</td><td>{_e(device.system_version or "-")}</td></tr>
-            <tr><td>物理位置</td><td>{_e(device.location or "-")}</td></tr>
+            <tr><td style="width: 120px;">序列号</td><td><code>{device.serial}</code></td></tr>
+            <tr><td>品牌/型号</td><td>{device.brand or "-"} {device.model or "-"}</td></tr>
+            <tr><td>系统版本</td><td>{device.system_version or "-"}</td></tr>
+            <tr><td>物理位置</td><td>{device.location or "-"}</td></tr>
         </table>
 
         <div class="card-header" style="margin-top: 1rem;">状态指标</div>

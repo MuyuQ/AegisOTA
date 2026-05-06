@@ -382,6 +382,8 @@ async def export_logs_from_device(
     device_serial = None
     if run_session.device:
         device_serial = run_session.device.serial
+    elif run_session.assigned_device_serial:
+        device_serial = run_session.assigned_device_serial
 
     if not device_serial:
         raise HTTPException(status_code=400, detail="No device associated with this run session")
