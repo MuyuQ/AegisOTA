@@ -3,89 +3,114 @@
 {% block title %}设备池管理 - AegisOTA{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="card">
-        <div class="card-header">
-            <span>设备池管理</span>
-            <button class="btn btn-primary" onclick="showCreateModal()">创建设备池</button>
-        </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">设备池管理</h1>
+    <p class="page-subtitle">管理设备分组和分配策略</p>
+</div>
 
-        <div id="pools-list">
-            {% if pools %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>名称</th>
-                        <th>用途</th>
-                        <th>保留比例</th>
-                        <th>设备数</th>
-                        <th>可用</th>
-                        <th>状态</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pool in pools %}
-                    <tr>
-                        <td>{{ pool.id }}</td>
-                        <td><strong>{{ pool.name }}</strong></td>
-                        <td>
-                            <span class="badge badge-{{ 'primary' if pool.purpose == 'stable' else 'warning' if pool.purpose == 'stress' else 'danger' }}">
-                                {{ pool.purpose }}
-                            </span>
-                        </td>
-                        <td class="text-tertiary">{{ (pool.reserved_ratio * 100)|int }}%</td>
-                        <td class="text-tertiary">{{ pool.total_devices }}</td>
-                        <td class="text-tertiary">{{ pool.available_devices }}</td>
-                        <td>
-                            <span class="status-badge status-{{ 'active' if pool.enabled else 'inactive' }}">
-                                {{ '启用' if pool.enabled else '禁用' }}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-secondary" onclick="showPoolDetail({{ pool.id }})">详情</button>
-                            <button class="btn btn-sm btn-danger" onclick="deletePool({{ pool.id }})">删除</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <p>暂无设备池</p>
-                <button class="btn btn-primary" onclick="initDefaultPools()">初始化默认池</button>
-            </div>
-            {% endif %}
+<!-- Actions Bar -->
+<div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-5);">
+    <button class="btn btn-primary" onclick="showCreateModal()">
+        <span>+</span>
+        <span>创建设备池</span>
+    </button>
+</div>
+
+<!-- Pools List Panel -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">◈</span>
+            <span>设备池列表</span>
         </div>
+    </div>
+    <div class="panel-body">
+        {% if pools %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">ID</th>
+                    <th>名称</th>
+                    <th style="width: 100px;">用途</th>
+                    <th style="width: 100px;">保留比例</th>
+                    <th style="width: 80px;">设备数</th>
+                    <th style="width: 80px;">可用</th>
+                    <th style="width: 80px;">状态</th>
+                    <th style="width: 140px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pool in pools %}
+                <tr>
+                    <td style="font-family: var(--font-mono);">{{ pool.id }}</td>
+                    <td style="font-weight: 500;">{{ pool.name }}</td>
+                    <td>
+                        {% if pool.purpose == 'stable' %}
+                            <span class="status-badge success">稳定</span>
+                        {% elif pool.purpose == 'stress' %}
+                            <span class="status-badge warning">压力</span>
+                        {% else %}
+                            <span class="status-badge danger">应急</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: var(--font-mono);">{{ (pool.reserved_ratio * 100)|int }}%</td>
+                    <td style="font-family: var(--font-mono); color: var(--text-secondary);">{{ pool.total_devices }}</td>
+                    <td style="font-family: var(--font-mono); color: var(--text-secondary);">{{ pool.available_devices }}</td>
+                    <td>
+                        {% if pool.enabled %}
+                            <span class="status-badge success">启用</span>
+                        {% else %}
+                            <span class="status-badge neutral">禁用</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: var(--space-2);">
+                            <button class="btn btn-sm btn-secondary" onclick="showPoolDetail({{ pool.id }})">详情</button>
+                            <button class="btn btn-sm btn-secondary" onclick="deletePool({{ pool.id }})">删除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">◈</div>
+            <div class="empty-state-title">暂无设备池</div>
+            <div class="empty-state-description">创建设备池来组织和管理测试设备</div>
+            <button class="btn btn-primary" onclick="initDefaultPools()" style="margin-top: var(--space-4);">初始化默认池</button>
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- 创建设备池模态框 -->
-<div id="createModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>创建设备池</h3>
-            <span class="close" onclick="closeCreateModal()">&times;</span>
+<!-- Create Pool Modal -->
+<div id="createModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeCreateModal()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px; background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-default); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; font-weight: 600;">创建设备池</span>
+            <button onclick="closeCreateModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: var(--space-1);">&times;</button>
         </div>
-        <form id="createForm" onsubmit="createPool(event)">
+        <form id="createForm" onsubmit="createPool(event)" style="padding: var(--space-5);">
             <div class="form-group">
-                <label for="name">名称</label>
-                <input type="text" id="name" name="name" required>
+                <label class="form-label" for="name">名称 <span style="color: var(--accent-red);">*</span></label>
+                <input type="text" id="name" name="name" class="form-input" required style="width: 100%;" placeholder="如：稳定测试池">
             </div>
             <div class="form-group">
-                <label for="purpose">用途</label>
-                <select id="purpose" name="purpose" required>
+                <label class="form-label" for="purpose">用途 <span style="color: var(--accent-red);">*</span></label>
+                <select id="purpose" name="purpose" class="form-input" required style="width: 100%;">
                     <option value="stable">稳定测试</option>
                     <option value="stress">压力测试</option>
                     <option value="emergency">应急池</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="reserved_ratio">保留比例</label>
-                <input type="number" id="reserved_ratio" name="reserved_ratio" value="0.2" step="0.1" min="0" max="1">
+                <label class="form-label" for="reserved_ratio">保留比例</label>
+                <input type="number" id="reserved_ratio" name="reserved_ratio" value="0.2" step="0.1" min="0" max="1" class="form-input" style="width: 100%;">
+                <p style="margin-top: var(--space-2); color: var(--text-tertiary); font-size: 12px;">保留用于应急任务的设备比例 (0-1)</p>
             </div>
-            <div class="form-actions">
+            <div style="margin-top: var(--space-6); display: flex; justify-content: flex-end; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--border-default);">
                 <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">取消</button>
                 <button type="submit" class="btn btn-primary">创建</button>
             </div>
@@ -95,7 +120,7 @@
 
 <script>
 function showCreateModal() {
-    document.getElementById('createModal').style.display = 'block';
+    document.getElementById('createModal').style.display = 'flex';
 }
 
 function closeCreateModal() {
@@ -148,14 +173,6 @@ function initDefaultPools() {
             location.reload();
         }
     });
-}
-
-// 点击模态框外部关闭
-window.onclick = function(event) {
-    const modal = document.getElementById('createModal');
-    if (event.target == modal) {
-        closeCreateModal();
-    }
 }
 </script>
 {% endblock %}

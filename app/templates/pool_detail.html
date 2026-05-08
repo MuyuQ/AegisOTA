@@ -3,236 +3,310 @@
 {% block title %}{{ pool.name }} - 设备池详情 - AegisOTA{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-    <h1>设备池: {{ pool.name }}</h1>
-    <a href="/pools" class="btn btn-secondary">← 返回列表</a>
-</div>
-
-<div class="grid grid-cols-2" style="margin-bottom: 1.5rem;">
-    <div class="card">
-        <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">基本信息</h2>
-        <table class="table">
-            <tr>
-                <td style="width: 150px; color: var(--text-muted);">ID</td>
-                <td>{{ pool.id }}</td>
-            </tr>
-            <tr>
-                <td style="color: var(--text-muted);">名称</td>
-                <td>{{ pool.name }}</td>
-            </tr>
-            <tr>
-                <td style="color: var(--text-muted);">用途</td>
-                <td>
-                    {% if pool.purpose == 'stable' %}
-                    <span class="status-badge status-idle">稳定测试</span>
-                    {% elif pool.purpose == 'stress' %}
-                    <span class="status-badge status-running">压力测试</span>
-                    {% elif pool.purpose == 'emergency' %}
-                    <span class="status-badge status-failed">应急</span>
-                    {% else %}
-                    <span class="status-badge">{{ pool.purpose }}</span>
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td style="color: var(--text-muted);">状态</td>
-                <td id="pool-status">
-                    {% if pool.enabled %}
-                    <span style="color: var(--success-color);">● 已启用</span>
-                    {% else %}
-                    <span style="color: var(--text-muted);">○ 已禁用</span>
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td style="color: var(--text-muted);">应急保留比例</td>
-                <td id="pool-reserved-ratio">{{ (pool.reserved_ratio * 100)|round }}%</td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="card">
-        <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">容量统计</h2>
-        <div class="grid grid-cols-2" style="gap: 1rem;">
-            <div class="stat-card">
-                <div class="stat-value">{{ pool.total_devices }}</div>
-                <div class="stat-label">总设备数</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--success-color);">{{ pool.available_devices }}</div>
-                <div class="stat-label">可用设备</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--warning-color);">{{ pool.busy_devices }}</div>
-                <div class="stat-label">忙碌设备</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: var(--text-muted);">{{ pool.offline_devices }}</div>
-                <div class="stat-label">离线设备</div>
-            </div>
+<!-- Page Header -->
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="page-title">设备池: {{ pool.name }}</h1>
+            <p class="page-subtitle">查看和管理设备池详情</p>
         </div>
-        {% if pool.quarantined_devices > 0 %}
-        <div style="margin-top: 1rem; padding: 0.5rem; background: #fee2e2; border-radius: 4px; color: #b91c1c;">
-            ⚠️ {{ pool.quarantined_devices }} 台设备已被隔离
-        </div>
-        {% endif %}
+        <a href="/pools" class="btn btn-secondary">← 返回列表</a>
     </div>
 </div>
 
-<div class="card">
-    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">
-        池内设备
-        <span style="font-weight: normal; color: var(--text-muted); font-size: 0.9rem;">({{ devices|length }} 台)</span>
-    </h2>
-
-    <div id="device-list">
-        {% if devices %}
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>序列号</th>
-                        <th>品牌</th>
-                        <th>型号</th>
-                        <th>状态</th>
-                        <th>健康度</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
+<!-- Info & Stats Grid -->
+<div class="content-grid" style="margin-bottom: var(--space-5);">
+    <!-- Basic Info Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">◈</span>
+                <span>基本信息</span>
+            </div>
+        </div>
+        <div class="panel-body">
+            <table class="data-table">
                 <tbody>
-                    {% for device in devices %}
-                    <tr id="device-row-{{ device.id }}">
-                        <td><code>{{ device.serial }}</code></td>
-                        <td class="text-secondary">{{ device.brand or '-' }}</td>
-                        <td class="text-secondary">{{ device.model or '-' }}</td>
+                    <tr>
+                        <td style="width: 120px; color: var(--text-secondary); font-size: 13px;">ID</td>
+                        <td style="font-family: var(--font-mono);">{{ pool.id }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-secondary); font-size: 13px;">名称</td>
+                        <td style="font-weight: 500;">{{ pool.name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-secondary); font-size: 13px;">用途</td>
                         <td>
-                            <span class="status-badge status-{{ device.status|lower }}">
-                                {% if device.status == 'idle' %}空闲
-                                {% elif device.status == 'busy' %}忙碌
-                                {% elif device.status == 'offline' %}离线
-                                {% elif device.status == 'quarantined' %}隔离
-                                {% else %}{{ device.status }}
-                                {% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            {% if device.health_score %}
-                            <span class="{% if device.health_score >= 90 %}health-high{% elif device.health_score >= 70 %}health-medium{% else %}health-low{% endif %}">
-                                {{ device.health_score|round(1) }}%
-                            </span>
+                            {% if pool.purpose == 'stable' %}
+                                <span class="status-badge success">稳定测试</span>
+                            {% elif pool.purpose == 'stress' %}
+                                <span class="status-badge warning">压力测试</span>
+                            {% elif pool.purpose == 'emergency' %}
+                                <span class="status-badge danger">应急</span>
                             {% else %}
-                            -
+                                <span class="status-badge neutral">{{ pool.purpose }}</span>
                             {% endif %}
                         </td>
-                        <td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-secondary); font-size: 13px;">状态</td>
+                        <td id="pool-status">
+                            {% if pool.enabled %}
+                                <span class="status-indicator">
+                                    <span class="status-dot success"></span>
+                                    <span class="status-text success">已启用</span>
+                                </span>
+                            {% else %}
+                                <span class="status-indicator">
+                                    <span class="status-dot neutral"></span>
+                                    <span class="status-text neutral">已禁用</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: var(--text-secondary); font-size: 13px;">保留比例</td>
+                        <td style="font-family: var(--font-mono);">{{ (pool.reserved_ratio * 100)|round }}%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Capacity Stats Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">◉</span>
+                <span>容量统计</span>
+            </div>
+        </div>
+        <div class="panel-body" style="padding: var(--space-4);">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3);">
+                <div class="stat-card" style="padding: var(--space-4);">
+                    <div class="stat-card-header" style="margin-bottom: var(--space-2);">
+                        <span class="stat-card-label">总设备数</span>
+                    </div>
+                    <div class="stat-card-value" style="font-size: 24px;">{{ pool.total_devices }}</div>
+                </div>
+                <div class="stat-card success" style="padding: var(--space-4);">
+                    <div class="stat-card-header" style="margin-bottom: var(--space-2);">
+                        <span class="stat-card-label">可用设备</span>
+                    </div>
+                    <div class="stat-card-value" style="font-size: 24px; color: var(--accent-green);">{{ pool.available_devices }}</div>
+                </div>
+                <div class="stat-card warning" style="padding: var(--space-4);">
+                    <div class="stat-card-header" style="margin-bottom: var(--space-2);">
+                        <span class="stat-card-label">忙碌设备</span>
+                    </div>
+                    <div class="stat-card-value" style="font-size: 24px; color: var(--accent-yellow);">{{ pool.busy_devices }}</div>
+                </div>
+                <div class="stat-card" style="padding: var(--space-4);">
+                    <div class="stat-card-header" style="margin-bottom: var(--space-2);">
+                        <span class="stat-card-label">离线设备</span>
+                    </div>
+                    <div class="stat-card-value" style="font-size: 24px; color: var(--text-tertiary);">{{ pool.offline_devices }}</div>
+                </div>
+            </div>
+            {% if pool.quarantined_devices > 0 %}
+            <div style="margin-top: var(--space-4); padding: var(--space-3); background: rgba(248, 81, 73, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(248, 81, 73, 0.2);">
+                <span class="status-indicator">
+                    <span class="status-dot danger"></span>
+                    <span class="status-text danger">{{ pool.quarantined_devices }} 台设备已被隔离</span>
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Devices in Pool Panel -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">◉</span>
+            <span>池内设备 ({{ devices|length }} 台)</span>
+        </div>
+    </div>
+    <div class="panel-body" id="device-list">
+        {% if devices %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>序列号</th>
+                    <th>品牌</th>
+                    <th>型号</th>
+                    <th>状态</th>
+                    <th>健康度</th>
+                    <th style="width: 140px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for device in devices %}
+                <tr id="device-row-{{ device.id }}">
+                    <td><code>{{ device.serial }}</code></td>
+                    <td style="color: var(--text-secondary);">{{ device.brand or '-' }}</td>
+                    <td style="color: var(--text-secondary);">{{ device.model or '-' }}</td>
+                    <td>
+                        {% if device.status == 'idle' %}
+                            <span class="status-badge success">空闲</span>
+                        {% elif device.status == 'busy' %}
+                            <span class="status-badge warning">忙碌</span>
+                        {% elif device.status == 'offline' %}
+                            <span class="status-badge neutral">离线</span>
+                        {% elif device.status == 'quarantined' %}
+                            <span class="status-badge danger">隔离</span>
+                        {% else %}
+                            <span class="status-badge neutral">{{ device.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if device.health_score %}
+                        <span class="{% if device.health_score >= 90 %}text-success{% elif device.health_score >= 70 %}text-warning{% else %}text-danger{% endif %}"
+                              style="font-family: var(--font-mono); font-weight: 600;">
+                            {{ device.health_score|round(1) }}%
+                        </span>
+                        {% else %}
+                        <span style="color: var(--text-tertiary);">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: var(--space-2);">
                             <a href="/devices/{{ device.serial }}" class="btn btn-sm btn-secondary">详情</a>
-                            <button class="btn btn-sm btn-danger"
+                            <button class="btn btn-sm btn-secondary"
                                     hx-delete="/api/v1/pools/{{ pool.id }}/devices/{{ device.id }}"
                                     hx-confirm="确定要从池中移除设备 {{ device.serial }} 吗？"
                                     hx-target="#device-row-{{ device.id }}"
                                     hx-swap="outerHTML swap:0.5s">
                                 移除
                             </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
-        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
-            暂无设备分配到此池
-        </p>
+        <div class="empty-state" style="padding: var(--space-8);">
+            <div class="empty-state-icon">◉</div>
+            <div class="empty-state-title">暂无设备</div>
+            <div class="empty-state-description">此设备池暂无分配的设备</div>
+        </div>
         {% endif %}
     </div>
 </div>
 
-<div class="card" style="margin-top: 1rem;">
-    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">操作</h2>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button class="btn btn-primary" onclick="openAssignModal()">分配设备</button>
-        <button class="btn btn-secondary" onclick="openEditModal()">编辑配置</button>
-        {% if pool.enabled %}
-        <button class="btn btn-secondary"
-                hx-put="/pools/{{ pool.id }}/status"
-                hx-vals='{"enabled": false}'
-                hx-encoding='application/json'
-                hx-target="#pool-status"
-                hx-swap="innerHTML"
-                onclick="this.textContent='处理中...'">
-            禁用
-        </button>
-        {% else %}
-        <button class="btn btn-primary"
-                hx-put="/pools/{{ pool.id }}/status"
-                hx-vals='{"enabled": true}'
-                hx-encoding='application/json'
-                hx-target="#pool-status"
-                hx-swap="innerHTML"
-                onclick="this.textContent='处理中...'">
-            启用
-        </button>
-        {% endif %}
-        <button class="btn btn-danger"
-                hx-delete="/api/v1/pools/{{ pool.id }}"
-                hx-confirm="确定要删除设备池 {{ pool.name }} 吗？此操作不可恢复！"
-                hx-redirect="/pools">
-            删除设备池
-        </button>
+<!-- Actions Panel -->
+<div class="panel" style="margin-top: var(--space-5);">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">⚡</span>
+            <span>操作</span>
+        </div>
+    </div>
+    <div class="panel-body" style="padding: var(--space-4);">
+        <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="openAssignModal()">
+                <span>+</span>
+                <span>分配设备</span>
+            </button>
+            <button class="btn btn-secondary" onclick="openEditModal()">
+                <span>⚙</span>
+                <span>编辑配置</span>
+            </button>
+            {% if pool.enabled %}
+            <button class="btn btn-secondary"
+                    hx-put="/pools/{{ pool.id }}/status"
+                    hx-vals='{"enabled": false}'
+                    hx-encoding='application/json'
+                    hx-target="#pool-status"
+                    hx-swap="innerHTML"
+                    onclick="this.textContent='处理中...'">
+                禁用
+            </button>
+            {% else %}
+            <button class="btn btn-primary"
+                    hx-put="/pools/{{ pool.id }}/status"
+                    hx-vals='{"enabled": true}'
+                    hx-encoding='application/json'
+                    hx-target="#pool-status"
+                    hx-swap="innerHTML"
+                    onclick="this.textContent='处理中...'">
+                启用
+            </button>
+            {% endif %}
+            <button class="btn btn-secondary"
+                    hx-delete="/api/v1/pools/{{ pool.id }}"
+                    hx-confirm="确定要删除设备池 {{ pool.name }} 吗？此操作不可恢复！"
+                    hx-redirect="/pools">
+                删除设备池
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- 分配设备模态框 -->
-<div id="assign-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="assign-modal-title">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="assign-modal-title" class="modal-title">分配设备</h3>
-            <button class="modal-close" onclick="closeAssignModal()" aria-label="关闭">&times;</button>
+<!-- Assign Device Modal -->
+<div id="assign-modal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeAssignModal()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px; background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-default); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; font-weight: 600;">分配设备</span>
+            <button onclick="closeAssignModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: var(--space-1);">&times;</button>
         </div>
-        <form hx-post="/pools/{{ pool.id }}/assign" hx-target="#device-list" hx-swap="innerHTML" onsubmit="setTimeout(closeAssignModal, 100)">
+        <form hx-post="/pools/{{ pool.id }}/assign" hx-target="#device-list" hx-swap="innerHTML" onsubmit="setTimeout(closeAssignModal, 100)" style="padding: var(--space-5);">
             <div class="form-group">
                 <label class="form-label">选择设备</label>
                 {% if unassigned_devices %}
-                <select name="device_id" class="form-select" required>
+                <select name="device_id" class="form-input" required style="width: 100%;">
                     <option value="">请选择设备</option>
                     {% for device in unassigned_devices %}
                     <option value="{{ device.id }}">{{ device.serial }} ({{ device.brand or '-' }} {{ device.model or '-' }})</option>
                     {% endfor %}
                 </select>
                 {% else %}
-                <p style="color: var(--text-muted);">暂无未分配的设备</p>
+                <div class="empty-state" style="padding: var(--space-6);">
+                    <div class="empty-state-icon">◉</div>
+                    <div class="empty-state-title">暂无可用设备</div>
+                    <div class="empty-state-description">所有设备都已分配到其他池</div>
+                </div>
                 {% endif %}
             </div>
             {% if unassigned_devices %}
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">确认分配</button>
+            <div style="margin-top: var(--space-5); display: flex; justify-content: flex-end; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--border-default);">
+                <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">取消</button>
+                <button type="submit" class="btn btn-primary">确认分配</button>
+            </div>
             {% endif %}
         </form>
-        <div id="assign-result" style="margin-top: 1rem;"></div>
+        <div id="assign-result" style="padding: var(--space-4) var(--space-5);"></div>
     </div>
 </div>
 
-<!-- 编辑配置模态框 -->
-<div id="edit-modal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="edit-modal-title" class="modal-title">编辑配置</h3>
-            <button class="modal-close" onclick="closeEditModal()" aria-label="关闭">&times;</button>
+<!-- Edit Config Modal -->
+<div id="edit-modal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeEditModal()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px; background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden;">
+        <div style="padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-default); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; font-weight: 600;">编辑配置</span>
+            <button onclick="closeEditModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: var(--space-1);">&times;</button>
         </div>
-        <form hx-put="/pools/{{ pool.id }}/form" hx-target="#edit-result" hx-swap="innerHTML" onsubmit="setTimeout(() => location.reload(), 1000)">
+        <form hx-put="/pools/{{ pool.id }}/form" hx-target="#edit-result" hx-swap="innerHTML" onsubmit="setTimeout(() => location.reload(), 1000)" style="padding: var(--space-5);">
             <div class="form-group">
                 <label class="form-label">应急保留比例 (%)</label>
-                <input type="number" name="reserved_ratio" value="{{ (pool.reserved_ratio * 100)|round }}" class="form-input" min="0" max="100" step="1">
+                <input type="number" name="reserved_ratio" value="{{ (pool.reserved_ratio * 100)|round }}" class="form-input" min="0" max="100" step="1" style="width: 100%;">
             </div>
             <div class="form-group">
                 <label class="form-label">状态</label>
-                <select name="enabled" class="form-select">
+                <select name="enabled" class="form-input" style="width: 100%;">
                     <option value="true" {% if pool.enabled %}selected{% endif %}>已启用</option>
                     <option value="false" {% if not pool.enabled %}selected{% endif %}>已禁用</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">保存配置</button>
+            <div style="margin-top: var(--space-5); display: flex; justify-content: flex-end; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--border-default);">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存配置</button>
+            </div>
         </form>
-        <div id="edit-result" style="margin-top: 1rem;"></div>
+        <div id="edit-result" style="padding: var(--space-4) var(--space-5);"></div>
     </div>
 </div>
 
@@ -253,16 +327,7 @@ function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
 }
 
-// 点击模态框外部关闭
-document.querySelectorAll('.modal-overlay').forEach(modal => {
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    });
-});
-
-// ESC 键关闭模态框
+// ESC key to close modals
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(modal => {
