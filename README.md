@@ -84,6 +84,16 @@ precheck -> package_prepare -> apply_update -> reboot_wait -> post_validate
 
 网页路由不走接口密钥中间件；写操作由 CSRF Token 保护。
 
+### 界面截图
+
+| 页面 | 截图 |
+|------|------|
+| 仪表盘 | ![仪表盘](test_results/dashboard.png) |
+| 设备列表 | ![设备列表](test_results/devices.png) |
+| 任务列表 | ![任务列表](test_results/runs.png) |
+| 创建任务 | ![创建任务](test_results/create_run.png) |
+| 设置页面 | ![设置页面](test_results/settings.png) |
+
 ## 技术栈
 
 | 层级 | 技术 |
@@ -286,6 +296,50 @@ curl -X POST http://localhost:8000/api/v1/runs \
     "device_serial": "ABC123"
   }'
 ```
+
+### Python API 调用示例
+
+```python
+import httpx
+
+BASE_URL = "http://localhost:8000"
+
+# 获取设备列表
+with httpx.Client() as client:
+    resp = client.get(f"{BASE_URL}/api/v1/devices")
+    devices = resp.json()["data"]
+
+# 创建任务
+with httpx.Client() as client:
+    resp = client.post(
+        f"{BASE_URL}/api/v1/runs",
+        json={"plan_id": 1, "device_serial": "ABC123"}
+    )
+    run = resp.json()
+```
+
+### 错误响应
+
+所有错误返回统一格式：
+
+```json
+{
+  "detail": "错误描述信息",
+  "code": "ERROR_CODE"
+}
+```
+
+**常见错误码：**
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数无效 |
+| 401 | API Key 无效或缺失 |
+| 404 | 资源不存在 |
+| 409 | 资源冲突（如设备已被占用） |
+| 500 | 服务器内部错误 |
+
+> 更详细的 API 文档请参考 [docs/API.md](docs/API.md)。
 
 ## 配置
 
@@ -662,92 +716,498 @@ graph TB
     Faults --> ADB
 ```
 
+### 架构深入说明
+
+<details>
+<summary>控制面与执行面分层设计</summary>
+
+AegisOTA 采用"控制面 + 执行面"的分层架构设计，实现任务调度与命令执行的解耦。
+
+**控制面（Control Plane）**
+- FastAPI Web Service：提供 REST API 和 Web 控制台
+- Service Layer：业务逻辑层，处理设备管理、任务调度、报告生成等
+- SQLite Database：数据持久化
+
+**执行面（Execution Plane）**
+- Worker Process：后台任务执行器
+- RunExecutor：OTA 流程编排器
+- Fault Injector：故障注入插件
+- Validation Modules：升级后验证模块
+- Command Runner：ADB/Fastboot 命令执行器
+
+</details>
+
+<details>
+<summary>核心模块职责</summary>
+
+**API 层（`app/api/`）**
+
+| 模块 | 职责 |
+|------|------|
+| `devices.py` | 设备 CRUD、同步、隔离、恢复 |
+| `pools.py` | 设备池管理、容量查询 |
+| `runs.py` | 任务创建、查询、终止 |
+| `plans.py` | 升级计划管理 |
+| `reports.py` | 报告生成与导出 |
+| `diagnosis.py` | 日志诊断与规则管理 |
+| `web.py` | Web 页面路由 |
+
+**服务层（`app/services/`）**
+
+| 服务 | 职责 |
+|------|------|
+| `DeviceService` | 设备生命周期管理 |
+| `PoolService` | 设备池容量与分配 |
+| `RunService` | 任务状态机与调度 |
+| `WorkerService` | Worker 任务协调 |
+| `LogExportService` | 设备日志导出 |
+| `DiagnosisService` | 日志分析与诊断 |
+| `ReportService` | 报告生成 |
+
+**执行层（`app/executors/`）**
+
+| 模块 | 职责 |
+|------|------|
+| `RunExecutor` | 任务全流程编排 |
+| `StepHandler` | 各阶段处理器 |
+| `ADBExecutor` | ADB 命令封装 |
+| `CommandRunner` | 通用命令执行 |
+| `RunContext` | 执行上下文 |
+
+**异常注入层（`app/faults/`）**
+
+故障注入插件系统，插件提供 `prepare()`、`inject()`、`cleanup()` 生命周期。
+
+**诊断层（`app/diagnosis/` + `app/parsers/`）**
+
+TraceLens 日志分析引擎，包括日志解析器和诊断引擎。
+
+**验证器层（`app/validators/`）**
+
+| 验证器 | 职责 |
+|--------|------|
+| `BootCheck` | 启动完成检查 |
+| `VersionCheck` | 版本号验证 |
+| `PerfCheck` | 性能基准检查 |
+| `MonkeyRunner` | Monkey 稳定性测试 |
+| `StateMachine` | 状态转换验证 |
+
+</details>
+
+<details>
+<summary>数据模型与状态机</summary>
+
+**核心实体关系**
+
+```
+┌──────────────┐       ┌──────────────┐
+│  DevicePool  │       │ UpgradePlan  │
+└──────┬───────┘       └──────┬───────┘
+       │                      │
+       │ 1:N                  │ 1:N
+       ▼                      ▼
+┌──────────────┐       ┌──────────────┐
+│    Device    │       │  RunSession  │
+└──────┬───────┘       └──────┬───────┘
+       │                      │
+       │ N:M (Lease)          │ 1:N
+       └──────────────────────┼──────────────┐
+                              │              │
+                              ▼              ▼
+                       ┌────────────┐  ┌────────────┐
+                       │  RunStep   │  │  Artifact  │
+                       └────────────┘  └────────────┘
+```
+
+**任务状态转换**
+
+```
+QUEUED -> ALLOCATING -> RESERVED -> RUNNING -> VALIDATING -> PASSED/FAILED/ABORTED
+```
+
+**设备状态转换**
+
+```
+OFFLINE -> IDLE -> RESERVED -> BUSY -> QUARANTINED
+```
+
+</details>
+
+<details>
+<summary>设计决策</summary>
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| **数据库** | SQLite | 单机部署足够，零运维成本 |
+| **Web 框架** | FastAPI | 高性能、类型安全、自动文档 |
+| **前端** | Jinja2 + HTMX | 轻量级，无需构建流程 |
+| **Worker** | 单机进程 | 避免 Celery 复杂度 |
+| **异常注入** | 插件化 | 易扩展，独立封装 |
+| **命令执行** | CommandRunner | 统一抽象，易于测试 |
+
+</details>
+
+> 更详细的架构文档请参考 [docs/architecture.md](docs/architecture.md)。
+
 ## 贡献指南
 
-感谢你对 AegisOTA 的关注！我们欢迎各种形式的贡献。
+感谢对 AegisOTA 项目的关注！本文档介绍如何参与项目开发。
 
-### 开发环境搭建
+### 快速链接
 
-1. **Fork 并克隆仓库**
+- [项目仓库](https://github.com/MuyuQ/AegisOTA)
+- [Issue 追踪](https://github.com/MuyuQ/AegisOTA/issues)
+- [API 文档](docs/API.md)
+- [架构文档](docs/architecture.md)
+
+### 开发环境设置
+
+**系统要求**
+
+- Python 3.10+
+- Git
+- ADB (Android Debug Bridge) - 可选，用于集成测试
+
+**安装步骤**
+
+1. **克隆仓库**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AegisOTA.git
+git clone https://github.com/MuyuQ/AegisOTA.git
 cd AegisOTA
 ```
 
-2. **安装依赖**
+2. **创建虚拟环境**
 
 ```bash
-uv sync
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux/macOS
+source .venv/bin/activate
 ```
 
-3. **运行测试确认环境正常**
+3. **安装依赖**
 
 ```bash
-pytest
+# 使用 pip
+pip install -e ".[dev]"
+
+# 或使用 uv (推荐，更快)
+uv pip install -e ".[dev]"
 ```
 
-### 提交类型
-
-| 类型 | 说明 |
-| --- | --- |
-| `feat` | 新功能 |
-| `fix` | 缺陷修复 |
-| `docs` | 文档更新 |
-| `style` | 代码格式调整（不影响逻辑） |
-| `refactor` | 代码重构 |
-| `test` | 测试相关 |
-| `chore` | 构建、配置、工具链等 |
-
-### 代码规范
-
-- 使用 `snake_case` 命名模块和函数，`PascalCase` 命名类。
-- 新增 Python 代码需包含类型注解。
-- 用户可见文本和文档使用中文。
-- 保持分层清晰：`api → services → executors/models/utils`。
-- 不要绕过 `app.config.Settings`，新配置项使用 `AEGISOTA_` 前缀。
-- 任务产物输出到 `artifacts/` 目录，不写入其他路径。
-
-### 提交前检查
+4. **验证安装**
 
 ```bash
-# 格式化
-ruff format app tests
-
-# 静态检查
-ruff check app tests
-
-# 类型检查
-mypy app tests
+# CLI 应该可用
+labctl --help
 
 # 运行测试
+pytest tests/ -v
+```
+
+5. **启动开发服务**
+
+```bash
+# 数据库会自动创建
+uvicorn app.main:app --reload
+```
+
+访问 http://localhost:8000/docs 查看 API 文档。
+
+### 编码规范
+
+**Python 风格**
+
+- 遵循 [PEP 8](https://pep8.org/)
+- 使用类型注解
+- 函数长度不超过 50 行
+- 类长度不超过 300 行
+
+**命名约定**
+
+| 类型 | 约定 | 示例 |
+|------|------|------|
+| 模块 | `snake_case` | `device_service.py` |
+| 类 | `PascalCase` | `DeviceService` |
+| 函数/方法 | `snake_case` | `get_device_by_id` |
+| 常量 | `UPPER_SNAKE_CASE` | `DEFAULT_TIMEOUT` |
+| 私有方法 | `_leading_underscore` | `_validate_input` |
+
+**文档字符串**
+
+使用中文，遵循 Google 风格：
+
+```python
+def get_device(device_id: int) -> Device:
+    """获取设备详情。
+
+    Args:
+        device_id: 设备 ID
+
+    Returns:
+        Device: 设备对象
+
+    Raises:
+        HTTPException: 设备不存在时抛出 404
+    """
+```
+
+### Git 工作流
+
+**分支管理**
+
+```
+main          - 主分支，保护状态
+├── feature/xxx  - 新功能
+├── fix/xxx      - Bug 修复
+└── docs/xxx     - 文档更新
+```
+
+**提交消息格式**
+
+使用 Conventional Commits：
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**类型说明：**
+
+| Type | 说明 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | Bug 修复 |
+| `docs` | 文档更新 |
+| `style` | 代码格式 |
+| `refactor` | 重构 |
+| `test` | 测试相关 |
+| `chore` | 构建/工具 |
+
+**示例：**
+
+```bash
+feat(api): add device pool capacity endpoint
+
+- Add GET /api/pools/{id}/capacity
+- Return available/reserved/busy counts
+- Add utilization percentage
+
+Closes #42
+```
+
+**提交前检查清单**
+
+```bash
+# 1. 代码格式化
+ruff format app/
+ruff check app/
+
+# 2. 运行测试
+pytest tests/ -v
+
+# 3. 运行覆盖率 (可选)
+pytest --cov=app --cov-report=term-missing
+
+# 4. 检查变更
+git diff
+```
+
+### 测试指南
+
+**运行测试**
+
+```bash
+# 全部测试
 pytest
+
+# 特定模块
+pytest tests/test_services/ -v
+
+# 特定文件
+pytest tests/test_api/test_devices.py::test_get_device -v
+
+# 带覆盖率
+pytest --cov=app --cov-report=html
+open htmlcov/index.html
+```
+
+**编写测试**
+
+```python
+# tests/test_services/test_device_service.py
+import pytest
+from app.services.device_service import DeviceService
+
+class TestDeviceService:
+    @pytest.fixture
+    def db(self):
+        # 测试数据库
+        ...
+
+    @pytest.fixture
+    def service(self, db):
+        return DeviceService(db)
+
+    def test_sync_discovers_devices(self, service, mock_adb):
+        """测试同步发现设备。"""
+        mock_adb.list_devices.return_value = [("ABC123", "device")]
+
+        result = service.sync_devices()
+
+        assert result.discovered == 1
+        assert result.registered == 0
+```
+
+**Mock 外部依赖**
+
+```python
+from unittest.mock import patch, MagicMock
+
+@patch("app.executors.adb_executor.subprocess")
+def test_adb_command(mock_subprocess):
+    mock_subprocess.run.return_value = MagicMock(returncode=0, stdout="OK")
+
+    # 测试代码
+```
+
+### 开发功能
+
+**添加 API 端点**
+
+1. 创建路由文件
+
+```python
+# app/api/my_feature.py
+from fastapi import APIRouter, HTTPException
+
+router = APIRouter(prefix="/api/my-feature", tags=["my-feature"])
+
+@router.get("/")
+def list_items():
+    """列出项目。"""
+    return {"items": []}
+
+@router.post("/")
+def create_item(name: str):
+    """创建项目。"""
+    return {"id": 1, "name": name}
+```
+
+2. 注册路由
+
+```python
+# app/main.py
+from app.api import my_feature
+
+app.include_router(my_feature.router)
+```
+
+3. 编写测试
+
+```python
+# tests/test_api/test_my_feature.py
+def test_list_items(client):
+    resp = client.get("/api/my-feature")
+    assert resp.status_code == 200
+    assert "items" in resp.json()
+```
+
+**添加异常注入插件**
+
+1. 创建插件类
+
+```python
+# app/faults/my_fault.py
+from app.faults.base import FaultPlugin, FaultResult
+from app.executors.run_context import RunContext
+
+class MyFault(FaultPlugin):
+    """我的故障注入。"""
+
+    fault_type = "my_fault"
+    fault_stage = "precheck"
+
+    def prepare(self, context: RunContext) -> None:
+        # 准备条件
+        pass
+
+    def inject(self, context: RunContext) -> FaultResult:
+        # 注入故障
+        return FaultResult(success=True)
+
+    def cleanup(self, context: RunContext) -> None:
+        # 清理恢复
+        pass
+```
+
+2. 注册插件
+
+```python
+# app/faults/__init__.py
+from app.faults.my_fault import MyFault
+
+FAULT_PLUGINS = {
+    "my_fault": MyFault,
+    # ...
+}
 ```
 
 ### Pull Request 流程
 
-1. 从 `main` 分支创建特性分支：`git checkout -b feat/your-feature`
-2. 提交更改并编写清晰的 commit message
-3. 确保所有测试通过且 lint 检查无误
-4. 推送到你的 Fork 仓库并提交 Pull Request
-5. 在 PR 中说明变更内容、动机和相关 issue 编号
+**PR 模板**
 
-### 添加新功能
+```markdown
+## 变更说明
+简要描述变更内容和原因。
 
-- **故障插件**：在 `app/faults/` 下实现，遵循 `FaultPlugin` 生命周期，并在测试中添加用例。
-- **验证器**：放在 `app/validators/`，返回结构化验证结果。
-- **日志解析器**：放在 `app/parsers/`，输出可诊断的归一化事件。
-- **API 端点**：请求/响应模型放在 `app/api/schemas.py`，路由保持简洁，业务逻辑放入服务层。
-- **调度/执行器变更**：同时审查 `run_service`、`scheduler_service`、`worker_service`、`preemption_service`，注意状态机和租约生命周期。
+## 相关 Issue
+Closes #123
 
-###  issue 提交
+## 测试
+- [ ] 已添加单元测试
+- [ ] 已运行所有测试
+- [ ] 覆盖率无下降
 
-提交 issue 时请包含：
+## 检查清单
+- [ ] 代码已格式化 (ruff format)
+- [ ] 通过代码检查 (ruff check)
+- [ ] 已更新文档
+```
 
-- 问题描述和复现步骤
-- 预期行为与实际行为
-- 相关日志或截图
-- 环境信息（Python 版本、OS、ADB 版本等）
+**审核流程**
+
+1. 创建 PR
+2. CI 自动运行测试
+3. 维护者审核
+4. 根据反馈修改
+5. 合并到 main
+
+### 安全注意事项
+
+- **禁止**硬编码敏感信息（使用环境变量或配置文件）
+- **禁止**使用 `shell=True` 执行用户输入
+- **务必**验证所有用户输入
+- **务必**使用参数化查询
+- **务必**为新 API 添加认证保护
+
+### 获取帮助
+
+- 提交 Issue：https://github.com/MuyuQ/AegisOTA/issues
+- 查看现有讨论
+
+感谢你的贡献！
+
+## 详细文档
+
+- [系统架构详解](docs/architecture.md) - 分层设计、核心模块、数据模型、状态机、执行流程
+- [API 参考文档](docs/API.md) - 完整端点说明、参数、响应、错误码、使用示例
+- [贡献指南](docs/CONTRIBUTING.md) - 开发环境、编码规范、Git 工作流、测试指南、PR 流程
 
 ## 许可证
 
