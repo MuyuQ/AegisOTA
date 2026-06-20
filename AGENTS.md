@@ -66,12 +66,14 @@ app/
 ├── diagnosis/      # rule engine, confidence, similar-case lookup
 ├── reporting/      # report generation and failure classification
 ├── models/         # SQLAlchemy models and enums
+├── middleware/     # rate limiter
 ├── templates/      # Jinja2 pages
 ├── static/         # CSS/static assets
 ├── rules/          # diagnosis rules
 ├── utils/          # logging and transaction helpers
 ├── config.py       # settings, env loading, directory bootstrapping
 ├── database.py     # DB init/session setup
+├── exceptions.py   # custom exceptions
 └── main.py         # FastAPI app entry
 tests/
 docs/
@@ -103,7 +105,7 @@ Plugins implement `prepare()`, `inject()`, `cleanup()` methods.
 class FaultPlugin(ABC):
     fault_type: str
     fault_stage: str
-    
+
     def prepare(self, context) -> FaultResult: ...
     def inject(self, context) -> FaultResult: ...  # Must implement
     def cleanup(self, context) -> FaultResult: ...
