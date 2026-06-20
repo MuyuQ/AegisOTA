@@ -196,7 +196,7 @@ class PrecheckHandler(StepHandler):
             if match:
                 battery_level = int(match.group(1))
 
-        if battery_level is not None and battery_level < 20:
+        if battery_level and battery_level < 20:
             return StepHandlerResult(
                 success=False,
                 step_name=self.step_name,
@@ -403,21 +403,6 @@ class RebootWaitHandler(StepHandler):
         reboot_result = self.executor.reboot(device=context.device_serial)
         self._record_command(context, "reboot", reboot_result)
 
-        # P1-5: 检查 reboot 命令是否成功发送
-        if not reboot_result.success:
-            return StepHandlerResult(
-                success=False,
-                step_name=self.step_name,
-                message="重启命令发送失败",
-                data={
-                    "stdout": reboot_result.stdout,
-                    "stderr": reboot_result.stderr,
-                    "exit_code": reboot_result.exit_code,
-                },
-                duration_ms=int((time.time() - start_time) * 1000),
-                error=f"Reboot command failed: {reboot_result.stderr}",
-            )
-
         # 等待设备重启完成
         boot_timeout = self.timeout
         wait_start = time.time()
@@ -486,7 +471,6 @@ class PostValidateHandler(StepHandler):
         # 检查版本
         props = self.executor.getprop(device=context.device_serial)
         current_version = props.get("ro.build.fingerprint")
-        current_build = props.get("ro.build.display.id")
 
         # 检查开机完成
         boot_completed = props.get("sys.boot_completed") == "1"
@@ -501,34 +485,12 @@ class PostValidateHandler(StepHandler):
                 error="sys.boot_completed != 1",
             )
 
-        # P1-4: 校验 target build / fingerprint（如果上下文中指定了目标版本）
-        target_fingerprint_mismatch = False
-        if context.target_build and current_version:
-            if context.target_build not in current_version:
-                target_fingerprint_mismatch = True
-
         # 保存验证结果
         validation_data = {
             "current_version": current_version,
-            "current_build": current_build,
             "boot_completed": boot_completed,
-            "target_build": context.target_build,
-            "fingerprint_mismatch": target_fingerprint_mismatch,
             "validation_time": datetime.now(timezone.utc).isoformat(),
         }
-
-        if target_fingerprint_mismatch:
-            return StepHandlerResult(
-                success=False,
-                step_name=self.step_name,
-                message="升级后版本与目标版本不匹配",
-                data=validation_data,
-                duration_ms=int((time.time() - start_time) * 1000),
-                error=(
-                    f"Expected fingerprint containing '{context.target_build}', "
-                    f"got '{current_version}'"
-                ),
-            )
 
         self._save_artifact(
             context,

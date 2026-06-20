@@ -3,82 +3,197 @@
 {% block title %}仪表盘 - AegisOTA{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 2rem;">仪表盘</h1>
+<!-- Stats Overview -->
+<div class="stats-overview">
+    <div class="stat-card success">
+        <div class="stat-card-header">
+            <span class="stat-card-label">设备总数</span>
+            <div class="stat-card-icon">◉</div>
+        </div>
+        <div class="stat-card-value">{{ stats.total_devices }}</div>
+    </div>
 
-<div class="grid grid-cols-4">
-    <div class="card stat-card">
-        <div class="stat-value">{{ stats.total_devices }}</div>
-        <div class="stat-label">设备总数</div>
+    <div class="stat-card info">
+        <div class="stat-card-header">
+            <span class="stat-card-label">空闲设备</span>
+            <div class="stat-card-icon">◈</div>
+        </div>
+        <div class="stat-card-value">{{ stats.idle_devices }}</div>
     </div>
-    <div class="card stat-card">
-        <div class="stat-value">{{ stats.idle_devices }}</div>
-        <div class="stat-label">空闲设备</div>
+
+    <div class="stat-card warning">
+        <div class="stat-card-header">
+            <span class="stat-card-label">运行中任务</span>
+            <div class="stat-card-icon">▣</div>
+        </div>
+        <div class="stat-card-value">{{ stats.running_tasks }}</div>
     </div>
-    <div class="card stat-card">
-        <div class="stat-value">{{ stats.running_tasks }}</div>
-        <div class="stat-label">运行中任务</div>
-    </div>
-    <div class="card stat-card">
-        <div class="stat-value">{{ stats.today_tasks }}</div>
-        <div class="stat-label">今日任务</div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">今日任务</span>
+            <div class="stat-card-icon">◫</div>
+        </div>
+        <div class="stat-card-value">{{ stats.today_tasks }}</div>
     </div>
 </div>
 
-<div class="grid grid-cols-2" style="margin-top: 2rem;">
-    <div class="card">
-        <div class="card-header">设备状态分布</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>状态</th>
-                    <th>数量</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><span class="status-badge status-idle">空闲</span></td>
-                    <td>{{ stats.idle_devices }}</td>
-                </tr>
-                <tr>
-                    <td><span class="status-badge status-busy">忙碌</span></td>
-                    <td>{{ stats.busy_devices }}</td>
-                </tr>
-                <tr>
-                    <td><span class="status-badge status-offline">离线</span></td>
-                    <td>{{ stats.offline_devices }}</td>
-                </tr>
-                <tr>
-                    <td><span class="status-badge status-quarantined">隔离</span></td>
-                    <td>{{ stats.quarantined_devices }}</td>
-                </tr>
-            </tbody>
-        </table>
+<!-- Content Grid -->
+<div class="content-grid">
+    <!-- Device Status Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">◉</span>
+                <span>设备状态分布</span>
+            </div>
+            <a href="/devices" class="btn btn-ghost btn-sm">查看全部</a>
+        </div>
+        <div class="panel-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>状态</th>
+                        <th style="text-align: right;">数量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="status-indicator">
+                                <span class="status-dot success"></span>
+                                <span class="status-text success">空闲</span>
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-family: var(--font-mono); font-weight: 600;">{{ stats.idle_devices }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="status-indicator">
+                                <span class="status-dot warning"></span>
+                                <span class="status-text warning">忙碌</span>
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-family: var(--font-mono); font-weight: 600;">{{ stats.busy_devices }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="status-indicator">
+                                <span class="status-dot neutral"></span>
+                                <span class="status-text neutral">离线</span>
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-family: var(--font-mono); font-weight: 600;">{{ stats.offline_devices }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="status-indicator">
+                                <span class="status-dot danger"></span>
+                                <span class="status-text danger">隔离</span>
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-family: var(--font-mono); font-weight: 600;">{{ stats.quarantined_devices }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">最近任务</div>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>任务名称</th>
-                    <th>设备</th>
-                    <th>状态</th>
-                    <th>结果</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for run in recent_runs %}
-                <tr>
-                    <td><a href="/runs/{{ run.id }}">#{{ run.id }}</a></td>
-                    <td>{{ run.plan_name }}</td>
-                    <td><code>{{ run.device_serial }}</code></td>
-                    <td><span class="status-badge status-{{ run.status }}">{{ run.status }}</span></td>
-                    <td>{{ run.result or '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Recent Runs Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">▣</span>
+                <span>最近任务</span>
+            </div>
+            <a href="/runs" class="btn btn-ghost btn-sm">查看全部</a>
+        </div>
+        <div class="panel-body">
+            {% if recent_runs %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>任务</th>
+                        <th>状态</th>
+                        <th style="text-align: right;">结果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in recent_runs %}
+                    <tr>
+                        <td>
+                            <a href="/runs/{{ run.id }}">#{{ run.id }}</a>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">{{ run.plan_name }}</div>
+                            <div class="code" style="margin-top: 2px;">{{ run.device_serial }}</div>
+                        </td>
+                        <td>
+                            {% if run.status == 'running' %}
+                                <span class="status-badge warning">{{ run.status }}</span>
+                            {% elif run.status == 'passed' %}
+                                <span class="status-badge success">{{ run.status }}</span>
+                            {% elif run.status == 'failed' %}
+                                <span class="status-badge danger">{{ run.status }}</span>
+                            {% else %}
+                                <span class="status-badge neutral">{{ run.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            {% if run.result %}
+                                <span class="{% if run.result == 'passed' %}text-success{% elif run.result == 'failed' %}text-danger{% else %}text-secondary{% endif %}">
+                                    {{ run.result }}
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-tertiary);">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">◫</div>
+                <div class="empty-state-title">暂无任务</div>
+                <div class="empty-state-description">创建一个新任务开始测试</div>
+                <a href="/runs/create" class="btn btn-primary" style="margin-top: var(--space-4);">创建任务</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div style="margin-top: var(--space-6);">
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span class="panel-title-icon">⚡</span>
+                <span>快捷操作</span>
+            </div>
+        </div>
+        <div class="panel-body" style="padding: var(--space-4);">
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <a href="/runs/create" class="btn btn-primary">
+                    <span>+</span>
+                    <span>创建任务</span>
+                </a>
+                <a href="/devices" class="btn btn-secondary">
+                    <span>◉</span>
+                    <span>设备管理</span>
+                </a>
+                <a href="/pools" class="btn btn-secondary">
+                    <span>◈</span>
+                    <span>设备池</span>
+                </a>
+                <a href="/diagnosis" class="btn btn-secondary">
+                    <span>◐</span>
+                    <span>诊断记录</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -3,44 +3,53 @@
 {% block title %}诊断记录 - AegisOTA{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <div>
-        <h1>诊断记录</h1>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">共 {{ total_count }} 条诊断记录</p>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">诊断记录</h1>
+    <p class="page-subtitle">查看任务失败诊断分析结果</p>
+</div>
+
+<!-- Search Panel -->
+<div class="panel" style="margin-bottom: var(--space-5);">
+    <div class="panel-body">
+        <form method="GET" action="/diagnosis" style="display: flex; gap: var(--space-4); align-items: flex-end; flex-wrap: wrap; padding: var(--space-4);">
+            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                <label for="serial" class="form-label">设备序列号</label>
+                <input type="text" id="serial" name="serial" class="form-input"
+                       value="{{ serial or '' }}" placeholder="输入设备 SN 搜索" style="width: 100%;">
+            </div>
+            <div class="form-group" style="min-width: 180px; margin-bottom: 0;">
+                <label for="category" class="form-label">故障分类</label>
+                <select id="category" name="category" class="form-input" style="width: 100%;">
+                    <option value="">全部</option>
+                    <option value="device_env_issue" {% if category == 'device_env_issue' %}selected{% endif %}>设备环境问题</option>
+                    <option value="boot_failure" {% if category == 'boot_failure' %}selected{% endif %}>启动失败</option>
+                    <option value="package_issue" {% if category == 'package_issue' %}selected{% endif %}>升级包问题</option>
+                    <option value="validation_failure" {% if category == 'validation_failure' %}selected{% endif %}>验证失败</option>
+                    <option value="monkey_instability" {% if category == 'monkey_instability' %}selected{% endif %}>Monkey 不稳定</option>
+                    <option value="adb_transport_issue" {% if category == 'adb_transport_issue' %}selected{% endif %}>ADB 传输问题</option>
+                    <option value="unknown" {% if category == 'unknown' %}selected{% endif %}>未知</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: var(--space-2);">
+                <button type="submit" class="btn btn-primary">搜索</button>
+                <a href="/diagnosis" class="btn btn-secondary">清除</a>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- 搜索栏 -->
-<div class="card" style="margin-bottom: 1.5rem;">
-    <form method="GET" action="/diagnosis" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-        <div class="form-group" style="flex: 1; min-width: 200px;">
-            <label for="serial" class="form-label">设备序列号</label>
-            <input type="text" id="serial" name="serial" class="form-input"
-                   value="{{ serial or '' }}" placeholder="输入设备 SN 搜索">
+<!-- Diagnosis List Panel -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">◐</span>
+            <span>诊断记录 {% if total_count %}({{ total_count }}){% endif %}</span>
         </div>
-        <div class="form-group" style="min-width: 150px;">
-            <label for="category" class="form-label">故障分类</label>
-            <select id="category" name="category" class="form-select">
-                <option value="">全部</option>
-                <option value="device_env_issue" {% if category == 'device_env_issue' %}selected{% endif %}>设备环境问题</option>
-                <option value="boot_failure" {% if category == 'boot_failure' %}selected{% endif %}>启动失败</option>
-                <option value="package_issue" {% if category == 'package_issue' %}selected{% endif %}>升级包问题</option>
-                <option value="validation_failure" {% if category == 'validation_failure' %}selected{% endif %}>验证失败</option>
-                <option value="monkey_instability" {% if category == 'monkey_instability' %}selected{% endif %}>Monkey 不稳定</option>
-                <option value="adb_transport_issue" {% if category == 'adb_transport_issue' %}selected{% endif %}>ADB 传输问题</option>
-                <option value="unknown" {% if category == 'unknown' %}selected{% endif %}>未知</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">搜索</button>
-        <a href="/diagnosis" class="btn btn-secondary">清除</a>
-    </form>
-</div>
-
-<!-- 诊断记录表格 -->
-<div class="card">
-    {% if diagnoses %}
-    <div class="table-responsive">
-        <table class="table">
+    </div>
+    <div class="panel-body">
+        {% if diagnoses %}
+        <table class="data-table">
             <thead>
                 <tr>
                     <th>任务 ID</th>
@@ -56,9 +65,7 @@
                 {% for diag in diagnoses %}
                 <tr>
                     <td>
-                        <a href="/runs/{{ diag.run_id }}" style="text-decoration: none; color: var(--primary-color);">
-                            #{{ diag.run_id }}
-                        </a>
+                        <a href="/runs/{{ diag.run_id }}">#{{ diag.run_id }}</a>
                     </td>
                     <td><code>{{ diag.device_serial }}</code></td>
                     <td>
@@ -70,106 +77,79 @@
                             {{ (diag.confidence * 100)|round|int }}%
                         </span>
                     </td>
-                    <td>{{ diag.created_at_display }}</td>
+                    <td style="color: var(--text-tertiary); font-size: 12px;">{{ diag.created_at_display }}</td>
                     <td>
-                        <a href="/diagnosis/{{ diag.run_id }}" class="btn btn-sm btn-primary">查看详情</a>
+                        <a href="/diagnosis/{{ diag.run_id }}" class="btn btn-sm btn-secondary">详情</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
 
-    <!-- 分页 -->
-    {% if total_pages > 1 %}
-    <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-        {% if page > 1 %}
-        <a href="/diagnosis?page={{ page - 1 }}{% if serial %}&serial={{ serial }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
-           class="btn btn-sm btn-secondary">上一页</a>
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div style="display: flex; justify-content: center; align-items: center; gap: var(--space-2); padding: var(--space-4); border-top: 1px solid var(--border-default);">
+            {% if page > 1 %}
+            <a href="/diagnosis?page={{ page - 1 }}{% if serial %}&serial={{ serial }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
+               class="btn btn-sm btn-secondary">上一页</a>
+            {% endif %}
+
+            <span style="color: var(--text-secondary); font-size: 13px;">
+                第 {{ page }} 页，共 {{ total_pages }} 页
+            </span>
+
+            {% if page < total_pages %}
+            <a href="/diagnosis?page={{ page + 1 }}{% if serial %}&serial={{ serial }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
+               class="btn btn-sm btn-secondary">下一页</a>
+            {% endif %}
+        </div>
         {% endif %}
 
-        <span style="color: var(--text-muted);">
-            第 {{ page }} 页，共 {{ total_pages }} 页
-        </span>
-
-        {% if page < total_pages %}
-        <a href="/diagnosis?page={{ page + 1 }}{% if serial %}&serial={{ serial }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
-           class="btn btn-sm btn-secondary">下一页</a>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">◐</div>
+            <div class="empty-state-title">暂无诊断记录</div>
+            <div class="empty-state-description">当任务执行失败时，系统会自动进行诊断分析</div>
+        </div>
         {% endif %}
     </div>
-    {% endif %}
-
-    {% else %}
-    <!-- 空状态 -->
-    <div class="empty-state" style="text-align: center; padding: 3rem;">
-        <p style="color: var(--text-muted); font-size: 1.125rem;">暂无诊断记录</p>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">
-            当任务执行失败时，系统会自动进行诊断分析
-        </p>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <style>
-    /* 故障分类标签颜色 */
+    /* Category Badge Colors */
     .category-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .category-device_env_issue { background-color: #fef3c7; color: #b45309; }
-    .category-boot_failure { background-color: #fee2e2; color: #b91c1c; }
-    .category-package_issue { background-color: #fed7aa; color: #c2410c; }
-    .category-validation_failure { background-color: #e0f2fe; color: #0369a1; }
-    .category-monkey_instability { background-color: #fae8ff; color: #9334ea; }
-    .category-adb_transport_issue { background-color: #f1f5f9; color: #475569; }
-    .category-unknown { background-color: #f1f5f9; color: #64748b; }
-
-    /* 暗黑模式分类标签 */
-    @media (prefers-color-scheme: dark) {
-        .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
-        .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
-        .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
-        .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
-        .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
-        .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
-        .category-unknown { background-color: #334155; color: #94a3b8; }
-    }
-
-    [data-theme="dark"] .category-device_env_issue { background-color: #78350f; color: #fef3c7; }
-    [data-theme="dark"] .category-boot_failure { background-color: #7f1d1d; color: #fecaca; }
-    [data-theme="dark"] .category-package_issue { background-color: #7c2d12; color: #fed7aa; }
-    [data-theme="dark"] .category-validation_failure { background-color: #0c4a6e; color: #bae6fd; }
-    [data-theme="dark"] .category-monkey_instability { background-color: #6b21a8; color: #fae8ff; }
-    [data-theme="dark"] .category-adb_transport_issue { background-color: #334155; color: #cbd5e1; }
-    [data-theme="dark"] .category-unknown { background-color: #334155; color: #94a3b8; }
-
-    /* 置信度标签颜色 */
-    .confidence-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.875rem;
+        display: inline-flex;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-md);
+        font-size: 11px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
 
-    .confidence-high { background-color: #dcfce7; color: #15803d; }
-    .confidence-medium { background-color: #fef3c7; color: #b45309; }
-    .confidence-low { background-color: #fee2e2; color: #b91c1c; }
+    .category-device_env_issue { background: rgba(210, 153, 34, 0.15); color: var(--accent-yellow); }
+    .category-boot_failure { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
+    .category-package_issue { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); }
+    .category-validation_failure { background: rgba(88, 166, 255, 0.15); color: var(--accent-blue); }
+    .category-monkey_instability { background: rgba(163, 113, 247, 0.15); color: var(--accent-purple); }
+    .category-adb_transport_issue { background: var(--bg-tertiary); color: var(--text-secondary); }
+    .category-unknown { background: var(--bg-tertiary); color: var(--text-tertiary); }
 
-    @media (prefers-color-scheme: dark) {
-        .confidence-high { background-color: #14532d; color: #bbf7d0; }
-        .confidence-medium { background-color: #78350f; color: #fef3c7; }
-        .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+    /* Confidence Badge Colors */
+    .confidence-badge {
+        display: inline-flex;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-md);
+        font-size: 11px;
+        font-weight: 600;
+        font-family: var(--font-mono);
     }
 
-    [data-theme="dark"] .confidence-high { background-color: #14532d; color: #bbf7d0; }
-    [data-theme="dark"] .confidence-medium { background-color: #78350f; color: #fef3c7; }
-    [data-theme="dark"] .confidence-low { background-color: #7f1d1d; color: #fecaca; }
+    .confidence-high { background: rgba(63, 185, 80, 0.15); color: var(--accent-green); }
+    .confidence-medium { background: rgba(210, 153, 34, 0.15); color: var(--accent-yellow); }
+    .confidence-low { background: rgba(248, 81, 73, 0.15); color: var(--accent-red); }
 </style>
 {% endblock %}

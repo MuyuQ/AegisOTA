@@ -263,8 +263,7 @@ class TestPriorityScheduling:
         assert allocated.pool_id == pool.id
 
         test_db.refresh(run)
-        assert run.status == RunStatus.RUNNING
-        assert run.device_id == allocated.id
+        assert run.status == RunStatus.ALLOCATING
 
     def test_allocate_respects_reserved_capacity(self, test_db):
         """测试分配设备时保留容量。"""

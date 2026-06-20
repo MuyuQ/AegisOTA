@@ -140,15 +140,14 @@ class RunExecutor:
 
         ended_at = datetime.now(timezone.utc)
 
-        # 记录 run_end 事件（必须在写入 timeline.json 之前）
-        context.record_event("run_end", f"Run {context.run_id} ended")
-
         # 保存时间线
         if context.artifact_dir:
             timeline_file = context.artifact_dir / "timeline.json"
             timeline_file.parent.mkdir(parents=True, exist_ok=True)
             with open(timeline_file, "w") as f:
                 json.dump(context.timeline, f, indent=2)
+
+        context.record_event("run_end", f"Run {context.run_id} ended")
 
         return RunExecutionResult(
             success=(failed_step is None),

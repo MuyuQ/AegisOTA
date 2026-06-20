@@ -54,16 +54,18 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if not csrf_token:
             csrf_token = secrets.token_urlsafe(CSRF_TOKEN_LENGTH)
 
-        # 对于 POST/PUT/PATCH/DELETE 请求，强制验证 CSRF token
-        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        # 对于 POST/PUT/DELETE 请求，验证 CSRF token
+        if request.method in ("POST", "PUT", "DELETE"):
             # 从请求头获取 token（HTMX 使用 X-CSRF-Token）
             header_token = request.headers.get("X-CSRF-Token")
-            cookie_token = request.cookies.get(CSRF_TOKEN_COOKIE)
 
-            if not header_token or not cookie_token or cookie_token != header_token:
-                return JSONResponse(
-                    {"detail": "CSRF token missing or invalid"}, status_code=403
-                )
+            # 如果有 header token，验证它
+            if header_token is not None:
+                cookie_token = request.cookies.get(CSRF_TOKEN_COOKIE)
+                if not cookie_token or cookie_token != header_token:
+                    return JSONResponse(
+                        {"detail": "CSRF token missing or invalid"}, status_code=400
+                    )
 
         # 调用下一个处理器
         response = await call_next(request)

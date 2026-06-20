@@ -3,68 +3,96 @@
 {% block title %}系统设置 - AegisOTA{% endblock %}
 
 {% block content %}
-<h1>系统设置</h1>
+<!-- Page Header -->
+<div class="page-header" style="margin-bottom: var(--space-6);">
+    <h1 class="page-title">系统设置</h1>
+    <p class="page-subtitle">配置系统参数和测试选项</p>
+</div>
 
-<div class="card" style="margin-top: 1.5rem;">
-    <div class="card-header">执行配置</div>
-    <form hx-post="/settings/config" hx-swap="innerHTML" hx-target="#config-result" style="margin-top: 0.5rem;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <table class="table">
-            <tr>
-                <td style="width: 200px;">
-                    <label class="form-label" style="margin: 0;">最大并发任务数</label>
-                </td>
-                <td>
-                    <input type="number" name="max_concurrent_runs" value="{{ max_concurrent_runs }}"
-                           class="form-input" style="width: 100px;" min="1" max="20">
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label class="form-label" style="margin: 0;">默认超时时间 (秒)</label>
-                </td>
-                <td>
-                    <input type="number" name="default_timeout" value="{{ default_timeout }}"
-                           class="form-input" style="width: 100px;" min="60" max="3600">
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label class="form-label" style="margin: 0;">重启等待超时 (秒)</label>
-                </td>
-                <td>
-                    <input type="number" name="reboot_wait_timeout" value="{{ reboot_wait_timeout }}"
-                           class="form-input" style="width: 100px;" min="30" max="600">
-                </td>
-            </tr>
-        </table>
+<!-- Settings Form -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">⚙</span>
+            <span>执行配置</span>
+        </div>
+    </div>
+    <div class="panel-body">
+        <form hx-post="/settings/config" hx-swap="innerHTML" hx-target="#config-result">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-        <div class="card-header" style="margin-top: 1rem;">Monkey 测试配置</div>
-        <table class="table" style="margin-top: 0.5rem;">
-            <tr>
-                <td style="width: 200px;">
-                    <label class="form-label" style="margin: 0;">默认事件数</label>
-                </td>
-                <td>
-                    <input type="number" name="monkey_default_count" value="{{ monkey_default_count }}"
-                           class="form-input" style="width: 120px;" min="100" max="100000">
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label class="form-label" style="margin: 0;">事件间隔 (ms)</label>
-                </td>
-                <td>
-                    <input type="number" name="monkey_throttle" value="{{ monkey_throttle }}"
-                           class="form-input" style="width: 100px;" min="10" max="1000">
-                </td>
-            </tr>
-        </table>
+            <div style="padding: var(--space-5);">
+                <!-- Execution Config -->
+                <div style="margin-bottom: var(--space-6);">
+                    <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.03em;">执行配置</h3>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
-            保存配置
-        </button>
-    </form>
-    <div id="config-result" style="margin-top: 1rem;"></div>
+                    <div style="display: grid; gap: var(--space-4);">
+                        <div class="form-group" style="display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: var(--space-4);">
+                            <label class="form-label" style="margin: 0; font-weight: 500;">最大并发任务数</label>
+                            <div>
+                                <input type="number" name="max_concurrent_runs" value="{{ max_concurrent_runs }}"
+                                       class="form-input" style="width: 120px;" min="1" max="20">
+                                <span style="color: var(--text-tertiary); font-size: 12px; margin-left: var(--space-3);">同时运行的最大任务数量</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: var(--space-4);">
+                            <label class="form-label" style="margin: 0; font-weight: 500;">默认超时时间 (秒)</label>
+                            <div>
+                                <input type="number" name="default_timeout" value="{{ default_timeout }}"
+                                       class="form-input" style="width: 120px;" min="60" max="3600">
+                                <span style="color: var(--text-tertiary); font-size: 12px; margin-left: var(--space-3);">任务执行超时时间</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: var(--space-4);">
+                            <label class="form-label" style="margin: 0; font-weight: 500;">重启等待超时 (秒)</label>
+                            <div>
+                                <input type="number" name="reboot_wait_timeout" value="{{ reboot_wait_timeout }}"
+                                       class="form-input" style="width: 120px;" min="30" max="600">
+                                <span style="color: var(--text-tertiary); font-size: 12px; margin-left: var(--space-3);">设备重启后等待时间</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 1px; background: var(--border-default); margin: var(--space-5) 0;"></div>
+
+                <!-- Monkey Config -->
+                <div>
+                    <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-4); text-transform: uppercase; letter-spacing: 0.03em;">Monkey 测试配置</h3>
+
+                    <div style="display: grid; gap: var(--space-4);">
+                        <div class="form-group" style="display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: var(--space-4);">
+                            <label class="form-label" style="margin: 0; font-weight: 500;">默认事件数</label>
+                            <div>
+                                <input type="number" name="monkey_default_count" value="{{ monkey_default_count }}"
+                                       class="form-input" style="width: 120px;" min="100" max="100000">
+                                <span style="color: var(--text-tertiary); font-size: 12px; margin-left: var(--space-3);">Monkey 测试的事件数量</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="display: grid; grid-template-columns: 200px 1fr; align-items: center; gap: var(--space-4);">
+                            <label class="form-label" style="margin: 0; font-weight: 500;">事件间隔 (ms)</label>
+                            <div>
+                                <input type="number" name="monkey_throttle" value="{{ monkey_throttle }}"
+                                       class="form-input" style="width: 120px;" min="10" max="1000">
+                                <span style="color: var(--text-tertiary); font-size: 12px; margin-left: var(--space-3);">事件之间的间隔时间</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="padding: var(--space-4) var(--space-5); background: var(--bg-tertiary); border-top: 1px solid var(--border-default); display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary">
+                    <span>✓</span>
+                    <span>保存配置</span>
+                </button>
+            </div>
+        </form>
+        <div id="config-result" style="padding: var(--space-4) var(--space-5);"></div>
+    </div>
 </div>
 {% endblock %}

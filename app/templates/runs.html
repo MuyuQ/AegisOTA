@@ -3,48 +3,102 @@
 {% block title %}任务列表 - AegisOTA{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>任务列表</h1>
-    <a href="/runs/create" class="btn btn-primary">创建任务</a>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">任务列表</h1>
+    <p class="page-subtitle">查看和管理 OTA 升级任务</p>
 </div>
 
-<div class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>升级计划</th>
-                <th>设备</th>
-                <th>状态</th>
-                <th>结果</th>
-                <th>耗时</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for run in runs %}
-            <tr>
-                <td><a href="/runs/{{ run.id }}" class="text-secondary"><strong>#{{ run.id }}</strong></a></td>
-                <td class="text-secondary">{{ run.plan_name }}</td>
-                <td class="text-secondary">{{ run.device_serial }}</td>
-                <td>
-                    <span class="status-badge status-{{ run.status }}">{{ run.status }}</span>
-                </td>
-                <td>{{ run.result }}</td>
-                <td class="text-tertiary">{{ run.duration }}s</td>
-                <td class="text-tertiary">{{ run.started_at }}</td>
-                <td>
-                    <a href="/runs/{{ run.id }}" class="btn btn-sm btn-secondary">详情</a>
-                    {% if run.status in ['queued', 'reserved', 'running'] %}
-                    <button class="btn btn-sm btn-danger" hx-post="/api/v1/runs/{{ run.id }}/abort" hx-swap="outerHTML" hx-target="closest tr">
-                        终止
-                    </button>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Actions Bar -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5);">
+    <div style="display: flex; gap: var(--space-3);">
+        <span class="status-indicator">
+            <span class="status-dot info"></span>
+            <span class="status-text info">运行中</span>
+        </span>
+        <span class="status-indicator">
+            <span class="status-dot success"></span>
+            <span class="status-text success">成功</span>
+        </span>
+        <span class="status-indicator">
+            <span class="status-dot danger"></span>
+            <span class="status-text danger">失败</span>
+        </span>
+    </div>
+    <a href="/runs/create" class="btn btn-primary">
+        <span>+</span>
+        <span>创建任务</span>
+    </a>
+</div>
+
+<!-- Task List Panel -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <span class="panel-title-icon">▣</span>
+            <span>任务列表 ({{ runs|length }})</span>
+        </div>
+    </div>
+    <div class="panel-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>升级计划</th>
+                    <th>设备</th>
+                    <th>状态</th>
+                    <th>结果</th>
+                    <th>耗时</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in runs %}
+                <tr>
+                    <td>
+                        <a href="/runs/{{ run.id }}">#{{ run.id }}</a>
+                    </td>
+                    <td>{{ run.plan_name }}</td>
+                    <td>
+                        <code>{{ run.device_serial }}</code>
+                    </td>
+                    <td>
+                        {% if run.status == 'running' %}
+                            <span class="status-badge warning">{{ run.status }}</span>
+                        {% elif run.status == 'passed' %}
+                            <span class="status-badge success">{{ run.status }}</span>
+                        {% elif run.status == 'failed' %}
+                            <span class="status-badge danger">{{ run.status }}</span>
+                        {% else %}
+                            <span class="status-badge neutral">{{ run.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if run.result %}
+                            <span class="{% if run.result == 'passed' %}text-success{% elif run.result == 'failed' %}text-danger{% else %}text-secondary{% endif %}">
+                                {{ run.result }}
+                            </span>
+                        {% else %}
+                            <span style="color: var(--text-tertiary);">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: var(--font-mono); color: var(--text-secondary);">{{ run.duration }}s</td>
+                    <td style="color: var(--text-tertiary); font-size: 12px;">{{ run.started_at }}</td>
+                    <td>
+                        <div style="display: flex; gap: var(--space-2);">
+                            <a href="/runs/{{ run.id }}" class="btn btn-sm btn-secondary">详情</a>
+                            {% if run.status in ['queued', 'reserved', 'running'] %}
+                            <button class="btn btn-sm btn-secondary" hx-post="/api/v1/runs/{{ run.id }}/abort" hx-swap="outerHTML" hx-target="closest tr">
+                                终止
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
