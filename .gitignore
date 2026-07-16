@@ -55,3 +55,7 @@ artifacts/*
 
 # Claude Code
 CLAUDE.md
+
+.DS_Store
+*.pyc
+*.sync-conflict-*
