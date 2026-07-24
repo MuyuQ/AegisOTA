@@ -152,7 +152,9 @@ class FailureClassifier:
 
     def get_recommendation(self, category: FailureCategory) -> str:
         """获取处理建议。"""
-        return self.recommendations.get(category, self.recommendations[FailureCategory.UNKNOWN])
+        return self.recommendations.get(
+            category, self.recommendations[FailureCategory.UNKNOWN]
+        )
 
     def get_next_actions(self, category: FailureCategory) -> List[str]:
         """获取下一步行动建议。"""

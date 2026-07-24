@@ -149,10 +149,16 @@ class RunSession(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     plan_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("upgrade_plans.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("upgrade_plans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     device_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("devices.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     # 优先级和设备池
@@ -160,7 +166,10 @@ class RunSession(Base):
         String(16), default=RunPriority.NORMAL, nullable=False, index=True
     )
     pool_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("device_pools.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("device_pools.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     preemptible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     drill_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -170,7 +179,9 @@ class RunSession(Base):
         String(32), default=RunStatus.QUEUED, nullable=False, index=True
     )
     result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    failure_category: Mapped[Optional[FailureCategory]] = mapped_column(String(32), nullable=True)
+    failure_category: Mapped[Optional[FailureCategory]] = mapped_column(
+        String(32), nullable=True
+    )
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 任务选项（JSON 存储）
@@ -199,7 +210,9 @@ class RunSession(Base):
     plan: Mapped[Optional["UpgradePlan"]] = relationship(
         "UpgradePlan", back_populates="run_sessions"
     )
-    device: Mapped[Optional["Device"]] = relationship("Device", back_populates="run_sessions")
+    device: Mapped[Optional["Device"]] = relationship(
+        "Device", back_populates="run_sessions"
+    )
     steps: Mapped[list["RunStep"]] = relationship(
         "RunStep", back_populates="run_session", cascade="all, delete-orphan"
     )
@@ -253,7 +266,10 @@ class RunStep(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     step_name: Mapped[StepName] = mapped_column(String(32), nullable=False)
     step_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -278,7 +294,9 @@ class RunStep(Base):
     )
 
     # 关系
-    run_session: Mapped["RunSession"] = relationship("RunSession", back_populates="steps")
+    run_session: Mapped["RunSession"] = relationship(
+        "RunSession", back_populates="steps"
+    )
 
     def get_result(self) -> dict[str, Any]:
         """获取步骤结果。"""

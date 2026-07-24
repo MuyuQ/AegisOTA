@@ -6,7 +6,14 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session, joinedload
 
 from app.config import get_settings
-from app.models.run import RunSession, RunStatus, RunStep, StepName, UpgradePlan, UpgradeType
+from app.models.run import (
+    RunSession,
+    RunStatus,
+    RunStep,
+    StepName,
+    UpgradePlan,
+    UpgradeType,
+)
 
 
 class RunService:
@@ -177,7 +184,11 @@ class RunService:
             return None
 
         # 只有排队和运行中的任务可以终止
-        if session.status not in [RunStatus.QUEUED, RunStatus.RESERVED, RunStatus.RUNNING]:
+        if session.status not in [
+            RunStatus.QUEUED,
+            RunStatus.RESERVED,
+            RunStatus.RUNNING,
+        ]:
             return None
 
         session.status = RunStatus.ABORTED
@@ -265,4 +276,9 @@ class RunService:
 
     def get_run_steps(self, run_id: int) -> List[RunStep]:
         """获取任务的所有执行步骤。"""
-        return self.db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()
+        return (
+            self.db.query(RunStep)
+            .filter_by(run_id=run_id)
+            .order_by(RunStep.step_order)
+            .all()
+        )

@@ -31,7 +31,9 @@ class RateLimiter:
         cutoff = now - window_seconds
 
         # 清理过期记录
-        self._requests[identifier] = [ts for ts in self._requests[identifier] if ts > cutoff]
+        self._requests[identifier] = [
+            ts for ts in self._requests[identifier] if ts > cutoff
+        ]
 
         # 检查是否超过限制
         if len(self._requests[identifier]) >= max_requests:

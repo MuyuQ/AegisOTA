@@ -254,11 +254,15 @@ class TestRunSessionCreation:
         ]
 
         for status in terminal_states:
-            session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id, status=status)
+            session = RunSession(
+                device_id=sample_device.id, plan_id=sample_plan.id, status=status
+            )
             assert session.is_terminal_state() is True, f"{status} 应该是终态"
 
         for status in non_terminal_states:
-            session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id, status=status)
+            session = RunSession(
+                device_id=sample_device.id, plan_id=sample_plan.id, status=status
+            )
             assert session.is_terminal_state() is False, f"{status} 不应该是终态"
 
 
@@ -292,7 +296,9 @@ class TestRunSessionRelationships:
         db_session.commit()
 
         step1 = RunStep(run_id=session.id, step_name=StepName.PRECHECK, step_order=1)
-        step2 = RunStep(run_id=session.id, step_name=StepName.APPLY_UPDATE, step_order=2)
+        step2 = RunStep(
+            run_id=session.id, step_name=StepName.APPLY_UPDATE, step_order=2
+        )
         db_session.add_all([step1, step2])
         db_session.commit()
 

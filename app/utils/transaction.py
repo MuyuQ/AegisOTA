@@ -16,7 +16,9 @@ T = TypeVar("T")
 
 
 @contextmanager
-def transaction(db: Session, auto_commit: bool = True) -> Generator[Session, None, None]:
+def transaction(
+    db: Session, auto_commit: bool = True
+) -> Generator[Session, None, None]:
     """事务上下文管理器。
 
     在上下文块结束时自动提交或回滚事务。
@@ -40,7 +42,9 @@ def transaction(db: Session, auto_commit: bool = True) -> Generator[Session, Non
         raise
 
 
-def with_transaction(auto_commit: bool = True) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def with_transaction(
+    auto_commit: bool = True,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """事务装饰器。
 
     为服务方法添加事务处理，失败时自动回滚。
@@ -82,7 +86,9 @@ def with_transaction(auto_commit: bool = True) -> Callable[[Callable[..., T]], C
                 db = args[0].db
 
             if db is None:
-                raise ValueError("with_transaction decorator requires a 'db' Session parameter")
+                raise ValueError(
+                    "with_transaction decorator requires a 'db' Session parameter"
+                )
 
             try:
                 result = func(*args, **kwargs)
@@ -90,7 +96,9 @@ def with_transaction(auto_commit: bool = True) -> Callable[[Callable[..., T]], C
                     db.commit()
                 return result
             except Exception as e:
-                logger.error(f"Transaction in {func.__name__} failed, rolling back: {e}")
+                logger.error(
+                    f"Transaction in {func.__name__} failed, rolling back: {e}"
+                )
                 db.rollback()
                 raise
 
@@ -106,7 +114,12 @@ class TransactionalMixin:
     """
 
     def _execute_in_transaction(
-        self, db: Session, operation: Callable[..., T], *args, auto_commit: bool = True, **kwargs
+        self,
+        db: Session,
+        operation: Callable[..., T],
+        *args,
+        auto_commit: bool = True,
+        **kwargs,
     ) -> T:
         """在事务中执行操作。
 

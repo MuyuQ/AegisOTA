@@ -154,7 +154,11 @@ class DeviceService:
         if device.current_run_id:
             lease = (
                 self.db.query(DeviceLease)
-                .filter_by(device_id=device.id, run_id=device.current_run_id, lease_status="active")
+                .filter_by(
+                    device_id=device.id,
+                    run_id=device.current_run_id,
+                    lease_status="active",
+                )
                 .first()
             )
             if lease:

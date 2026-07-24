@@ -55,7 +55,9 @@ class ReportService:
         ) == RunStatus.FAILED.value:
             failed_step, error_message = self._find_failed_step(steps)
             if failed_step:
-                failure_category = self._classify_failure(failed_step, error_message, steps)
+                failure_category = self._classify_failure(
+                    failed_step, error_message, steps
+                )
                 failure_summary = f"步骤 {failed_step} 失败"
                 root_cause = error_message
                 recommendation = self.classifier.get_recommendation(failure_category)
@@ -211,7 +213,9 @@ class ReportService:
         """查找失败的步骤。"""
         failed_status = StepStatus.FAILED.value
         for step in steps:
-            step_status = step.status.value if hasattr(step.status, "value") else str(step.status)
+            step_status = (
+                step.status.value if hasattr(step.status, "value") else str(step.status)
+            )
             if step_status == failed_status:
                 error_msg = None
                 if step.step_result:
@@ -223,8 +227,10 @@ class ReportService:
                 # step_name 可能是枚举或字符串
                 step_name = step.step_name
                 if step_name:
-                    return step_name.value if hasattr(step_name, "value") else str(
-                        step_name
+                    return (
+                        step_name.value
+                        if hasattr(step_name, "value")
+                        else str(step_name)
                     ), error_msg
                 return None, error_msg
         return None, None
@@ -278,15 +284,17 @@ class ReportService:
             step_name_value = (
                 step_name.value
                 if step_name and hasattr(step_name, "value")
-                else str(step_name)
-                if step_name
-                else None
+                else str(step_name) if step_name else None
             )
 
             event = {
                 "step_name": step_name_value,
                 "step_order": step.step_order,
-                "status": step.status.value if hasattr(step.status, "value") else str(step.status),
+                "status": (
+                    step.status.value
+                    if hasattr(step.status, "value")
+                    else str(step.status)
+                ),
                 "started_at": step.started_at.isoformat() if step.started_at else None,
                 "ended_at": step.ended_at.isoformat() if step.ended_at else None,
                 "duration_seconds": step.get_duration_seconds(),
@@ -316,11 +324,17 @@ class ReportService:
         return self.generator.generate(
             run_id=run_session.id,
             plan_name=run_session.plan.name if run_session.plan else "未知计划",
-            device_serial=run_session.device.serial if run_session.device else "未知设备",
+            device_serial=(
+                run_session.device.serial if run_session.device else "未知设备"
+            ),
             status=status_value,
             started_at=run_session.started_at,
             ended_at=run_session.ended_at,
-            failed_step=timeline[0]["step_name"] if timeline and status_value == "failed" else None,
+            failed_step=(
+                timeline[0]["step_name"]
+                if timeline and status_value == "failed"
+                else None
+            ),
             failure_category=failure_category,
             timeline=timeline,
             step_results=step_results,

@@ -20,7 +20,9 @@ console = Console()
 @app.command("submit")
 def submit_run(
     plan_id: int = typer.Argument(..., help="升级计划 ID"),
-    device_serial: Optional[str] = typer.Option(None, "--device", "-d", help="指定设备序列号"),
+    device_serial: Optional[str] = typer.Option(
+        None, "--device", "-d", help="指定设备序列号"
+    ),
 ):
     """提交升级任务。
 
@@ -46,7 +48,9 @@ def submit_run(
                 typer.echo(f"设备不存在: {device_serial}", err=True)
                 raise typer.Exit(1)
             if not device.is_available():
-                typer.echo(f"设备 {device_serial} 当前不可用，状态: {device.status.value}")
+                typer.echo(
+                    f"设备 {device_serial} 当前不可用，状态: {device.status.value}"
+                )
                 raise typer.Exit(1)
             device_id = device.id
         else:
@@ -73,7 +77,9 @@ def submit_run(
         typer.echo(f"  升级计划: {plan.name}")
         typer.echo(f"  设备: {device.serial}")
         status_val = (
-            run_session.status.value if hasattr(run_session.status, "value") else run_session.status
+            run_session.status.value
+            if hasattr(run_session.status, "value")
+            else run_session.status
         )
         typer.echo(f"  状态: {status_val}")
 

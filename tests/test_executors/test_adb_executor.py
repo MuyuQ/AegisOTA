@@ -33,7 +33,9 @@ def test_adb_shell_command_format():
 def test_adb_push_command_format():
     """测试 adb push 命令格式。"""
     executor = ADBExecutor()
-    cmd = executor._build_adb_command("push", "/local/file", "/remote/path", device="ABC123")
+    cmd = executor._build_adb_command(
+        "push", "/local/file", "/remote/path", device="ABC123"
+    )
     assert cmd == ["adb", "-s", "ABC123", "push", "/local/file", "/remote/path"]
 
 

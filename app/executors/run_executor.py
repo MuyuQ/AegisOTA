@@ -49,7 +49,9 @@ class RunExecutionResult:
             "duration_seconds": self.get_duration_seconds(),
             "failed_step": self.failed_step.value if self.failed_step else None,
             "error": self.error,
-            "steps": {name: result.to_dict() for name, result in self.step_results.items()},
+            "steps": {
+                name: result.to_dict() for name, result in self.step_results.items()
+            },
         }
 
 

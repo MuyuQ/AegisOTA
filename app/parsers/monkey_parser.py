@@ -148,7 +148,9 @@ class MonkeyParser(BaseParser):
 
             # 遍历所有匹配规则
             for pattern_data in self.PATTERNS:
-                pattern, normalized_code, stage, severity, event_type, pkg_group = pattern_data
+                pattern, normalized_code, stage, severity, event_type, pkg_group = (
+                    pattern_data
+                )
 
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:

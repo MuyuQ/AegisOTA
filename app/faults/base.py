@@ -78,7 +78,9 @@ class FaultPlugin(ABC):
         """判断是否应该注入（可根据条件决定）。"""
         return True
 
-    def record_event(self, context: RunContext, message: str, extra: Optional[Dict] = None):
+    def record_event(
+        self, context: RunContext, message: str, extra: Optional[Dict] = None
+    ):
         """记录异常注入事件。"""
         context.record_event(
             "fault_injection",

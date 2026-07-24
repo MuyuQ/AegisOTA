@@ -70,8 +70,12 @@ class Settings(BaseSettings):
         self.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
         # 确保升级包目录存在
         self.OTA_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
-        (self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
-        (self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR).mkdir(parents=True, exist_ok=True)
+        (self.OTA_PACKAGES_DIR / self.FULL_PACKAGE_SUBDIR).mkdir(
+            parents=True, exist_ok=True
+        )
+        (self.OTA_PACKAGES_DIR / self.INCREMENTAL_PACKAGE_SUBDIR).mkdir(
+            parents=True, exist_ok=True
+        )
 
     def get_full_package_path(self) -> Path:
         """获取全量包目录路径。"""

@@ -69,7 +69,9 @@ class SimilarCaseService:
 
         # 不在此处提交，让调用者控制事务边界
 
-    def _generate_evidence_hash(self, key_evidence: Optional[list[dict]]) -> Optional[str]:
+    def _generate_evidence_hash(
+        self, key_evidence: Optional[list[dict]]
+    ) -> Optional[str]:
         """生成证据哈希。
 
         从关键证据中提取前几条日志行，生成 MD5 哈希用于相似度匹配。
@@ -259,7 +261,9 @@ class SimilarCaseService:
             统计信息字典，包含总数、分类分布等
         """
         # 总数
-        total = self.session.execute(select(SimilarCaseIndex).where(True)).scalars().all()
+        total = (
+            self.session.execute(select(SimilarCaseIndex).where(True)).scalars().all()
+        )
         total_count = len(total)
 
         # 按分类统计

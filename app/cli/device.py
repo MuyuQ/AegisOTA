@@ -20,7 +20,9 @@ console = Console()
 
 def get_device_status_info(device):
     """获取设备状态信息。"""
-    status_value = device.status.value if hasattr(device.status, "value") else str(device.status)
+    status_value = (
+        device.status.value if hasattr(device.status, "value") else str(device.status)
+    )
     status_style = {
         DeviceStatus.IDLE: "green",
         DeviceStatus.BUSY: "yellow",
@@ -28,7 +30,11 @@ def get_device_status_info(device):
         DeviceStatus.QUARANTINED: "red",
         DeviceStatus.RECOVERING: "blue",
     }.get(
-        device.status if isinstance(device.status, DeviceStatus) else DeviceStatus(device.status),
+        (
+            device.status
+            if isinstance(device.status, DeviceStatus)
+            else DeviceStatus(device.status)
+        ),
         "white",
     )
 

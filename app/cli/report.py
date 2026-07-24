@@ -21,7 +21,9 @@ console = Console()
 def export_report(
     run_id: int = typer.Argument(..., help="任务 ID"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="输出文件路径"),
-    format: str = typer.Option("markdown", "--format", "-f", help="报告格式 (markdown/html/json)"),
+    format: str = typer.Option(
+        "markdown", "--format", "-f", help="报告格式 (markdown/html/json)"
+    ),
 ):
     """导出任务报告。
 
@@ -53,7 +55,9 @@ def export_report(
         table.add_row("升级计划", plan_name)
         table.add_row("设备序列号", device_serial)
         table.add_row("状态", run.status.value)
-        table.add_row("失败分类", run.failure_category.value if run.failure_category else "-")
+        table.add_row(
+            "失败分类", run.failure_category.value if run.failure_category else "-"
+        )
         table.add_row("持续时间", duration_str)
         table.add_row("创建时间", str(run.created_at))
         table.add_row("开始时间", str(run.started_at or "-"))
@@ -118,7 +122,9 @@ def export_report(
         db.close()
 
 
-def _generate_report_content(run: RunSession, artifacts: list[Artifact], format: str) -> str:
+def _generate_report_content(
+    run: RunSession, artifacts: list[Artifact], format: str
+) -> str:
     """生成报告内容。
 
     根据格式类型生成对应的报告文本。
@@ -136,7 +142,9 @@ def _generate_report_content(run: RunSession, artifacts: list[Artifact], format:
             "plan_name": plan_name,
             "device_serial": device_serial,
             "status": run.status.value,
-            "failure_category": run.failure_category.value if run.failure_category else None,
+            "failure_category": (
+                run.failure_category.value if run.failure_category else None
+            ),
             "duration_seconds": duration,
             "created_at": str(run.created_at),
             "started_at": str(run.started_at) if run.started_at else None,

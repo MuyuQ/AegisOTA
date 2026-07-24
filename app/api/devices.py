@@ -63,7 +63,8 @@ async def list_devices(
         except ValueError:
             valid_values = [s.value for s in DeviceStatus]
             raise HTTPException(
-                status_code=400, detail=f"Invalid status '{status}'. Valid values: {valid_values}"
+                status_code=400,
+                detail=f"Invalid status '{status}'. Valid values: {valid_values}",
             )
 
     devices = service.list_devices(status=device_status)
@@ -106,7 +107,11 @@ async def get_device(
         brand=device.brand,
         model=device.model,
         system_version=device.system_version,
-        status=device.status.value if hasattr(device.status, "value") else str(device.status),
+        status=(
+            device.status.value
+            if hasattr(device.status, "value")
+            else str(device.status)
+        ),
         battery_level=device.battery_level,
         health_score=device.health_score,
         tags=device.get_tags(),
@@ -152,7 +157,9 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
             "status": d.status.value if hasattr(d.status, "value") else d.status,
             "battery_level": d.battery_level or "-",
             "health_score": d.health_score or 0,
-            "last_seen_at": d.last_seen_at.strftime("%Y-%m-%d %H:%M") if d.last_seen_at else "-",
+            "last_seen_at": (
+                d.last_seen_at.strftime("%Y-%m-%d %H:%M") if d.last_seen_at else "-"
+            ),
         }
         for d in all_devices
     ]
@@ -173,9 +180,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
         health_class = (
             "health-high"
             if d["health_score"] >= 80
-            else "health-medium"
-            if d["health_score"] >= 50
-            else "health-low"
+            else "health-medium" if d["health_score"] >= 50 else "health-low"
         )
 
         action_btn = ""
@@ -192,7 +197,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
                 f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
             )
 
-        rows_html += f'''
+        rows_html += f"""
         <tr>
             <td><strong>{d["serial"]}</strong></td>
             <td>{d["brand"]} {d["model"]}</td>
@@ -213,7 +218,7 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
             </td>
             <td>{d["last_seen_at"]}</td>
             <td>{action_btn}</td>
-        </tr>'''
+        </tr>"""
 
     html = f"""
     <table class="table">
@@ -279,12 +284,16 @@ async def quarantine_device_html(
         "pool_id": device.pool_id,
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
-        "status": device.status.value if hasattr(device.status, "value") else device.status,
+        "status": (
+            device.status.value if hasattr(device.status, "value") else device.status
+        ),
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
-        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M")
-        if device.last_seen_at
-        else "-",
+        "last_seen_at": (
+            device.last_seen_at.strftime("%Y-%m-%d %H:%M")
+            if device.last_seen_at
+            else "-"
+        ),
     }
 
     pool_html = (
@@ -298,13 +307,10 @@ async def quarantine_device_html(
     health_class = (
         "health-high"
         if d["health_score"] >= 80
-        else "health-medium"
-        if d["health_score"] >= 50
-        else "health-low"
+        else "health-medium" if d["health_score"] >= 50 else "health-low"
     )
 
-    return HTMLResponse(
-        content=f'''
+    return HTMLResponse(content=f"""
     <tr>
         <td><strong>{d["serial"]}</strong></td>
         <td>{d["brand"]} {d["model"]}</td>
@@ -329,8 +335,7 @@ async def quarantine_device_html(
                     hx-post="/api/v1/devices/{d["serial"]}/recover/html"
                     hx-swap="outerHTML" hx-target="closest tr">恢复</button>
         </td>
-    </tr>'''
-    )
+    </tr>""")
 
 
 @router.post("/{serial}/recover")
@@ -348,9 +353,11 @@ async def recover_device(
     return {
         "status": "recovered",
         "serial": serial,
-        "new_status": device.status.value
-        if hasattr(device.status, "value")
-        else str(device.status),
+        "new_status": (
+            device.status.value
+            if hasattr(device.status, "value")
+            else str(device.status)
+        ),
     }
 
 
@@ -376,12 +383,16 @@ async def recover_device_html(
         "pool_id": device.pool_id,
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
-        "status": device.status.value if hasattr(device.status, "value") else device.status,
+        "status": (
+            device.status.value if hasattr(device.status, "value") else device.status
+        ),
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
-        "last_seen_at": device.last_seen_at.strftime("%Y-%m-%d %H:%M")
-        if device.last_seen_at
-        else "-",
+        "last_seen_at": (
+            device.last_seen_at.strftime("%Y-%m-%d %H:%M")
+            if device.last_seen_at
+            else "-"
+        ),
     }
 
     status_class = f"status-{d['status']}"
@@ -396,9 +407,7 @@ async def recover_device_html(
     health_class = (
         "health-high"
         if d["health_score"] >= 80
-        else "health-medium"
-        if d["health_score"] >= 50
-        else "health-low"
+        else "health-medium" if d["health_score"] >= 50 else "health-low"
     )
 
     action_btn = ""
@@ -409,8 +418,7 @@ async def recover_device_html(
             f'hx-swap="outerHTML" hx-target="closest tr">隔离</button>'
         )
 
-    return HTMLResponse(
-        content=f'''
+    return HTMLResponse(content=f"""
     <tr>
         <td><strong>{d["serial"]}</strong></td>
         <td>{d["brand"]} {d["model"]}</td>
@@ -431,8 +439,7 @@ async def recover_device_html(
         </td>
         <td>{d["last_seen_at"]}</td>
         <td>{action_btn}</td>
-    </tr>'''
-    )
+    </tr>""")
 
 
 @router.put("/{serial}/tags")
@@ -488,7 +495,9 @@ async def get_device_health_detail(
 
     # 2. 设备状态
     status_impact = 0
-    status_value = device.status.value if hasattr(device.status, "value") else str(device.status)
+    status_value = (
+        device.status.value if hasattr(device.status, "value") else str(device.status)
+    )
     if device.status == DeviceStatus.OFFLINE:
         status_impact = -20
     elif device.status == DeviceStatus.QUARANTINED:
@@ -505,7 +514,9 @@ async def get_device_health_detail(
     run_stats = (
         db.query(
             func.count(RunSession.id),
-            func.sum(func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)),
+            func.sum(
+                func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)
+            ),
         )
         .filter(RunSession.device_id == device.id)
         .first()
@@ -567,7 +578,9 @@ async def get_device_health_detail(
     # 7. 最近同步时间
     sync_impact = 0
     if device.last_seen_at:
-        hours_since = (datetime.now(timezone.utc) - device.last_seen_at).total_seconds() / 3600
+        hours_since = (
+            datetime.now(timezone.utc) - device.last_seen_at
+        ).total_seconds() / 3600
         if hours_since > 24:
             sync_impact = -10
         sync_value = device.last_seen_at.strftime("%Y-%m-%d %H:%M")
@@ -599,11 +612,11 @@ async def get_device_health_detail(
     factor_rows = ""
     for f in health_factors:
         value_class = "health-low" if f["impact"] < 0 else ""
-        factor_rows += f'''
+        factor_rows += f"""
         <tr>
             <td>{f["label"]}</td>
             <td class="{value_class}">{f["value"]}</td>
-        </tr>'''
+        </tr>"""
 
     # 构建 HTML
     html = f"""

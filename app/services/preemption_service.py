@@ -82,7 +82,9 @@ class PreemptionService:
                 return False
 
             # 获取抢占者任务
-            preemptor_run = self.db.query(RunSession).filter_by(id=preemptor_run_id).first()
+            preemptor_run = (
+                self.db.query(RunSession).filter_by(id=preemptor_run_id).first()
+            )
             if not preemptor_run:
                 return False
 

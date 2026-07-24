@@ -225,7 +225,9 @@ class TestDeviceDatabaseOperations:
         db_session.add_all(devices)
         db_session.commit()
 
-        available = db_session.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
+        available = (
+            db_session.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
+        )
         assert len(available) == 2
         assert all(d.status == DeviceStatus.IDLE for d in available)
 
@@ -444,14 +446,19 @@ class TestDevicePool:
         db_session.add(pool)
         db_session.commit()
 
-        assert pool.get_tag_selector() == {"tags": ["samsung", "stable"], "brand": "Samsung"}
+        assert pool.get_tag_selector() == {
+            "tags": ["samsung", "stable"],
+            "brand": "Samsung",
+        }
 
     def test_pool_available_capacity(self, db_session):
         """测试设备池可用容量计算。"""
         from app.models.device import Device, DevicePool
         from app.models.enums import DeviceStatus, PoolPurpose
 
-        pool = DevicePool(name="capacity_pool", purpose=PoolPurpose.STABLE, max_parallel=10)
+        pool = DevicePool(
+            name="capacity_pool", purpose=PoolPurpose.STABLE, max_parallel=10
+        )
         db_session.add(pool)
         db_session.commit()
 

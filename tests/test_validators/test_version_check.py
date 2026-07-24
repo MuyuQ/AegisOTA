@@ -23,7 +23,8 @@ def test_version_checker_mismatch():
     """测试版本不匹配。"""
     executor = MockADBExecutor()
     executor.set_response(
-        "shell getprop", stdout="[ro.build.fingerprint]: [Google/oriole/oriole:13/OLD_VERSION]\n"
+        "shell getprop",
+        stdout="[ro.build.fingerprint]: [Google/oriole/oriole:13/OLD_VERSION]\n",
     )
 
     checker = VersionChecker(executor)

@@ -81,7 +81,9 @@ def _format_datetime(dt: datetime) -> str:
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """仪表盘首页。"""
     # 优化: 单次聚合查询替代多次 count
-    device_stats = db.query(Device.status, func.count(Device.id)).group_by(Device.status).all()
+    device_stats = (
+        db.query(Device.status, func.count(Device.id)).group_by(Device.status).all()
+    )
 
     status_counts = {status: count for status, count in device_stats}
     total_devices = sum(status_counts.values())
@@ -94,7 +96,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
 
     # 今日任务
     today = datetime.now(timezone.utc).date()
-    today_tasks = db.query(RunSession).filter(func.date(RunSession.created_at) == today).count()
+    today_tasks = (
+        db.query(RunSession).filter(func.date(RunSession.created_at) == today).count()
+    )
 
     # 最近任务 (带 eager loading)
     recent_runs = (
@@ -131,7 +135,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
-        request, "dashboard.html", get_template_context(request, stats=stats, recent_runs=runs_data)
+        request,
+        "dashboard.html",
+        get_template_context(request, stats=stats, recent_runs=runs_data),
     )
 
 
@@ -193,9 +199,11 @@ async def runs_page(request: Request, db: Session = Depends(get_db)):
             "started_at": r.started_at.isoformat() if r.started_at else "-",
             "ended_at": r.ended_at.isoformat() if r.ended_at else "-",
             "duration": r.get_duration_seconds() or "-",
-            "failure_category": r.failure_category.value
-            if hasattr(r.failure_category, "value")
-            else (r.failure_category or "-"),
+            "failure_category": (
+                r.failure_category.value
+                if hasattr(r.failure_category, "value")
+                else (r.failure_category or "-")
+            ),
         }
         for r in runs
     ]
@@ -224,16 +232,20 @@ async def create_run_page(request: Request, db: Session = Depends(get_db)):
                 "serial": device.serial,
                 "brand": device.brand or "-",
                 "model": device.model or "-",
-                "status": device.status.value
-                if hasattr(device.status, "value")
-                else str(device.status),
+                "status": (
+                    device.status.value
+                    if hasattr(device.status, "value")
+                    else str(device.status)
+                ),
             }
         )
 
     return templates.TemplateResponse(
         request,
         "create_run.html",
-        get_template_context(request, plans=plans, devices_by_location=dict(devices_by_location)),
+        get_template_context(
+            request, plans=plans, devices_by_location=dict(devices_by_location)
+        ),
     )
 
 
@@ -262,7 +274,9 @@ async def run_detail_page(
         )
 
     # 获取执行步骤
-    steps = db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()
+    steps = (
+        db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()
+    )
 
     # 获取任务选项
     run_options = run.get_run_options()
@@ -278,23 +292,31 @@ async def run_detail_page(
         "started_at": run.started_at.isoformat() if run.started_at else "-",
         "ended_at": run.ended_at.isoformat() if run.ended_at else "-",
         "duration": run.get_duration_seconds() or "-",
-        "failure_category": run.failure_category.value
-        if hasattr(run.failure_category, "value")
-        else (run.failure_category or "-"),
+        "failure_category": (
+            run.failure_category.value
+            if hasattr(run.failure_category, "value")
+            else (run.failure_category or "-")
+        ),
         "summary": run.summary or "-",
         # 新增字段
         "total_iterations": run.total_iterations or 1,
         "current_iteration": run.current_iteration or 0,
         "monkey_enabled": monkey_enabled,
-        "monkey_event_count": monkey_params.get("event_count", 1000) if monkey_enabled else None,
-        "monkey_throttle": monkey_params.get("throttle", 50) if monkey_enabled else None,
+        "monkey_event_count": (
+            monkey_params.get("event_count", 1000) if monkey_enabled else None
+        ),
+        "monkey_throttle": (
+            monkey_params.get("throttle", 50) if monkey_enabled else None
+        ),
         "stop_on_failure": run_options.get("stop_on_failure", True),
     }
 
     steps_data = [
         {
             "id": s.id,
-            "step_name": s.step_name.value if hasattr(s.step_name, "value") else s.step_name,
+            "step_name": (
+                s.step_name.value if hasattr(s.step_name, "value") else s.step_name
+            ),
             "status": s.status.value if hasattr(s.status, "value") else s.status,
             "started_at": s.started_at.isoformat() if s.started_at else "-",
             "ended_at": s.ended_at.isoformat() if s.ended_at else "-",
@@ -311,7 +333,9 @@ async def run_detail_page(
     if diagnosis:
         diagnosis_data = {
             "category": diagnosis.category,
-            "category_display": CATEGORY_DISPLAY_MAP.get(diagnosis.category, diagnosis.category),
+            "category_display": CATEGORY_DISPLAY_MAP.get(
+                diagnosis.category, diagnosis.category
+            ),
             "root_cause": diagnosis.root_cause,
             "confidence": diagnosis.confidence,
             "confidence_level": _get_confidence_level(diagnosis.confidence),
@@ -321,7 +345,9 @@ async def run_detail_page(
     return templates.TemplateResponse(
         request,
         "run_detail.html",
-        get_template_context(request, run=run_data, steps=steps_data, diagnosis=diagnosis_data),
+        get_template_context(
+            request, run=run_data, steps=steps_data, diagnosis=diagnosis_data
+        ),
     )
 
 
@@ -344,22 +370,30 @@ async def plans_page(request: Request, db: Session = Depends(get_db)):
         {
             "id": p.id,
             "name": p.name,
-            "upgrade_type": p.upgrade_type.value
-            if hasattr(p.upgrade_type, "value")
-            else str(p.upgrade_type),
+            "upgrade_type": (
+                p.upgrade_type.value
+                if hasattr(p.upgrade_type, "value")
+                else str(p.upgrade_type)
+            ),
             "package_path": p.package_path or "-",
             "source_build": p.source_build or "-",
             "target_build": p.target_build or "-",
             "parallelism": p.parallelism or 1,
             "default_pool_id": p.default_pool_id,
-            "default_pool_name": pool_names.get(p.default_pool_id) if p.default_pool_id else None,
-            "created_at": p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else "-",
+            "default_pool_name": (
+                pool_names.get(p.default_pool_id) if p.default_pool_id else None
+            ),
+            "created_at": (
+                p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else "-"
+            ),
         }
         for p in plans
     ]
 
     return templates.TemplateResponse(
-        request, "plans.html", get_template_context(request, plans=plans_data, pools=pools_data)
+        request,
+        "plans.html",
+        get_template_context(request, plans=plans_data, pools=pools_data),
     )
 
 
@@ -377,9 +411,11 @@ async def pools_page(request: Request, db: Session = Depends(get_db)):
             {
                 "id": pool.id,
                 "name": pool.name,
-                "purpose": pool.purpose.value
-                if hasattr(pool.purpose, "value")
-                else str(pool.purpose),
+                "purpose": (
+                    pool.purpose.value
+                    if hasattr(pool.purpose, "value")
+                    else str(pool.purpose)
+                ),
                 "reserved_ratio": pool.reserved_ratio,
                 "enabled": pool.enabled,
                 "total_devices": capacity["total"],
@@ -393,7 +429,9 @@ async def pools_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/pools/{pool_id}", response_class=HTMLResponse)
-async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends(get_db)):
+async def pool_detail_page(
+    request: Request, pool_id: int, db: Session = Depends(get_db)
+):
     """设备池详情页面。"""
     service = PoolService(db)
     pool = service.get_pool_by_id(pool_id)
@@ -416,9 +454,11 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
                 "serial": device.serial,
                 "brand": device.brand,
                 "model": device.model,
-                "status": device.status.value
-                if hasattr(device.status, "value")
-                else str(device.status),
+                "status": (
+                    device.status.value
+                    if hasattr(device.status, "value")
+                    else str(device.status)
+                ),
                 "health_score": device.health_score,
             }
         )
@@ -433,16 +473,20 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
                 "serial": device.serial,
                 "brand": device.brand,
                 "model": device.model,
-                "status": device.status.value
-                if hasattr(device.status, "value")
-                else str(device.status),
+                "status": (
+                    device.status.value
+                    if hasattr(device.status, "value")
+                    else str(device.status)
+                ),
             }
         )
 
     pool_data = {
         "id": pool.id,
         "name": pool.name,
-        "purpose": pool.purpose.value if hasattr(pool.purpose, "value") else str(pool.purpose),
+        "purpose": (
+            pool.purpose.value if hasattr(pool.purpose, "value") else str(pool.purpose)
+        ),
         "reserved_ratio": pool.reserved_ratio,
         "enabled": pool.enabled,
         "total_devices": capacity["total"],
@@ -456,7 +500,10 @@ async def pool_detail_page(request: Request, pool_id: int, db: Session = Depends
         request,
         "pool_detail.html",
         get_template_context(
-            request, pool=pool_data, devices=devices_data, unassigned_devices=unassigned_data
+            request,
+            pool=pool_data,
+            devices=devices_data,
+            unassigned_devices=unassigned_data,
         ),
     )
 
@@ -510,7 +557,8 @@ async def assign_device_form(
         device_id = int(device_id_str)
     except ValueError:
         return HTMLResponse(
-            content="<div class='alert alert-danger'>设备 ID 格式错误</div>", status_code=400
+            content="<div class='alert alert-danger'>设备 ID 格式错误</div>",
+            status_code=400,
         )
 
     service = PoolService(db)
@@ -518,7 +566,8 @@ async def assign_device_form(
 
     if not device:
         return HTMLResponse(
-            content="<div class='alert alert-danger'>设备或池不存在</div>", status_code=404
+            content="<div class='alert alert-danger'>设备或池不存在</div>",
+            status_code=404,
         )
 
     # 获取更新后的池和设备列表
@@ -556,7 +605,9 @@ def _render_device_list_html(pool_id: int, devices: list) -> str:
                 if d.health_score >= 90
                 else ("health-medium" if d.health_score >= 70 else "health-low")
             )
-            health_display = f'<span class="{health_class}">{round(d.health_score, 1)}%</span>'
+            health_display = (
+                f'<span class="{health_class}">{round(d.health_score, 1)}%</span>'
+            )
 
         rows.append(f"""
         <tr id="device-row-{d.id}">
@@ -622,9 +673,13 @@ async def update_pool_status(
 
     # 返回更新后的状态 HTML
     if pool.enabled:
-        return HTMLResponse(content='<span style="color: var(--success-color);">● 已启用</span>')
+        return HTMLResponse(
+            content='<span style="color: var(--success-color);">● 已启用</span>'
+        )
     else:
-        return HTMLResponse(content='<span style="color: var(--text-muted);">○ 已禁用</span>')
+        return HTMLResponse(
+            content='<span style="color: var(--text-muted);">○ 已禁用</span>'
+        )
 
 
 # ============ 诊断页面路由 ============
@@ -672,7 +727,9 @@ async def diagnosis_list_page(
                 "run_id": diag.run_id,
                 "device_serial": diag.device_serial,
                 "category": diag.category,
-                "category_display": CATEGORY_DISPLAY_MAP.get(diag.category, diag.category),
+                "category_display": CATEGORY_DISPLAY_MAP.get(
+                    diag.category, diag.category
+                ),
                 "root_cause": diag.root_cause,
                 "confidence": diag.confidence,
                 "confidence_level": _get_confidence_level(diag.confidence),
@@ -789,7 +846,9 @@ async def diagnosis_detail_page(
         "device_serial": diagnosis.device_serial,
         "stage": diagnosis.stage,
         "category": diagnosis.category,
-        "category_display": CATEGORY_DISPLAY_MAP.get(diagnosis.category, diagnosis.category),
+        "category_display": CATEGORY_DISPLAY_MAP.get(
+            diagnosis.category, diagnosis.category
+        ),
         "root_cause": diagnosis.root_cause,
         "confidence": diagnosis.confidence,
         "confidence_level": _get_confidence_level(diagnosis.confidence),

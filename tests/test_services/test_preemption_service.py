@@ -38,9 +38,15 @@ def setup_pool_and_devices(test_db):
     test_db.add(pool)
 
     devices = [
-        Device(serial="DEV001", status=DeviceStatus.IDLE, battery_level=80, pool_id=pool.id),
-        Device(serial="DEV002", status=DeviceStatus.IDLE, battery_level=75, pool_id=pool.id),
-        Device(serial="DEV003", status=DeviceStatus.IDLE, battery_level=90, pool_id=pool.id),
+        Device(
+            serial="DEV001", status=DeviceStatus.IDLE, battery_level=80, pool_id=pool.id
+        ),
+        Device(
+            serial="DEV002", status=DeviceStatus.IDLE, battery_level=75, pool_id=pool.id
+        ),
+        Device(
+            serial="DEV003", status=DeviceStatus.IDLE, battery_level=90, pool_id=pool.id
+        ),
     ]
     for d in devices:
         test_db.add(d)
@@ -62,7 +68,9 @@ def setup_plan(test_db):
     return plan
 
 
-def test_find_preemptible_runs(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_find_preemptible_runs(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试查找可被抢占的任务。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -151,7 +159,9 @@ def test_find_preemptible_runs_excludes_non_preemptible(
     assert preemptible_runs[0].id == run1.id
 
 
-def test_preempt_run_success(preemption_service, test_db, setup_pool_and_devices, setup_plan):
+def test_preempt_run_success(
+    preemption_service, test_db, setup_pool_and_devices, setup_plan
+):
     """测试成功抢占任务。"""
     pool = setup_pool_and_devices["pool"]
     plan = setup_plan
@@ -258,7 +268,9 @@ def test_preempt_run_only_normal_priority(
     test_db.commit()
 
     # 查找可抢占任务（不允许抢占 HIGH）
-    preemptible_runs = preemption_service.find_preemptible_runs(pool.id, allow_preempt_high=False)
+    preemptible_runs = preemption_service.find_preemptible_runs(
+        pool.id, allow_preempt_high=False
+    )
 
     # 只应该返回 NORMAL 优先级任务
     assert len(preemptible_runs) == 1

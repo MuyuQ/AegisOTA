@@ -10,7 +10,14 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.models.device import Device, DeviceStatus
 from app.models.report import Report, ReportStatus
-from app.models.run import RunSession, RunStatus, RunStep, StepName, StepStatus, UpgradePlan
+from app.models.run import (
+    RunSession,
+    RunStatus,
+    RunStep,
+    StepName,
+    StepStatus,
+    UpgradePlan,
+)
 from app.services.report_service import ReportService
 
 

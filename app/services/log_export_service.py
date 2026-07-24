@@ -45,16 +45,22 @@ class LogExportService:
         exported_files: List[str] = []
 
         # 导出 recovery 日志
-        exported_files.extend(self._export_recovery_logs(run_id, device_serial, artifact_dir))
+        exported_files.extend(
+            self._export_recovery_logs(run_id, device_serial, artifact_dir)
+        )
 
         # 导出 update_engine 日志
-        exported_files.extend(self._export_update_engine_log(run_id, device_serial, artifact_dir))
+        exported_files.extend(
+            self._export_update_engine_log(run_id, device_serial, artifact_dir)
+        )
 
         # 导出 logcat
         exported_files.extend(self._export_logcat(run_id, device_serial, artifact_dir))
 
         # 导出设备信息
-        exported_files.extend(self._export_device_info(run_id, device_serial, artifact_dir))
+        exported_files.extend(
+            self._export_device_info(run_id, device_serial, artifact_dir)
+        )
 
         # 保存产物记录到数据库
         self._create_artifact_records(run_id, artifact_dir, exported_files)
@@ -91,7 +97,9 @@ class LogExportService:
 
                 if result.success and dst_path.exists():
                     exported.append(dst_name)
-                    logger.info(f"成功导出 {dst_name} (run_id={run_id}, device={device_serial})")
+                    logger.info(
+                        f"成功导出 {dst_name} (run_id={run_id}, device={device_serial})"
+                    )
                 else:
                     logger.warning(
                         f"无法导出 {src_path}: {result.stderr or '文件不存在'} "
@@ -140,12 +148,16 @@ class LogExportService:
                         for log_file in log_files:
                             if log_file.is_file():
                                 try:
-                                    content = log_file.read_text(encoding="utf-8", errors="replace")
+                                    content = log_file.read_text(
+                                        encoding="utf-8", errors="replace"
+                                    )
                                     f.write(f"=== {log_file.name} ===\n")
                                     f.write(content)
                                     f.write("\n")
                                 except Exception as read_error:
-                                    logger.warning(f"读取 {log_file} 失败: {read_error}")
+                                    logger.warning(
+                                        f"读取 {log_file} 失败: {read_error}"
+                                    )
 
                     exported.append("update_engine.log")
                     logger.info(
@@ -195,14 +207,18 @@ class LogExportService:
 
             if result.success and dst_path.exists():
                 exported.append("logcat.txt")
-                logger.info(f"成功导出 logcat.txt (run_id={run_id}, device={device_serial})")
+                logger.info(
+                    f"成功导出 logcat.txt (run_id={run_id}, device={device_serial})"
+                )
             else:
                 logger.warning(
                     f"无法导出 logcat: {result.stderr or '无日志内容'} "
                     f"(run_id={run_id}, device={device_serial})"
                 )
         except Exception as e:
-            logger.warning(f"导出 logcat 时发生错误: {e} (run_id={run_id}, device={device_serial})")
+            logger.warning(
+                f"导出 logcat 时发生错误: {e} (run_id={run_id}, device={device_serial})"
+            )
 
         return exported
 
@@ -234,7 +250,9 @@ class LogExportService:
                     json.dump(snapshot, f, indent=2, ensure_ascii=False)
 
                 exported.append("device_info.json")
-                logger.info(f"成功导出 device_info.json (run_id={run_id}, device={device_serial})")
+                logger.info(
+                    f"成功导出 device_info.json (run_id={run_id}, device={device_serial})"
+                )
             else:
                 # 尝试仅使用 getprop
                 props = self.adb.getprop(device=device_serial)
@@ -249,9 +267,13 @@ class LogExportService:
                         f"成功导出 device_info.txt (run_id={run_id}, device={device_serial})"
                     )
                 else:
-                    logger.warning(f"无法获取设备信息 (run_id={run_id}, device={device_serial})")
+                    logger.warning(
+                        f"无法获取设备信息 (run_id={run_id}, device={device_serial})"
+                    )
         except Exception as e:
-            logger.warning(f"导出设备信息时发生错误: {e} (run_id={run_id}, device={device_serial})")
+            logger.warning(
+                f"导出设备信息时发生错误: {e} (run_id={run_id}, device={device_serial})"
+            )
 
         return exported
 

@@ -219,7 +219,11 @@ async def assign_device(
     return DeviceResponse(
         id=device.id,
         serial=device.serial,
-        status=device.status.value if hasattr(device.status, "value") else str(device.status),
+        status=(
+            device.status.value
+            if hasattr(device.status, "value")
+            else str(device.status)
+        ),
         pool_id=device.pool_id,
     )
 

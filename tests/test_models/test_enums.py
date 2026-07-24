@@ -1,6 +1,12 @@
 """枚举定义测试。"""
 
-from app.models.enums import DeviceStatus, LeaseStatus, PoolPurpose, RunPriority, RunStatus
+from app.models.enums import (
+    DeviceStatus,
+    LeaseStatus,
+    PoolPurpose,
+    RunPriority,
+    RunStatus,
+)
 
 
 class TestDeviceStatus:
