@@ -86,7 +86,9 @@ class TestPriorityPreemptionWorkflow:
             name="preempt_workflow", purpose=PoolPurpose.STABLE, max_parallel=1
         )
 
-        device = Device(serial="PREEMPT_W001", status=DeviceStatus.BUSY, pool_id=pool.id)
+        device = Device(
+            serial="PREEMPT_W001", status=DeviceStatus.BUSY, pool_id=pool.id
+        )
         test_db.add(device)
         test_db.commit()
 
@@ -148,15 +150,21 @@ class TestPriorityPreemptionWorkflow:
 
         # 添加不同状态的设备
         for i in range(5):
-            device = Device(serial=f"IDLE_{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id)
+            device = Device(
+                serial=f"IDLE_{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id
+            )
             test_db.add(device)
 
         for i in range(3):
-            device = Device(serial=f"BUSY_{i:03d}", status=DeviceStatus.BUSY, pool_id=pool.id)
+            device = Device(
+                serial=f"BUSY_{i:03d}", status=DeviceStatus.BUSY, pool_id=pool.id
+            )
             test_db.add(device)
 
         for i in range(2):
-            device = Device(serial=f"OFFLINE_{i:03d}", status=DeviceStatus.OFFLINE, pool_id=pool.id)
+            device = Device(
+                serial=f"OFFLINE_{i:03d}", status=DeviceStatus.OFFLINE, pool_id=pool.id
+            )
             test_db.add(device)
 
         test_db.commit()

@@ -206,7 +206,9 @@ class ReportGenerator:
 
         for event in timeline:
             md_parts.append(
-                "- **{}**: {}".format(event.get("timestamp", ""), event.get("message", ""))
+                "- **{}**: {}".format(
+                    event.get("timestamp", ""), event.get("message", "")
+                )
             )
 
         return "\n".join(md_parts)

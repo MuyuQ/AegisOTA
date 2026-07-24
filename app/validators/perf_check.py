@@ -48,7 +48,9 @@ class PerfChecker:
         self.executor = executor or ADBExecutor()
         self.memory_threshold = memory_threshold or self.DEFAULT_MEMORY_THRESHOLD
         self.cpu_threshold = cpu_threshold or self.DEFAULT_CPU_THRESHOLD
-        self.boot_time_threshold = boot_time_threshold or self.DEFAULT_BOOT_TIME_THRESHOLD
+        self.boot_time_threshold = (
+            boot_time_threshold or self.DEFAULT_BOOT_TIME_THRESHOLD
+        )
 
     def check(self, device_serial: str) -> PerfCheckResult:
         """执行性能检查。"""

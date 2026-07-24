@@ -248,12 +248,28 @@ class TestAllFaultTypes:
         """测试创建所有故障类型的配置。"""
         fault_configs = [
             (FaultType.STORAGE_PRESSURE, FaultStage.PRECHECK, {"fill_percent": 90}),
-            (FaultType.DOWNLOAD_INTERRUPTED, FaultStage.APPLY_UPDATE, {"interrupt_time": 30}),
-            (FaultType.PACKAGE_CORRUPTED, FaultStage.PRECHECK, {"corrupt_type": "header"}),
+            (
+                FaultType.DOWNLOAD_INTERRUPTED,
+                FaultStage.APPLY_UPDATE,
+                {"interrupt_time": 30},
+            ),
+            (
+                FaultType.PACKAGE_CORRUPTED,
+                FaultStage.PRECHECK,
+                {"corrupt_type": "header"},
+            ),
             (FaultType.LOW_BATTERY, FaultStage.PRECHECK, {"min_level": 15}),
             (FaultType.REBOOT_INTERRUPTED, FaultStage.APPLY_UPDATE, {"timeout": 60}),
-            (FaultType.POST_BOOT_WATCHDOG_FAILURE, FaultStage.POST_VALIDATE, {"check_interval": 5}),
-            (FaultType.MONKEY_AFTER_UPGRADE, FaultStage.POST_VALIDATE, {"event_count": 5000}),
+            (
+                FaultType.POST_BOOT_WATCHDOG_FAILURE,
+                FaultStage.POST_VALIDATE,
+                {"check_interval": 5},
+            ),
+            (
+                FaultType.MONKEY_AFTER_UPGRADE,
+                FaultStage.POST_VALIDATE,
+                {"event_count": 5000},
+            ),
             (
                 FaultType.PERFORMANCE_REGRESSION,
                 FaultStage.POST_VALIDATE,

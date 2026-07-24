@@ -93,7 +93,9 @@ class RuleEngine:
             # 阶段预筛选：检查是否有事件落在规则指定的阶段
             if rule.match_stage:
                 rule_stages = {s.lower() for s in rule.match_stage}
-                has_matching_stage = any(e.stage.value.lower() in rule_stages for e in events)
+                has_matching_stage = any(
+                    e.stage.value.lower() in rule_stages for e in events
+                )
                 if not has_matching_stage:
                     continue
 
@@ -184,7 +186,9 @@ class RuleEngine:
             # 阶段预筛选
             if rule.match_stage:
                 rule_stages = {s.lower() for s in rule.match_stage}
-                has_matching_stage = any(e.stage.value.lower() in rule_stages for e in events)
+                has_matching_stage = any(
+                    e.stage.value.lower() in rule_stages for e in events
+                )
                 if not has_matching_stage:
                     continue
 

@@ -84,7 +84,9 @@ class TestPoolServiceCreation:
         """测试创建重复名称的池应抛出错误。"""
         pool_service.create_pool(name="duplicate_pool", purpose=PoolPurpose.STABLE)
 
-        with pytest.raises(ValueError, match="Pool with name 'duplicate_pool' already exists"):
+        with pytest.raises(
+            ValueError, match="Pool with name 'duplicate_pool' already exists"
+        ):
             pool_service.create_pool(name="duplicate_pool", purpose=PoolPurpose.STRESS)
 
 
@@ -96,7 +98,9 @@ class TestPoolServiceQuery:
         """创建多个池用于测试。"""
         pool1 = pool_service.create_pool(name="stable_pool", purpose=PoolPurpose.STABLE)
         pool2 = pool_service.create_pool(name="stress_pool", purpose=PoolPurpose.STRESS)
-        pool3 = pool_service.create_pool(name="emergency_pool", purpose=PoolPurpose.EMERGENCY)
+        pool3 = pool_service.create_pool(
+            name="emergency_pool", purpose=PoolPurpose.EMERGENCY
+        )
         pool4 = pool_service.create_pool(
             name="disabled_pool", purpose=PoolPurpose.STABLE, enabled=False
         )
@@ -163,7 +167,9 @@ class TestPoolServiceUpdate:
 
     def test_update_pool_config(self, pool_service, test_db):
         """测试更新池配置。"""
-        pool = pool_service.create_pool(name="update_test_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="update_test_pool", purpose=PoolPurpose.STABLE
+        )
 
         updated = pool_service.update_pool(pool.id, reserved_ratio=0.5, max_parallel=20)
 
@@ -173,7 +179,9 @@ class TestPoolServiceUpdate:
 
     def test_update_pool_tag_selector(self, pool_service, test_db):
         """测试更新标签选择器。"""
-        pool = pool_service.create_pool(name="tag_update_pool", purpose=PoolPurpose.STRESS)
+        pool = pool_service.create_pool(
+            name="tag_update_pool", purpose=PoolPurpose.STRESS
+        )
 
         new_selector = {"brand": "Samsung", "tags": ["5G", "flagship"]}
         updated = pool_service.update_pool(pool.id, tag_selector=new_selector)
@@ -208,7 +216,9 @@ class TestPoolServiceDeviceAssignment:
 
     def test_assign_device_to_pool(self, pool_service, sample_device, test_db):
         """测试将设备分配到池。"""
-        pool = pool_service.create_pool(name="assignment_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="assignment_pool", purpose=PoolPurpose.STABLE
+        )
 
         result = pool_service.assign_device_to_pool(sample_device.id, pool.id)
 
@@ -343,7 +353,9 @@ class TestPoolServiceCapacity:
 
     def test_get_pool_capacity_with_quarantined(self, pool_service, test_db):
         """测试隔离设备的容量计算。"""
-        pool = pool_service.create_pool(name="quarantine_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="quarantine_pool", purpose=PoolPurpose.STABLE
+        )
 
         idle_device = Device(
             serial="IDLE_001",
@@ -519,7 +531,9 @@ class TestPoolServiceDefaultPools:
     def test_create_default_pools_with_existing_partial(self, pool_service, test_db):
         """测试部分默认池已存在时的创建。"""
         # 先创建一个默认池
-        pool_service.create_pool(name="stable_pool", purpose=PoolPurpose.STABLE, reserved_ratio=0.1)
+        pool_service.create_pool(
+            name="stable_pool", purpose=PoolPurpose.STABLE, reserved_ratio=0.1
+        )
 
         # 创建默认池
         pools = pool_service.create_default_pools()

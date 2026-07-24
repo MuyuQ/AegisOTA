@@ -183,7 +183,10 @@ class TestPriorityScheduling:
         test_db.commit()
 
         device = Device(
-            serial="PRIO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+            serial="PRIO001",
+            status=DeviceStatus.IDLE,
+            pool_id=pool.id,
+            battery_level=80,
         )
         test_db.add(device)
 
@@ -191,9 +194,15 @@ class TestPriorityScheduling:
         test_db.add(plan)
         test_db.commit()
 
-        run_normal = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
-        run_high = RunSession(plan_id=plan.id, priority=RunPriority.HIGH, pool_id=pool.id)
-        run_emergency = RunSession(plan_id=plan.id, priority=RunPriority.EMERGENCY, pool_id=pool.id)
+        run_normal = RunSession(
+            plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id
+        )
+        run_high = RunSession(
+            plan_id=plan.id, priority=RunPriority.HIGH, pool_id=pool.id
+        )
+        run_emergency = RunSession(
+            plan_id=plan.id, priority=RunPriority.EMERGENCY, pool_id=pool.id
+        )
         test_db.add_all([run_normal, run_high, run_emergency])
         test_db.commit()
 
@@ -213,7 +222,10 @@ class TestPriorityScheduling:
         test_db.commit()
 
         device = Device(
-            serial="FIFO001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+            serial="FIFO001",
+            status=DeviceStatus.IDLE,
+            pool_id=pool.id,
+            battery_level=80,
         )
         test_db.add(device)
 
@@ -243,7 +255,10 @@ class TestPriorityScheduling:
 
         for i in range(3):
             device = Device(
-                serial=f"ALLOC{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+                serial=f"ALLOC{i:03d}",
+                status=DeviceStatus.IDLE,
+                pool_id=pool.id,
+                battery_level=80,
             )
             test_db.add(device)
         test_db.commit()
@@ -281,7 +296,10 @@ class TestPriorityScheduling:
 
         for i in range(4):
             device = Device(
-                serial=f"RES{i:03d}", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+                serial=f"RES{i:03d}",
+                status=DeviceStatus.IDLE,
+                pool_id=pool.id,
+                battery_level=80,
             )
             test_db.add(device)
         test_db.commit()
@@ -294,7 +312,9 @@ class TestPriorityScheduling:
 
         runs = []
         for i in range(3):
-            run = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
+            run = RunSession(
+                plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id
+            )
             test_db.add(run)
             runs.append(run)
         test_db.commit()
@@ -322,7 +342,10 @@ class TestPoolBasedAllocation:
         test_db.commit()
 
         device = Device(
-            serial="SELECT001", status=DeviceStatus.IDLE, pool_id=pool.id, battery_level=80
+            serial="SELECT001",
+            status=DeviceStatus.IDLE,
+            pool_id=pool.id,
+            battery_level=80,
         )
         test_db.add(device)
         test_db.commit()
@@ -353,10 +376,16 @@ class TestPoolBasedAllocation:
         test_db.commit()
 
         device1 = Device(
-            serial="BOUNDARY001", status=DeviceStatus.BUSY, pool_id=pool1.id, battery_level=80
+            serial="BOUNDARY001",
+            status=DeviceStatus.BUSY,
+            pool_id=pool1.id,
+            battery_level=80,
         )
         device2 = Device(
-            serial="BOUNDARY002", status=DeviceStatus.IDLE, pool_id=pool2.id, battery_level=80
+            serial="BOUNDARY002",
+            status=DeviceStatus.IDLE,
+            pool_id=pool2.id,
+            battery_level=80,
         )
         test_db.add_all([device1, device2])
         test_db.commit()

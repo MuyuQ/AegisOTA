@@ -69,12 +69,20 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_fault_profiles_fault_stage"), "fault_profiles", ["fault_stage"], unique=False
+        op.f("ix_fault_profiles_fault_stage"),
+        "fault_profiles",
+        ["fault_stage"],
+        unique=False,
     )
     op.create_index(
-        op.f("ix_fault_profiles_fault_type"), "fault_profiles", ["fault_type"], unique=False
+        op.f("ix_fault_profiles_fault_type"),
+        "fault_profiles",
+        ["fault_type"],
+        unique=False,
     )
-    op.create_index(op.f("ix_fault_profiles_name"), "fault_profiles", ["name"], unique=False)
+    op.create_index(
+        op.f("ix_fault_profiles_name"), "fault_profiles", ["name"], unique=False
+    )
     op.create_table(
         "devices",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -137,11 +145,17 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["default_pool_id"], ["device_pools.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["fault_profile_id"], ["fault_profiles.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["default_pool_id"], ["device_pools.id"], ondelete="SET NULL"
+        ),
+        sa.ForeignKeyConstraint(
+            ["fault_profile_id"], ["fault_profiles.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_upgrade_plans_name"), "upgrade_plans", ["name"], unique=False)
+    op.create_index(
+        op.f("ix_upgrade_plans_name"), "upgrade_plans", ["name"], unique=False
+    )
     op.create_table(
         "run_sessions",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -174,16 +188,28 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(["device_id"], ["devices.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["parent_run_id"], ["run_sessions.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["parent_run_id"], ["run_sessions.id"], ondelete="SET NULL"
+        ),
         sa.ForeignKeyConstraint(["plan_id"], ["upgrade_plans.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["pool_id"], ["device_pools.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_run_sessions_device_id"), "run_sessions", ["device_id"], unique=False)
-    op.create_index(op.f("ix_run_sessions_plan_id"), "run_sessions", ["plan_id"], unique=False)
-    op.create_index(op.f("ix_run_sessions_pool_id"), "run_sessions", ["pool_id"], unique=False)
-    op.create_index(op.f("ix_run_sessions_priority"), "run_sessions", ["priority"], unique=False)
-    op.create_index(op.f("ix_run_sessions_status"), "run_sessions", ["status"], unique=False)
+    op.create_index(
+        op.f("ix_run_sessions_device_id"), "run_sessions", ["device_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_run_sessions_plan_id"), "run_sessions", ["plan_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_run_sessions_pool_id"), "run_sessions", ["pool_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_run_sessions_priority"), "run_sessions", ["priority"], unique=False
+    )
+    op.create_index(
+        op.f("ix_run_sessions_status"), "run_sessions", ["status"], unique=False
+    )
     op.create_table(
         "device_leases",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -208,7 +234,9 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_device_leases_device_id"), "device_leases", ["device_id"], unique=False
     )
-    op.create_index(op.f("ix_device_leases_run_id"), "device_leases", ["run_id"], unique=False)
+    op.create_index(
+        op.f("ix_device_leases_run_id"), "device_leases", ["run_id"], unique=False
+    )
     op.create_table(
         "run_steps",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),

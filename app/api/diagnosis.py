@@ -338,7 +338,9 @@ async def trigger_diagnosis(
     对指定任务执行诊断流程，包括日志解析、规则匹配和结果生成。
     """
     # 检查任务是否存在
-    run_session = db.execute(select(RunSession).where(RunSession.id == run_id)).scalar_one_or_none()
+    run_session = db.execute(
+        select(RunSession).where(RunSession.id == run_id)
+    ).scalar_one_or_none()
 
     if not run_session:
         raise HTTPException(status_code=404, detail="Run session not found")
@@ -373,7 +375,9 @@ async def export_logs_from_device(
     使用 ADB 从设备拉取 recovery、update_engine、logcat 等日志文件。
     """
     # 检查任务是否存在
-    run_session = db.execute(select(RunSession).where(RunSession.id == run_id)).scalar_one_or_none()
+    run_session = db.execute(
+        select(RunSession).where(RunSession.id == run_id)
+    ).scalar_one_or_none()
 
     if not run_session:
         raise HTTPException(status_code=404, detail="Run session not found")
@@ -386,7 +390,9 @@ async def export_logs_from_device(
         device_serial = run_session.assigned_device_serial
 
     if not device_serial:
-        raise HTTPException(status_code=400, detail="No device associated with this run session")
+        raise HTTPException(
+            status_code=400, detail="No device associated with this run session"
+        )
 
     # 执行日志导出
     service = LogExportService(db, ADBExecutor())
@@ -743,12 +749,15 @@ async def create_rule(
     """创建诊断规则。"""
     # 检查 rule_id 是否已存在
     existing = db.execute(
-        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == request.rule_id)
+        select(DiagnosticRuleModel).where(
+            DiagnosticRuleModel.rule_id == request.rule_id
+        )
     ).scalar_one_or_none()
 
     if existing:
         raise HTTPException(
-            status_code=400, detail=f"Rule with rule_id '{request.rule_id}' already exists"
+            status_code=400,
+            detail=f"Rule with rule_id '{request.rule_id}' already exists",
         )
 
     # 创建新规则
@@ -926,7 +935,9 @@ async def search_similar_cases(
         # 搜索诊断结果的关键证据
         if run_ids:
             results = (
-                db.execute(select(DiagnosticResult).where(DiagnosticResult.run_id.in_(run_ids)))
+                db.execute(
+                    select(DiagnosticResult).where(DiagnosticResult.run_id.in_(run_ids))
+                )
                 .scalars()
                 .all()
             )
@@ -937,7 +948,9 @@ async def search_similar_cases(
                 result = next((r for r in results if r.run_id == idx.run_id), None)
                 if result:
                     key_evidence = result.get_key_evidence()
-                    evidence_text = " ".join(e.get("raw_line", "") for e in key_evidence)
+                    evidence_text = " ".join(
+                        e.get("raw_line", "") for e in key_evidence
+                    )
                     if keywords.lower() in evidence_text.lower():
                         filtered_indices.append(idx)
 

@@ -101,7 +101,9 @@ class TestDeviceStateMachine:
 
     def test_quarantined_can_transition_to(self):
         """测试 QUARANTINED 状态可以转换到的状态。"""
-        allowed = device_state_machine.get_allowed_transitions(DeviceStatus.QUARANTINED.value)
+        allowed = device_state_machine.get_allowed_transitions(
+            DeviceStatus.QUARANTINED.value
+        )
         assert DeviceStatus.RECOVERING.value in allowed
         assert DeviceStatus.OFFLINE.value in allowed
 
@@ -117,7 +119,9 @@ class TestDeviceStateMachine:
 
         # OFFLINE 不能直接转换到 BUSY
         assert (
-            device_state_machine.can_transition(DeviceStatus.OFFLINE.value, DeviceStatus.BUSY.value)
+            device_state_machine.can_transition(
+                DeviceStatus.OFFLINE.value, DeviceStatus.BUSY.value
+            )
             is False
         )
 
@@ -156,13 +160,17 @@ class TestRunStateMachine:
         """测试非法的任务状态转换。"""
         # PASSED 不能转换到任何状态
         assert (
-            run_state_machine.can_transition(RunStatus.PASSED.value, RunStatus.QUEUED.value)
+            run_state_machine.can_transition(
+                RunStatus.PASSED.value, RunStatus.QUEUED.value
+            )
             is False
         )
 
         # QUEUED 不能直接转换到 PASSED
         assert (
-            run_state_machine.can_transition(RunStatus.QUEUED.value, RunStatus.PASSED.value)
+            run_state_machine.can_transition(
+                RunStatus.QUEUED.value, RunStatus.PASSED.value
+            )
             is False
         )
 

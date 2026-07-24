@@ -39,7 +39,10 @@ class Artifact(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     step_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("run_steps.id", ondelete="SET NULL"), nullable=True
@@ -61,7 +64,9 @@ class Artifact(Base):
     )
 
     # 关系
-    run_session: Mapped["RunSession"] = relationship("RunSession", back_populates="artifacts")
+    run_session: Mapped["RunSession"] = relationship(
+        "RunSession", back_populates="artifacts"
+    )
     step: Mapped[Optional["RunStep"]] = relationship("RunStep")
 
     def get_metadata(self) -> dict[str, Any]:

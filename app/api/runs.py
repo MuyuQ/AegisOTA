@@ -77,9 +77,11 @@ async def list_plans(db: Session = Depends(get_db)):
         {
             "id": p.id,
             "name": p.name,
-            "upgrade_type": p.upgrade_type.value
-            if hasattr(p.upgrade_type, "value")
-            else str(p.upgrade_type),
+            "upgrade_type": (
+                p.upgrade_type.value
+                if hasattr(p.upgrade_type, "value")
+                else str(p.upgrade_type)
+            ),
             "package_path": p.package_path,
             "target_build": p.target_build,
         }
@@ -179,7 +181,8 @@ async def list_runs(
         except ValueError:
             valid_values = [s.value for s in RunStatus]
             raise HTTPException(
-                status_code=400, detail=f"Invalid status '{status}'. Valid values: {valid_values}"
+                status_code=400,
+                detail=f"Invalid status '{status}'. Valid values: {valid_values}",
             )
 
     runs = service.list_runs(status=run_status, limit=limit)
@@ -260,7 +263,8 @@ async def create_run_form(
     plan = run_service.get_upgrade_plan(plan_id)
     if not plan:
         return HTMLResponse(
-            content='<div class="alert alert-error">升级计划不存在</div>', status_code=400
+            content='<div class="alert alert-error">升级计划不存在</div>',
+            status_code=400,
         )
 
     # 构建 run_options
@@ -294,7 +298,9 @@ async def create_run_form(
                 created_runs.append(run)
     else:
         # 无设备，排队等待
-        run = RunSession(plan_id=plan.id, status=RunStatus.QUEUED, total_iterations=upgrade_count)
+        run = RunSession(
+            plan_id=plan.id, status=RunStatus.QUEUED, total_iterations=upgrade_count
+        )
         run.set_run_options(run_options)
         db.add(run)
         db.commit()
@@ -304,7 +310,9 @@ async def create_run_form(
     # 构建成功消息
     if len(created_runs) == 1:
         run = created_runs[0]
-        status_str = run.status.value if hasattr(run.status, "value") else str(run.status)
+        status_str = (
+            run.status.value if hasattr(run.status, "value") else str(run.status)
+        )
         msg_parts = [
             "任务创建成功！",
             f"任务 ID: {run.id}",
@@ -318,13 +326,11 @@ async def create_run_form(
             event_count = run_options.get("monkey_params", {}).get("event_count", 1000)
             msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
 
-        return HTMLResponse(
-            content=f"""<div class="alert alert-success">
+        return HTMLResponse(content=f"""<div class="alert alert-success">
                 {"<br>".join(msg_parts)}<br>
                 <a href="/runs/{run.id}" class="btn btn-sm btn-primary"
                    style="margin-top: 0.5rem;">查看详情</a>
-            </div>"""
-        )
+            </div>""")
     else:
         # 多任务
         run_ids = [str(r.id) for r in created_runs]

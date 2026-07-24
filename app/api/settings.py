@@ -69,10 +69,8 @@ async def save_config(
     # 清除配置缓存以重新加载
     clear_settings_cache()
 
-    return HTMLResponse(
-        content="""
+    return HTMLResponse(content="""
     <div class="alert alert-success">
         配置已保存！部分配置可能需要重启服务生效。
     </div>
-    """
-    )
+    """)
