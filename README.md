@@ -787,3 +787,6 @@ class CustomCheck(BaseValidator):
 ## 许可证
 
 MIT License
+
+---
+*最后更新: 2026-07-24*
