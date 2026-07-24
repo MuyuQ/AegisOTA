@@ -245,7 +245,9 @@ class TestArtifactRelationships:
 class TestCascadeDelete:
     """级联删除测试。"""
 
-    def test_run_delete_cascades_artifacts(self, db_session, sample_device, sample_plan):
+    def test_run_delete_cascades_artifacts(
+        self, db_session, sample_device, sample_plan
+    ):
         """测试删除会话级联删除产物。"""
         run = RunSession(device_id=sample_device.id, plan_id=sample_plan.id)
         db_session.add(run)
@@ -278,7 +280,11 @@ class TestAllArtifactTypes:
             (ArtifactType.LOGCAT, "/logs/logcat.log", {"device_serial": "TEST001"}),
             (ArtifactType.STDOUT, "/logs/stdout.log", {"size_mb": 5}),
             (ArtifactType.STDERR, "/logs/stderr.log", {"error_count": 3}),
-            (ArtifactType.SCREENSHOT, "/img/screenshot.png", {"resolution": "1080x2400"}),
+            (
+                ArtifactType.SCREENSHOT,
+                "/img/screenshot.png",
+                {"resolution": "1080x2400"},
+            ),
             (ArtifactType.MONKEY_RESULT, "/results/monkey.json", {"events": 10000}),
             (ArtifactType.PERF_DATA, "/data/perf.csv", {"metrics": ["cpu", "mem"]}),
             (ArtifactType.REPORT, "/reports/report.md", {"format": "markdown"}),

@@ -61,7 +61,8 @@ class SchedulerService:
                 device_id=device_id,
                 run_id=run_id,
                 lease_status=LeaseStatus.ACTIVE,
-                expired_at=datetime.now(timezone.utc) + timedelta(seconds=lease_duration),
+                expired_at=datetime.now(timezone.utc)
+                + timedelta(seconds=lease_duration),
                 preemptible=preemptible,
             )
 
@@ -168,7 +169,9 @@ class SchedulerService:
         # 如果没有精确匹配，返回第一个可用设备
         return available_devices[0] if available_devices else None
 
-    def get_next_run_to_schedule(self, pool_id: Optional[int] = None) -> Optional[RunSession]:
+    def get_next_run_to_schedule(
+        self, pool_id: Optional[int] = None
+    ) -> Optional[RunSession]:
         """获取下一个待调度的任务（按优先级和 FIFO 排序）。"""
         query = self.db.query(RunSession).filter(RunSession.status == RunStatus.QUEUED)
 
@@ -210,7 +213,11 @@ class SchedulerService:
 
         # 计算当前正在使用的设备数（BUSY 或 RESERVED 状态）
         used_count = len(
-            [d for d in devices if d.status in (DeviceStatus.BUSY, DeviceStatus.RESERVED)]
+            [
+                d
+                for d in devices
+                if d.status in (DeviceStatus.BUSY, DeviceStatus.RESERVED)
+            ]
         )
 
         # 返回可用容量（不能超过保留后可用的数量）

@@ -91,7 +91,9 @@ class DiagnosisService:
 
         # 检查任务是否需要诊断
         if not self._needs_diagnosis(run_session):
-            logger.info(f"Run {run_id} does not need diagnosis (status: {run_session.status})")
+            logger.info(
+                f"Run {run_id} does not need diagnosis (status: {run_session.status})"
+            )
             return None
 
         # 获取设备序列号
@@ -129,10 +131,14 @@ class DiagnosisService:
         if not rules:
             logger.warning("No diagnostic rules loaded")
             # 创建证据不足结果
-            return self._create_insufficient_evidence_result(run_id, device_serial, db_events)
+            return self._create_insufficient_evidence_result(
+                run_id, device_serial, db_events
+            )
 
         # 执行规则匹配
-        result_data, matched_rules = self.rule_engine.evaluate(run_id, normalized_events)
+        result_data, matched_rules = self.rule_engine.evaluate(
+            run_id, normalized_events
+        )
 
         # 查找相似案例
         similar_cases = self._find_similar_cases(result_data, device_serial, run_id)
@@ -146,7 +152,9 @@ class DiagnosisService:
         self._save_rule_hits(run_id, diagnostic_result.id, matched_rules)
 
         # 索引案例用于相似搜索
-        self._index_case(run_id, device_serial, result_data, diagnostic_result.get_key_evidence())
+        self._index_case(
+            run_id, device_serial, result_data, diagnostic_result.get_key_evidence()
+        )
 
         # 提交所有变更
         self.db.commit()
@@ -278,7 +286,9 @@ class DiagnosisService:
 
         # 解析 update_engine 日志
         if "update_engine_log" in log_files:
-            events = self.update_engine_parser.parse(log_files["update_engine_log"], str(run_id))
+            events = self.update_engine_parser.parse(
+                log_files["update_engine_log"], str(run_id)
+            )
             all_events.extend(events)
             logger.debug(f"Update engine parser found {len(events)} events")
 
@@ -337,16 +347,26 @@ class DiagnosisService:
         for event in events:
             db_event = NormalizedEventDB(
                 run_id=run_id,
-                source_type=event.source_type.value
-                if hasattr(event.source_type, "value")
-                else str(event.source_type),
-                stage=event.stage.value if hasattr(event.stage, "value") else str(event.stage),
-                event_type=event.event_type.value
-                if hasattr(event.event_type, "value")
-                else str(event.event_type),
-                severity=event.severity.value
-                if hasattr(event.severity, "value")
-                else str(event.severity),
+                source_type=(
+                    event.source_type.value
+                    if hasattr(event.source_type, "value")
+                    else str(event.source_type)
+                ),
+                stage=(
+                    event.stage.value
+                    if hasattr(event.stage, "value")
+                    else str(event.stage)
+                ),
+                event_type=(
+                    event.event_type.value
+                    if hasattr(event.event_type, "value")
+                    else str(event.event_type)
+                ),
+                severity=(
+                    event.severity.value
+                    if hasattr(event.severity, "value")
+                    else str(event.severity)
+                ),
                 normalized_code=event.normalized_code,
                 raw_line=event.raw_line,
                 line_no=event.line_no,
@@ -375,13 +395,19 @@ class DiagnosisService:
         self.db.execute(delete(RuleHit).where(RuleHit.run_id == run_id))
 
         # 删除旧的诊断结果
-        self.db.execute(delete(DiagnosticResult).where(DiagnosticResult.run_id == run_id))
+        self.db.execute(
+            delete(DiagnosticResult).where(DiagnosticResult.run_id == run_id)
+        )
 
         # 删除旧的标准化事件
-        self.db.execute(delete(NormalizedEventDB).where(NormalizedEventDB.run_id == run_id))
+        self.db.execute(
+            delete(NormalizedEventDB).where(NormalizedEventDB.run_id == run_id)
+        )
 
         # 删除旧的相似案例索引
-        self.db.execute(delete(SimilarCaseIndex).where(SimilarCaseIndex.run_id == run_id))
+        self.db.execute(
+            delete(SimilarCaseIndex).where(SimilarCaseIndex.run_id == run_id)
+        )
 
         # 提交删除
         self.db.commit()
@@ -403,7 +429,9 @@ class DiagnosisService:
             相似案例列表
         """
         # 生成证据哈希
-        key_evidence = [{"normalized_code": code} for code in result_data.key_evidence[:3]]
+        key_evidence = [
+            {"normalized_code": code} for code in result_data.key_evidence[:3]
+        ]
         evidence_hash = self.similar_service._generate_evidence_hash(key_evidence)
 
         # 查找相似案例
@@ -438,15 +466,19 @@ class DiagnosisService:
         diagnostic_result = DiagnosticResult(
             run_id=run_id,
             device_serial=device_serial,
-            stage=result_data.stage.value
-            if hasattr(result_data.stage, "value")
-            else str(result_data.stage),
+            stage=(
+                result_data.stage.value
+                if hasattr(result_data.stage, "value")
+                else str(result_data.stage)
+            ),
             category=result_data.category,
             root_cause=result_data.root_cause,
             confidence=result_data.confidence,
-            result_status=result_data.result_status.value
-            if hasattr(result_data.result_status, "value")
-            else str(result_data.result_status),
+            result_status=(
+                result_data.result_status.value
+                if hasattr(result_data.result_status, "value")
+                else str(result_data.result_status)
+            ),
             next_action=result_data.next_action,
         )
 
@@ -614,5 +646,9 @@ class DiagnosisService:
         Returns:
             规则命中记录列表
         """
-        stmt = select(RuleHit).where(RuleHit.run_id == run_id).order_by(RuleHit.priority.desc())
+        stmt = (
+            select(RuleHit)
+            .where(RuleHit.run_id == run_id)
+            .order_by(RuleHit.priority.desc())
+        )
         return list(self.db.execute(stmt).scalars().all())

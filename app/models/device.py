@@ -30,7 +30,9 @@ class DevicePool(Base):
     __tablename__ = "device_pools"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False, index=True
+    )
     purpose: Mapped[PoolPurpose] = mapped_column(String(32), nullable=False)
 
     # 池配置
@@ -74,7 +76,9 @@ class Device(Base):
     __tablename__ = "devices"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    serial: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    serial: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
 
     # 设备信息
     brand: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
@@ -92,7 +96,10 @@ class Device(Base):
 
     # 设备池关联
     pool_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("device_pools.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("device_pools.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     # 物理位置
@@ -115,7 +122,9 @@ class Device(Base):
     current_run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # 关系
-    pool: Mapped[Optional["DevicePool"]] = relationship("DevicePool", back_populates="devices")
+    pool: Mapped[Optional["DevicePool"]] = relationship(
+        "DevicePool", back_populates="devices"
+    )
     leases: Mapped[list["DeviceLease"]] = relationship(
         "DeviceLease", back_populates="device", cascade="all, delete-orphan"
     )
@@ -148,14 +157,22 @@ class DeviceLease(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("devices.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     run_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="SET NULL"), nullable=True, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     # 租约时间
-    leased_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    leased_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
     expired_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     released_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
@@ -171,7 +188,9 @@ class DeviceLease(Base):
 
     # 关系
     device: Mapped["Device"] = relationship("Device", back_populates="leases")
-    run_session: Mapped[Optional["RunSession"]] = relationship("RunSession", back_populates="lease")
+    run_session: Mapped[Optional["RunSession"]] = relationship(
+        "RunSession", back_populates="lease"
+    )
 
     def is_active(self) -> bool:
         """检查租约是否有效。"""
@@ -189,4 +208,8 @@ class DeviceLease(Base):
 
 
 # 复合索引
-Index("ix_device_leases_device_id_lease_status", DeviceLease.device_id, DeviceLease.lease_status)
+Index(
+    "ix_device_leases_device_id_lease_status",
+    DeviceLease.device_id,
+    DeviceLease.lease_status,
+)

@@ -3,7 +3,11 @@
 import re
 from typing import Any, Dict, List, Optional
 
-from app.executors.command_runner import CommandResult, CommandRunner, ShellCommandRunner
+from app.executors.command_runner import (
+    CommandResult,
+    CommandRunner,
+    ShellCommandRunner,
+)
 
 
 class ADBExecutor:
@@ -194,7 +198,9 @@ class ADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """Fastboot 刷写分区。"""
-        cmd = self._build_fastboot_command("flash", partition, image_path, device=device)
+        cmd = self._build_fastboot_command(
+            "flash", partition, image_path, device=device
+        )
         return self.runner.run(cmd, timeout=timeout)
 
     def get_device_snapshot(

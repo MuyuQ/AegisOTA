@@ -83,7 +83,9 @@ def test_post_validate_handler_success(mock_executor, run_context):
 class TestIdempotency:
     """幂等性测试类。"""
 
-    def test_execute_with_idempotency_skips_when_can_resume(self, mock_executor, run_context):
+    def test_execute_with_idempotency_skips_when_can_resume(
+        self, mock_executor, run_context
+    ):
         """测试当 can_resume 返回 True 时跳过执行。"""
         handler = PrecheckHandler(executor=mock_executor)
 
@@ -110,19 +112,25 @@ class TestIdempotency:
         run_context.step_results[StepName.PRECHECK.value] = result1.to_dict()
 
         # 禁用幂等性时仍然执行
-        result2 = handler.execute_with_idempotency(run_context, enable_idempotency=False)
+        result2 = handler.execute_with_idempotency(
+            run_context, enable_idempotency=False
+        )
 
         assert result2.success is True
         assert result2.skipped is False
 
-    def test_can_resume_returns_false_without_previous_result(self, mock_executor, run_context):
+    def test_can_resume_returns_false_without_previous_result(
+        self, mock_executor, run_context
+    ):
         """测试没有之前结果时 can_resume 返回 False。"""
         handler = PrecheckHandler(executor=mock_executor)
 
         # 没有之前的结果
         assert handler.can_resume(run_context) is False
 
-    def test_can_resume_returns_true_with_success_result(self, mock_executor, run_context):
+    def test_can_resume_returns_true_with_success_result(
+        self, mock_executor, run_context
+    ):
         """测试有成功结果时 can_resume 返回 True。"""
         handler = PrecheckHandler(executor=mock_executor)
 

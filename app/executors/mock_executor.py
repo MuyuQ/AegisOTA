@@ -123,7 +123,9 @@ class MockExecutor(CommandRunner):
         executor.set_response("adb push", stdout="push success\n")
 
         # 升级命令成功
-        executor.set_response("adb shell am broadcast", stdout="Broadcast completed: result=0\n")
+        executor.set_response(
+            "adb shell am broadcast", stdout="Broadcast completed: result=0\n"
+        )
 
         return executor
 
@@ -133,7 +135,9 @@ class MockExecutor(CommandRunner):
         executor = cls.default_device_responses()
 
         # push 失败
-        executor.set_response("adb push", exit_code=1, stderr="No space left on device\n")
+        executor.set_response(
+            "adb push", exit_code=1, stderr="No space left on device\n"
+        )
 
         return executor
 

@@ -41,13 +41,20 @@ class Report(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     # 报告信息
     title: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
-    format: Mapped[str] = mapped_column(String(16), nullable=False, default=ReportFormat.JSON)
-    status: Mapped[str] = mapped_column(String(16), nullable=False, default=ReportStatus.GENERATING)
+    format: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=ReportFormat.JSON
+    )
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=ReportStatus.GENERATING
+    )
 
     # 文件路径
     content_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
@@ -76,7 +83,9 @@ class Report(Base):
     )
 
     # 关系
-    run_session: Mapped["RunSession"] = relationship("RunSession", back_populates="reports")
+    run_session: Mapped["RunSession"] = relationship(
+        "RunSession", back_populates="reports"
+    )
 
     def is_complete(self) -> bool:
         """检查报告是否已完成。"""

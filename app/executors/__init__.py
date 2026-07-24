@@ -1,7 +1,11 @@
 """执行器模块。"""
 
 from app.executors.adb_executor import ADBExecutor
-from app.executors.command_runner import CommandResult, CommandRunner, ShellCommandRunner
+from app.executors.command_runner import (
+    CommandResult,
+    CommandRunner,
+    ShellCommandRunner,
+)
 from app.executors.mock_executor import MockADBExecutor, MockExecutor
 from app.executors.run_context import DeviceSnapshot, RunContext
 from app.executors.run_executor import (

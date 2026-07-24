@@ -33,7 +33,10 @@ class NormalizedEvent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     # 来源信息
@@ -48,7 +51,9 @@ class NormalizedEvent(Base):
     event_type: Mapped[str] = mapped_column(
         String(32), nullable=False
     )  # error_signal/status_transition/progress_signal
-    severity: Mapped[str] = mapped_column(String(16), nullable=False)  # info/warning/error/critical
+    severity: Mapped[str] = mapped_column(
+        String(16), nullable=False
+    )  # info/warning/error/critical
     normalized_code: Mapped[str] = mapped_column(
         String(64), nullable=False, index=True
     )  # 标准化错误码
@@ -83,8 +88,14 @@ class NormalizedEvent(Base):
 
 
 # 复合索引：按任务和阶段查询事件
-Index("ix_normalized_events_run_id_stage", NormalizedEvent.run_id, NormalizedEvent.stage)
-Index("ix_normalized_events_run_id_severity", NormalizedEvent.run_id, NormalizedEvent.severity)
+Index(
+    "ix_normalized_events_run_id_stage", NormalizedEvent.run_id, NormalizedEvent.stage
+)
+Index(
+    "ix_normalized_events_run_id_severity",
+    NormalizedEvent.run_id,
+    NormalizedEvent.severity,
+)
 
 
 class DiagnosticResult(Base):
@@ -107,8 +118,12 @@ class DiagnosticResult(Base):
 
     # 诊断结论
     stage: Mapped[str] = mapped_column(String(32), nullable=False)  # 失败阶段
-    category: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # 故障分类
-    root_cause: Mapped[str] = mapped_column(String(64), nullable=False, index=True)  # 根因标识
+    category: Mapped[str] = mapped_column(
+        String(32), nullable=False, index=True
+    )  # 故障分类
+    root_cause: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )  # 根因标识
     confidence: Mapped[float] = mapped_column(Float, nullable=False)  # 置信度 0.0-1.0
     result_status: Mapped[str] = mapped_column(
         String(16), nullable=False
@@ -176,10 +191,16 @@ class RuleHit(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("run_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("run_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     result_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("diagnostic_results.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("diagnostic_results.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     rule_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
@@ -227,7 +248,9 @@ class DiagnosticRule(Base):
     __tablename__ = "diagnostic_rules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    rule_id: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
+    rule_id: Mapped[str] = mapped_column(
+        String(32), unique=True, nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -305,7 +328,11 @@ class DiagnosticRule(Base):
 
 
 # 复合索引：按优先级和启用状态查询
-Index("ix_diagnostic_rules_priority_enabled", DiagnosticRule.priority, DiagnosticRule.enabled)
+Index(
+    "ix_diagnostic_rules_priority_enabled",
+    DiagnosticRule.priority,
+    DiagnosticRule.enabled,
+)
 
 
 class SimilarCaseIndex(Base):
@@ -329,7 +356,9 @@ class SimilarCaseIndex(Base):
     # 索引字段
     category: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     root_cause: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    key_evidence_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)  # MD5 哈希
+    key_evidence_hash: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )  # MD5 哈希
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False

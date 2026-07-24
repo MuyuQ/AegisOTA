@@ -38,7 +38,11 @@ def list_pools():
             table.add_row(
                 str(pool.id),
                 pool.name,
-                pool.purpose.value if hasattr(pool.purpose, "value") else str(pool.purpose),
+                (
+                    pool.purpose.value
+                    if hasattr(pool.purpose, "value")
+                    else str(pool.purpose)
+                ),
                 f"{pool.reserved_ratio:.0%}",
                 str(pool.max_parallel),
                 "✓" if pool.enabled else "✗",
@@ -55,7 +59,9 @@ def create_pool(
     purpose: str = typer.Option(
         "stable", "--purpose", "-p", help="设备池用途: stable, stress, emergency"
     ),
-    reserved_ratio: float = typer.Option(0.2, "--reserved-ratio", "-r", help="保留比例"),
+    reserved_ratio: float = typer.Option(
+        0.2, "--reserved-ratio", "-r", help="保留比例"
+    ),
     max_parallel: int = typer.Option(5, "--max-parallel", "-m", help="最大并行数"),
 ):
     """创建设备池。"""
@@ -132,7 +138,9 @@ def show_pool(
 def update_pool(
     name: str = typer.Option(None, "--name", "-n", help="设备池名称"),
     pool_id: int = typer.Option(None, "--id", help="设备池 ID"),
-    reserved_ratio: float = typer.Option(None, "--reserved-ratio", "-r", help="保留比例"),
+    reserved_ratio: float = typer.Option(
+        None, "--reserved-ratio", "-r", help="保留比例"
+    ),
     max_parallel: int = typer.Option(None, "--max-parallel", "-m", help="最大并行数"),
     enabled: bool = typer.Option(None, "--enabled/--disabled", help="启用/禁用"),
 ):
@@ -211,6 +219,8 @@ def assign_device(
             console.print(f"[red]Device {device_id} not found[/red]")
             raise typer.Exit(1)
 
-        console.print(f"[green]Assigned device {device_id} to pool '{pool_name}'[/green]")
+        console.print(
+            f"[green]Assigned device {device_id} to pool '{pool_name}'[/green]"
+        )
     finally:
         db.close()

@@ -318,7 +318,9 @@ class EventNormalizer:
         new_stage: Stage | None = None
 
         # 根据normalized_code确定新阶段
-        if code.startswith("UE_STATUS_DOWNLOADING") or code.startswith("UE_STATUS_VERIFYING"):
+        if code.startswith("UE_STATUS_DOWNLOADING") or code.startswith(
+            "UE_STATUS_VERIFYING"
+        ):
             new_stage = Stage.APPLY_UPDATE
         elif code.startswith("UE_STATUS_FINALIZING"):
             new_stage = Stage.APPLY_UPDATE

@@ -190,7 +190,9 @@ class RuleLoader:
             return []
 
         db_rules = (
-            self.db_session.query(DiagnosticRuleModel).filter(DiagnosticRuleModel.enabled).all()
+            self.db_session.query(DiagnosticRuleModel)
+            .filter(DiagnosticRuleModel.enabled)
+            .all()
         )
 
         rules = [DiagnosticRule.from_db_model(db_rule) for db_rule in db_rules]

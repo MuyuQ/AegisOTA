@@ -16,7 +16,9 @@ def test_command_result_creation():
 
 def test_command_result_failure():
     """测试命令失败结果。"""
-    result = CommandResult(command="false", exit_code=1, stdout="", stderr="", duration_ms=10)
+    result = CommandResult(
+        command="false", exit_code=1, stdout="", stderr="", duration_ms=10
+    )
 
     assert result.exit_code == 1
     assert result.success is False

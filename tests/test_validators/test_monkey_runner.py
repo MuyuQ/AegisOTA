@@ -52,7 +52,8 @@ def test_monkey_runner_with_crash():
     """测试 Monkey 发现崩溃。"""
     executor = MockADBExecutor()
     executor.set_response(
-        "shell monkey", stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n"
+        "shell monkey",
+        stdout="Events injected: 500\n:Crashed: 1\n** Monkey aborted **\n",
     )
 
     runner = MonkeyRunner(executor=executor)

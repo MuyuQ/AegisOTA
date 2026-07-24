@@ -245,7 +245,9 @@ class RecoveryParser(BaseParser):
                         if parts[i] in ("0", "1"):
                             result = parts[i]
                             # 之后的字段组合为包路径
-                            package_path = " ".join(parts[i + 1 :]) if i + 1 < len(parts) else ""
+                            package_path = (
+                                " ".join(parts[i + 1 :]) if i + 1 < len(parts) else ""
+                            )
                             break
 
                     if result is not None:
