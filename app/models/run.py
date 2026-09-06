@@ -19,7 +19,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import RunPriority, RunStatus
-from app.models.fault import FaultProfile
 
 if TYPE_CHECKING:
     from app.models.artifact import Artifact
