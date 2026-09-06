@@ -54,7 +54,8 @@ class TestPoolWorkflow:
         pool_id = response.json()["id"]
 
         # 2. 创建设备并分配到池
-        device = Device(serial="WORKFLOW001", status=DeviceStatus.IDLE, pool_id=pool_id)
+        device = Device(serial="WORKFLOW001",
+                        status=DeviceStatus.IDLE, pool_id=pool_id)
         test_db.add(device)
         test_db.commit()
 
@@ -130,7 +131,8 @@ class TestPriorityPreemptionWorkflow:
 
         # 5. 执行抢占
         preemption_service = PreemptionService(test_db)
-        result = preemption_service.check_and_execute_preemption(emergency_run.id)
+        result = preemption_service.check_and_execute_preemption(
+            emergency_run.id)
 
         assert result is True
 

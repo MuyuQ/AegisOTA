@@ -21,7 +21,8 @@ console = Console()
 def get_device_status_info(device):
     """获取设备状态信息。"""
     status_value = (
-        device.status.value if hasattr(device.status, "value") else str(device.status)
+        device.status.value if hasattr(
+            device.status, "value") else str(device.status)
     )
     status_style = {
         DeviceStatus.IDLE: "green",
@@ -54,7 +55,8 @@ def sync_devices():
         typer.echo("正在扫描 ADB 设备...")
 
         # 使用 DeviceService 进行同步
-        service = DeviceService(db, runner=MockExecutor.default_device_responses())
+        service = DeviceService(
+            db, runner=MockExecutor.default_device_responses())
         devices = service.sync_devices()
 
         typer.echo(f"设备扫描完成，已同步 {len(devices)} 台设备")
@@ -89,7 +91,8 @@ def sync_devices():
 
 @app.command("list")
 def list_devices(
-    status: Optional[str] = typer.Option(None, "--status", "-s", help="按状态筛选设备"),
+    status: Optional[str] = typer.Option(
+        None, "--status", "-s", help="按状态筛选设备"),
     tag: Optional[str] = typer.Option(None, "--tag", "-t", help="按标签筛选设备"),
 ):
     """列出所有设备。
@@ -109,7 +112,8 @@ def list_devices(
                 query = query.filter(Device.status == status_enum)
             except ValueError:
                 typer.echo(f"无效的状态值: {status}", err=True)
-                typer.echo(f"有效状态: {', '.join([s.value for s in DeviceStatus])}")
+                typer.echo(
+                    f"有效状态: {', '.join([s.value for s in DeviceStatus])}")
                 raise typer.Exit(1)
 
         # 按标签筛选（简单字符串匹配）

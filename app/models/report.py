@@ -39,7 +39,8 @@ class Report(Base):
 
     __tablename__ = "reports"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -57,19 +58,25 @@ class Report(Base):
     )
 
     # 文件路径
-    content_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    content_path: Mapped[Optional[str]] = mapped_column(
+        String(512), nullable=True)
 
     # 失败分析
-    failure_category: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    failure_category: Mapped[Optional[str]] = mapped_column(
+        String(32), nullable=True)
     failure_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     root_cause: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     recommendation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 统计信息
-    total_steps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    passed_steps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    failed_steps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    skipped_steps: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_steps: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+    passed_steps: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+    failed_steps: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+    skipped_steps: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
 
     # 执行时间
     duration_seconds: Mapped[Optional[float]] = mapped_column(nullable=True)

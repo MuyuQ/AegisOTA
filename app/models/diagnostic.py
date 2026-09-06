@@ -31,7 +31,8 @@ class NormalizedEvent(Base):
 
     __tablename__ = "normalized_events"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -61,7 +62,8 @@ class NormalizedEvent(Base):
     # 原始数据
     raw_line: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     line_no: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    timestamp: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
 
     # 扩展数据（JSON 存储额外键值对）
     kv_payload: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -106,7 +108,8 @@ class DiagnosticResult(Base):
 
     __tablename__ = "diagnostic_results"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -114,7 +117,8 @@ class DiagnosticResult(Base):
         unique=True,
         index=True,
     )
-    device_serial: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    device_serial: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True)
 
     # 诊断结论
     stage: Mapped[str] = mapped_column(String(32), nullable=False)  # 失败阶段
@@ -124,7 +128,8 @@ class DiagnosticResult(Base):
     root_cause: Mapped[str] = mapped_column(
         String(64), nullable=False, index=True
     )  # 根因标识
-    confidence: Mapped[float] = mapped_column(Float, nullable=False)  # 置信度 0.0-1.0
+    confidence: Mapped[float] = mapped_column(
+        Float, nullable=False)  # 置信度 0.0-1.0
     result_status: Mapped[str] = mapped_column(
         String(16), nullable=False
     )  # passed/failed/transient_failure
@@ -189,7 +194,8 @@ class RuleHit(Base):
 
     __tablename__ = "rule_hits"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -203,7 +209,8 @@ class RuleHit(Base):
         index=True,
     )
 
-    rule_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    rule_id: Mapped[str] = mapped_column(
+        String(32), nullable=False, index=True)
     rule_name: Mapped[str] = mapped_column(String(64), nullable=False)
 
     # 匹配的事件码（JSON 数组）
@@ -247,24 +254,33 @@ class DiagnosticRule(Base):
 
     __tablename__ = "diagnostic_rules"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     rule_id: Mapped[str] = mapped_column(
         String(32), unique=True, nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
 
     # 匹配条件（JSON 数组）
-    match_all: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 全部匹配
-    match_any: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 任一匹配
-    exclude_any: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 排除条件
-    match_stage: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 阶段匹配
+    match_all: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # 全部匹配
+    match_any: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # 任一匹配
+    exclude_any: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # 排除条件
+    match_stage: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # 阶段匹配
 
     # 结论
-    category: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    root_cause: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    base_confidence: Mapped[float] = mapped_column(Float, default=0.8, nullable=False)
+    category: Mapped[str] = mapped_column(
+        String(32), nullable=False, index=True)
+    root_cause: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True)
+    base_confidence: Mapped[float] = mapped_column(
+        Float, default=0.8, nullable=False)
     next_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -343,7 +359,8 @@ class SimilarCaseIndex(Base):
 
     __tablename__ = "similar_case_index"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -351,11 +368,14 @@ class SimilarCaseIndex(Base):
         unique=True,
         index=True,
     )
-    device_serial: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    device_serial: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True)
 
     # 索引字段
-    category: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    root_cause: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(
+        String(32), nullable=False, index=True)
+    root_cause: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True)
     key_evidence_hash: Mapped[Optional[str]] = mapped_column(
         String(64), nullable=True
     )  # MD5 哈希

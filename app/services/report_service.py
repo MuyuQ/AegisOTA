@@ -60,7 +60,8 @@ class ReportService:
                 )
                 failure_summary = f"步骤 {failed_step} 失败"
                 root_cause = error_message
-                recommendation = self.classifier.get_recommendation(failure_category)
+                recommendation = self.classifier.get_recommendation(
+                    failure_category)
 
         # 统计步骤
         total_steps = len(steps)
@@ -105,7 +106,8 @@ class ReportService:
         self.db.refresh(report)
 
         # 生成报告数据
-        report_data = self._build_report_data(run_session, steps, failure_category)
+        report_data = self._build_report_data(
+            run_session, steps, failure_category)
 
         # 保存报告文件
         if save_files:
@@ -187,7 +189,8 @@ class ReportService:
             新生成的报告对象
         """
         # 删除旧报告
-        old_reports = self.db.query(Report).filter_by(run_id=run_session.id).all()
+        old_reports = self.db.query(Report).filter_by(
+            run_id=run_session.id).all()
         for old in old_reports:
             if old.content_path:
                 self._delete_report_files(old)
@@ -214,14 +217,16 @@ class ReportService:
         failed_status = StepStatus.FAILED.value
         for step in steps:
             step_status = (
-                step.status.value if hasattr(step.status, "value") else str(step.status)
+                step.status.value if hasattr(
+                    step.status, "value") else str(step.status)
             )
             if step_status == failed_status:
                 error_msg = None
                 if step.step_result:
                     try:
                         result = step.get_result()
-                        error_msg = result.get("error") or result.get("message")
+                        error_msg = result.get(
+                            "error") or result.get("message")
                     except Exception:
                         pass
                 # step_name 可能是枚举或字符串
@@ -355,7 +360,8 @@ class ReportService:
             主报告文件路径
         """
         # 创建报告目录
-        report_dir = self.settings.ARTIFACTS_DIR / "reports" / f"run_{report.run_id}"
+        report_dir = self.settings.ARTIFACTS_DIR / \
+            "reports" / f"run_{report.run_id}"
         report_dir.mkdir(parents=True, exist_ok=True)
 
         # 保存 JSON 报告

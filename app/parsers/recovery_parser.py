@@ -246,7 +246,8 @@ class RecoveryParser(BaseParser):
                             result = parts[i]
                             # 之后的字段组合为包路径
                             package_path = (
-                                " ".join(parts[i + 1 :]) if i + 1 < len(parts) else ""
+                                " ".join(parts[i + 1:]) if i +
+                                1 < len(parts) else ""
                             )
                             break
 

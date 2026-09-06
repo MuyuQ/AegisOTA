@@ -77,7 +77,8 @@ class TestTransactionContext:
         engine = test_db.get_bind()
         new_session = Session(bind=engine)
         try:
-            result = new_session.query(TestModel).filter_by(name="test").first()
+            result = new_session.query(
+                TestModel).filter_by(name="test").first()
             assert result is None
         finally:
             new_session.close()

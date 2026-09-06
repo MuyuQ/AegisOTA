@@ -50,7 +50,8 @@ class TestPoolServiceCreation:
 
     def test_create_pool_minimal(self, pool_service, test_db):
         """测试创建最小化配置的池。"""
-        pool = pool_service.create_pool(name="test_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="test_pool", purpose=PoolPurpose.STABLE)
 
         assert pool is not None
         assert pool.name == "test_pool"
@@ -82,12 +83,14 @@ class TestPoolServiceCreation:
 
     def test_create_pool_duplicate_name_raises_error(self, pool_service, test_db):
         """测试创建重复名称的池应抛出错误。"""
-        pool_service.create_pool(name="duplicate_pool", purpose=PoolPurpose.STABLE)
+        pool_service.create_pool(
+            name="duplicate_pool", purpose=PoolPurpose.STABLE)
 
         with pytest.raises(
             ValueError, match="Pool with name 'duplicate_pool' already exists"
         ):
-            pool_service.create_pool(name="duplicate_pool", purpose=PoolPurpose.STRESS)
+            pool_service.create_pool(
+                name="duplicate_pool", purpose=PoolPurpose.STRESS)
 
 
 class TestPoolServiceQuery:
@@ -96,8 +99,10 @@ class TestPoolServiceQuery:
     @pytest.fixture
     def pools_with_data(self, pool_service, test_db):
         """创建多个池用于测试。"""
-        pool1 = pool_service.create_pool(name="stable_pool", purpose=PoolPurpose.STABLE)
-        pool2 = pool_service.create_pool(name="stress_pool", purpose=PoolPurpose.STRESS)
+        pool1 = pool_service.create_pool(
+            name="stable_pool", purpose=PoolPurpose.STABLE)
+        pool2 = pool_service.create_pool(
+            name="stress_pool", purpose=PoolPurpose.STRESS)
         pool3 = pool_service.create_pool(
             name="emergency_pool", purpose=PoolPurpose.EMERGENCY
         )
@@ -171,7 +176,8 @@ class TestPoolServiceUpdate:
             name="update_test_pool", purpose=PoolPurpose.STABLE
         )
 
-        updated = pool_service.update_pool(pool.id, reserved_ratio=0.5, max_parallel=20)
+        updated = pool_service.update_pool(
+            pool.id, reserved_ratio=0.5, max_parallel=20)
 
         assert updated is not None
         assert updated.reserved_ratio == 0.5
@@ -229,7 +235,8 @@ class TestPoolServiceDeviceAssignment:
 
     def test_assign_device_to_pool_device_not_found(self, pool_service):
         """测试分配不存在的设备返回 None。"""
-        pool = pool_service.create_pool(name="test_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="test_pool", purpose=PoolPurpose.STABLE)
         result = pool_service.assign_device_to_pool(99999, pool.id)
         assert result is None
 
@@ -240,8 +247,10 @@ class TestPoolServiceDeviceAssignment:
 
     def test_change_device_pool(self, pool_service, sample_device, test_db):
         """测试更换设备所属池。"""
-        pool1 = pool_service.create_pool(name="pool1", purpose=PoolPurpose.STABLE)
-        pool2 = pool_service.create_pool(name="pool2", purpose=PoolPurpose.STRESS)
+        pool1 = pool_service.create_pool(
+            name="pool1", purpose=PoolPurpose.STABLE)
+        pool2 = pool_service.create_pool(
+            name="pool2", purpose=PoolPurpose.STRESS)
 
         # 先分配到 pool1
         pool_service.assign_device_to_pool(sample_device.id, pool1.id)
@@ -256,7 +265,8 @@ class TestPoolServiceDeviceAssignment:
 
     def test_remove_device_from_pool(self, pool_service, sample_device, test_db):
         """测试从池移除设备。"""
-        pool = pool_service.create_pool(name="removal_pool", purpose=PoolPurpose.STABLE)
+        pool = pool_service.create_pool(
+            name="removal_pool", purpose=PoolPurpose.STABLE)
         pool_service.assign_device_to_pool(sample_device.id, pool.id)
 
         result = pool_service.remove_device_from_pool(sample_device.id)
@@ -432,7 +442,8 @@ class TestPoolServiceTagMatching:
 
     def test_match_devices_for_pool(self, pool_service, pool_with_tagged_devices):
         """测试匹配池的设备。"""
-        matched = pool_service.match_devices_for_pool(pool_with_tagged_devices.id)
+        matched = pool_service.match_devices_for_pool(
+            pool_with_tagged_devices.id)
 
         # 应该返回 2 个匹配品牌为 Google 的设备
         assert len(matched) == 2

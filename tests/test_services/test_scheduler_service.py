@@ -59,7 +59,8 @@ def test_acquire_device_lease(scheduler, test_db, setup_data):
     device = setup_data["devices"][0]
     plan = setup_data["plan"]
 
-    run = RunSession(plan_id=plan.id, device_id=device.id, status=RunStatus.QUEUED)
+    run = RunSession(plan_id=plan.id, device_id=device.id,
+                     status=RunStatus.QUEUED)
     test_db.add(run)
     test_db.commit()
 
@@ -78,7 +79,8 @@ def test_acquire_lease_for_busy_device(scheduler, test_db, setup_data):
     device = setup_data["devices"][2]  # BUSY 设备
     plan = setup_data["plan"]
 
-    run = RunSession(plan_id=plan.id, device_id=device.id, status=RunStatus.QUEUED)
+    run = RunSession(plan_id=plan.id, device_id=device.id,
+                     status=RunStatus.QUEUED)
     test_db.add(run)
     test_db.commit()
 
@@ -92,7 +94,8 @@ def test_release_device_lease(scheduler, test_db, setup_data):
     device = setup_data["devices"][0]
     plan = setup_data["plan"]
 
-    run = RunSession(plan_id=plan.id, device_id=device.id, status=RunStatus.RUNNING)
+    run = RunSession(plan_id=plan.id, device_id=device.id,
+                     status=RunStatus.RUNNING)
     test_db.add(run)
     test_db.commit()
 
@@ -233,9 +236,12 @@ class TestPriorityScheduling:
         test_db.add(plan)
         test_db.commit()
 
-        run1 = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
-        run2 = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
-        run3 = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
+        run1 = RunSession(
+            plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
+        run2 = RunSession(
+            plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
+        run3 = RunSession(
+            plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
         test_db.add_all([run1, run2, run3])
         test_db.commit()
 
@@ -249,7 +255,8 @@ class TestPriorityScheduling:
         from app.models.device import DevicePool
         from app.models.enums import DeviceStatus, PoolPurpose, RunPriority
 
-        pool = DevicePool(name="alloc_pool", purpose=PoolPurpose.STABLE, max_parallel=5)
+        pool = DevicePool(name="alloc_pool",
+                          purpose=PoolPurpose.STABLE, max_parallel=5)
         test_db.add(pool)
         test_db.commit()
 
@@ -267,7 +274,8 @@ class TestPriorityScheduling:
         test_db.add(plan)
         test_db.commit()
 
-        run = RunSession(plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
+        run = RunSession(
+            plan_id=plan.id, priority=RunPriority.NORMAL, pool_id=pool.id)
         test_db.add(run)
         test_db.commit()
 

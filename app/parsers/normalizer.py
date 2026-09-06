@@ -100,7 +100,8 @@ class EventNormalizer:
             标准化事件，如果事件无效则返回None
         """
         # 提取必要字段
-        normalized_code = event.get("normalized_code") or event.get("code", "UNKNOWN")
+        normalized_code = event.get(
+            "normalized_code") or event.get("code", "UNKNOWN")
         if not normalized_code:
             return None
 

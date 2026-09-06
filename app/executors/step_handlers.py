@@ -154,7 +154,8 @@ class PrecheckHandler(StepHandler):
         if prev_result and prev_result.get("success"):
             # 验证设备仍然在线
             devices = self.executor.devices()
-            device_online = any(d["serial"] == context.device_serial for d in devices)
+            device_online = any(
+                d["serial"] == context.device_serial for d in devices)
             if device_online:
                 return True
         return False
@@ -168,7 +169,8 @@ class PrecheckHandler(StepHandler):
 
         # 检查设备在线
         devices = self.executor.devices()
-        device_online = any(d["serial"] == context.device_serial for d in devices)
+        device_online = any(
+            d["serial"] == context.device_serial for d in devices)
 
         if not device_online:
             return StepHandlerResult(

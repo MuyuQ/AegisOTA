@@ -76,7 +76,8 @@ async def list_devices(
             brand=d.brand,
             model=d.model,
             system_version=d.system_version,
-            status=d.status.value if hasattr(d.status, "value") else str(d.status),
+            status=d.status.value if hasattr(
+                d.status, "value") else str(d.status),
             battery_level=d.battery_level,
             health_score=d.health_score,
             tags=d.get_tags(),
@@ -158,7 +159,8 @@ async def sync_devices_html(request: Request, db: Session = Depends(get_db)):
             "battery_level": d.battery_level or "-",
             "health_score": d.health_score or 0,
             "last_seen_at": (
-                d.last_seen_at.strftime("%Y-%m-%d %H:%M") if d.last_seen_at else "-"
+                d.last_seen_at.strftime(
+                    "%Y-%m-%d %H:%M") if d.last_seen_at else "-"
             ),
         }
         for d in all_devices
@@ -285,7 +287,8 @@ async def quarantine_device_html(
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
         "status": (
-            device.status.value if hasattr(device.status, "value") else device.status
+            device.status.value if hasattr(
+                device.status, "value") else device.status
         ),
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
@@ -384,7 +387,8 @@ async def recover_device_html(
         "pool_name": device.pool.name if device.pool else None,
         "location": device.location or "-",
         "status": (
-            device.status.value if hasattr(device.status, "value") else device.status
+            device.status.value if hasattr(
+                device.status, "value") else device.status
         ),
         "battery_level": device.battery_level or "-",
         "health_score": device.health_score or 0,
@@ -496,7 +500,8 @@ async def get_device_health_detail(
     # 2. 设备状态
     status_impact = 0
     status_value = (
-        device.status.value if hasattr(device.status, "value") else str(device.status)
+        device.status.value if hasattr(
+            device.status, "value") else str(device.status)
     )
     if device.status == DeviceStatus.OFFLINE:
         status_impact = -20
@@ -515,7 +520,8 @@ async def get_device_health_detail(
         db.query(
             func.count(RunSession.id),
             func.sum(
-                func.case((RunSession.status.in_(["failed", "aborted"]), 1), else_=0)
+                func.case((RunSession.status.in_(
+                    ["failed", "aborted"]), 1), else_=0)
             ),
         )
         .filter(RunSession.device_id == device.id)

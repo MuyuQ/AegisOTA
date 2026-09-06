@@ -18,7 +18,8 @@ class UpdateEngineParser(BaseParser):
     source_type = SourceType.UPDATE_ENGINE_LOG
 
     # 时间戳正则: [2026-03-28 12:00:01.120]
-    TIMESTAMP_PATTERN = re.compile(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]")
+    TIMESTAMP_PATTERN = re.compile(
+        r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]")
 
     # 状态映射: (状态值, normalized_code, stage, severity, event_type)
     STATUS_MAPPING = {

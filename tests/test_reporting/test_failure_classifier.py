@@ -97,7 +97,8 @@ def test_get_next_actions():
 
     actions = classifier.get_next_actions(FailureCategory.BOOT_FAILURE)
     assert len(actions) > 0
-    assert any("logcat" in action.lower() or "日志" in action for action in actions)
+    assert any("logcat" in action.lower()
+               or "日志" in action for action in actions)
 
 
 def test_classify_apply_update_package_issue():

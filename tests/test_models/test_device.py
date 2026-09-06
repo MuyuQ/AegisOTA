@@ -226,7 +226,8 @@ class TestDeviceDatabaseOperations:
         db_session.commit()
 
         available = (
-            db_session.query(Device).filter(Device.status == DeviceStatus.IDLE).all()
+            db_session.query(Device).filter(
+                Device.status == DeviceStatus.IDLE).all()
         )
         assert len(available) == 2
         assert all(d.status == DeviceStatus.IDLE for d in available)
@@ -330,7 +331,8 @@ class TestDeviceLeaseMethods:
         db_session.add(device)
         db_session.commit()
 
-        lease = DeviceLease(device_id=device.id, lease_status=LeaseStatus.RELEASED)
+        lease = DeviceLease(device_id=device.id,
+                            lease_status=LeaseStatus.RELEASED)
         db_session.add(lease)
         db_session.commit()
 
@@ -442,7 +444,8 @@ class TestDevicePool:
         from app.models.enums import PoolPurpose
 
         pool = DevicePool(name="tag_pool", purpose=PoolPurpose.STABLE)
-        pool.set_tag_selector({"tags": ["samsung", "stable"], "brand": "Samsung"})
+        pool.set_tag_selector(
+            {"tags": ["samsung", "stable"], "brand": "Samsung"})
         db_session.add(pool)
         db_session.commit()
 
@@ -464,7 +467,8 @@ class TestDevicePool:
 
         # 添加设备
         devices = [
-            Device(serial=f"CAP{i:03d}", pool_id=pool.id, status=DeviceStatus.IDLE)
+            Device(serial=f"CAP{i:03d}", pool_id=pool.id,
+                   status=DeviceStatus.IDLE)
             for i in range(8)
         ]
         db_session.add_all(devices)
