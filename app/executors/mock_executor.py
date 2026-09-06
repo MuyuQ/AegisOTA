@@ -85,7 +85,8 @@ class MockExecutor(CommandRunner):
         executor = cls()
 
         # 设备列表响应
-        executor.set_response("adb devices", stdout="ABC123\tdevice\nXYZ789\tdevice\n")
+        executor.set_response(
+            "adb devices", stdout="ABC123\tdevice\nXYZ789\tdevice\n")
 
         # getprop 响应（匹配任何 shell getprop 命令）
         executor.set_response(
@@ -204,7 +205,8 @@ class MockADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """推送文件到设备。"""
-        cmd = self._build_adb_command("push", local_path, remote_path, device=device)
+        cmd = self._build_adb_command(
+            "push", local_path, remote_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def pull(
@@ -215,7 +217,8 @@ class MockADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """从设备拉取文件。"""
-        cmd = self._build_adb_command("pull", remote_path, local_path, device=device)
+        cmd = self._build_adb_command(
+            "pull", remote_path, local_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def reboot(
@@ -272,7 +275,8 @@ class MockADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """安装 APK。"""
-        cmd = self._build_adb_command("install", "-r", package_path, device=device)
+        cmd = self._build_adb_command(
+            "install", "-r", package_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def logcat(

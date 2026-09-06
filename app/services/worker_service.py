@@ -261,7 +261,8 @@ class WorkerService:
             plan_name=run.plan.name if run.plan else "Unknown",
             device_serial=run.device.serial if run.device else "Unknown",
             status=(
-                run.status.value if hasattr(run.status, "value") else str(run.status)
+                run.status.value if hasattr(
+                    run.status, "value") else str(run.status)
             ),
             started_at=run.started_at,
             ended_at=run.ended_at,
@@ -271,7 +272,8 @@ class WorkerService:
                 else None
             ),
             failure_category=(
-                FailureCategory(run.failure_category) if run.failure_category else None
+                FailureCategory(
+                    run.failure_category) if run.failure_category else None
             ),
             timeline=timeline,
             step_results=step_results,

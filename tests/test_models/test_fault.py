@@ -247,7 +247,8 @@ class TestAllFaultTypes:
     def test_create_all_fault_types(self, db_session):
         """测试创建所有故障类型的配置。"""
         fault_configs = [
-            (FaultType.STORAGE_PRESSURE, FaultStage.PRECHECK, {"fill_percent": 90}),
+            (FaultType.STORAGE_PRESSURE,
+             FaultStage.PRECHECK, {"fill_percent": 90}),
             (
                 FaultType.DOWNLOAD_INTERRUPTED,
                 FaultStage.APPLY_UPDATE,
@@ -259,7 +260,8 @@ class TestAllFaultTypes:
                 {"corrupt_type": "header"},
             ),
             (FaultType.LOW_BATTERY, FaultStage.PRECHECK, {"min_level": 15}),
-            (FaultType.REBOOT_INTERRUPTED, FaultStage.APPLY_UPDATE, {"timeout": 60}),
+            (FaultType.REBOOT_INTERRUPTED,
+             FaultStage.APPLY_UPDATE, {"timeout": 60}),
             (
                 FaultType.POST_BOOT_WATCHDOG_FAILURE,
                 FaultStage.POST_VALIDATE,

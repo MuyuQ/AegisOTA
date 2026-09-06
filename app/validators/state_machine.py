@@ -188,7 +188,8 @@ def validate_device_transition(
         StateTransitionError: 状态转换非法
     """
     if not device_state_machine.can_transition(from_status.value, to_status.value):
-        allowed = device_state_machine.get_allowed_transitions(from_status.value)
+        allowed = device_state_machine.get_allowed_transitions(
+            from_status.value)
         raise StateTransitionError(
             entity_type="Device",
             entity_id=device_id,

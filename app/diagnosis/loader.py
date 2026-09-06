@@ -270,7 +270,8 @@ class RuleLoader:
                     existing.set_match_stage(rule_data.get("match_stage", []))
                     existing.category = rule_data["category"]
                     existing.root_cause = rule_data.get("root_cause")
-                    existing.base_confidence = rule_data.get("base_confidence", 0.9)
+                    existing.base_confidence = rule_data.get(
+                        "base_confidence", 0.9)
                     existing.next_action = rule_data.get("next_action")
                 else:
                     # 创建新规则

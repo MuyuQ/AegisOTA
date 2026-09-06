@@ -86,7 +86,8 @@ class RunExecutor:
 
     def _create_default_handlers(self) -> Dict[StepName, StepHandler]:
         """创建默认 handler 集合。"""
-        executor = ADBExecutor(runner=self.runner) if self.runner else ADBExecutor()
+        executor = ADBExecutor(
+            runner=self.runner) if self.runner else ADBExecutor()
 
         return {
             StepName.PRECHECK: PrecheckHandler(executor=executor),

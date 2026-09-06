@@ -29,17 +29,21 @@ class DevicePool(Base):
 
     __tablename__ = "device_pools"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(
         String(64), unique=True, nullable=False, index=True
     )
     purpose: Mapped[PoolPurpose] = mapped_column(String(32), nullable=False)
 
     # 池配置
-    reserved_ratio: Mapped[float] = mapped_column(Float, default=0.2, nullable=False)
-    max_parallel: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    reserved_ratio: Mapped[float] = mapped_column(
+        Float, default=0.2, nullable=False)
+    max_parallel: Mapped[int] = mapped_column(
+        Integer, default=5, nullable=False)
     tag_selector: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
@@ -50,7 +54,8 @@ class DevicePool(Base):
     )
 
     # 关系
-    devices: Mapped[list["Device"]] = relationship("Device", back_populates="pool")
+    devices: Mapped[list["Device"]] = relationship(
+        "Device", back_populates="pool")
 
     def get_tag_selector(self) -> dict[str, Any]:
         """获取标签选择器配置。"""
@@ -75,7 +80,8 @@ class Device(Base):
 
     __tablename__ = "devices"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     serial: Mapped[str] = mapped_column(
         String(64), unique=True, index=True, nullable=False
     )
@@ -83,16 +89,21 @@ class Device(Base):
     # 设备信息
     brand: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    system_version: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    build_fingerprint: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    system_version: Mapped[Optional[str]] = mapped_column(
+        String(32), nullable=True)
+    build_fingerprint: Mapped[Optional[str]] = mapped_column(
+        String(256), nullable=True)
 
     # 状态与健康
     status: Mapped[DeviceStatus] = mapped_column(
         String(32), default=DeviceStatus.IDLE, nullable=False, index=True
     )
-    health_score: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
-    battery_level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    sync_failure_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    health_score: Mapped[int] = mapped_column(
+        Integer, default=100, nullable=False)
+    battery_level: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True)
+    sync_failure_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
 
     # 设备池关联
     pool_id: Mapped[Optional[int]] = mapped_column(
@@ -109,7 +120,8 @@ class Device(Base):
     tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳
-    last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[Optional[datetime]
+                         ] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
@@ -118,8 +130,10 @@ class Device(Base):
     )
 
     # 隔离与任务关联
-    quarantine_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    current_run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    quarantine_reason: Mapped[Optional[str]
+                              ] = mapped_column(Text, nullable=True)
+    current_run_id: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True)
 
     # 关系
     pool: Mapped[Optional["DevicePool"]] = relationship(
@@ -155,7 +169,8 @@ class DeviceLease(Base):
 
     __tablename__ = "device_leases"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     device_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("devices.id", ondelete="CASCADE"),
@@ -173,8 +188,10 @@ class DeviceLease(Base):
     leased_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
-    expired_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    released_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    expired_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    released_at: Mapped[Optional[datetime]
+                        ] = mapped_column(DateTime, nullable=True)
 
     # 租约状态
     lease_status: Mapped[LeaseStatus] = mapped_column(
@@ -182,9 +199,12 @@ class DeviceLease(Base):
     )
 
     # 抢占相关
-    preemptible: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    preempted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    preempted_by_run_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    preemptible: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    preempted_at: Mapped[Optional[datetime]
+                         ] = mapped_column(DateTime, nullable=True)
+    preempted_by_run_id: Mapped[Optional[int]
+                                ] = mapped_column(Integer, nullable=True)
 
     # 关系
     device: Mapped["Device"] = relationship("Device", back_populates="leases")

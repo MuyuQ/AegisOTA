@@ -148,7 +148,8 @@ class SchedulerService:
 
         # 如果指定了 pool_id，只从该池中选择设备
         if pool_id is not None:
-            available_devices = [d for d in available_devices if d.pool_id == pool_id]
+            available_devices = [
+                d for d in available_devices if d.pool_id == pool_id]
             if not available_devices:
                 return None
 
@@ -173,7 +174,8 @@ class SchedulerService:
         self, pool_id: Optional[int] = None
     ) -> Optional[RunSession]:
         """获取下一个待调度的任务（按优先级和 FIFO 排序）。"""
-        query = self.db.query(RunSession).filter(RunSession.status == RunStatus.QUEUED)
+        query = self.db.query(RunSession).filter(
+            RunSession.status == RunStatus.QUEUED)
 
         # 如果指定了池 ID，只查询该池的任务
         if pool_id is not None:
@@ -205,7 +207,8 @@ class SchedulerService:
         devices = self.db.query(Device).filter_by(pool_id=pool_id).all()
 
         # 计算可用设备数（只有 IDLE 状态的设备）
-        available_devices = len([d for d in devices if d.status == DeviceStatus.IDLE])
+        available_devices = len(
+            [d for d in devices if d.status == DeviceStatus.IDLE])
 
         # 计算保留容量
         reserved_count = int(pool.max_parallel * pool.reserved_ratio)
@@ -345,7 +348,8 @@ class SchedulerService:
             lease.lease_status = LeaseStatus.EXPIRED
 
             # 设备进入恢复状态
-            device = self.db.query(Device).filter_by(id=lease.device_id).first()
+            device = self.db.query(Device).filter_by(
+                id=lease.device_id).first()
             if device:
                 device.status = DeviceStatus.RECOVERING
                 device.current_run_id = None

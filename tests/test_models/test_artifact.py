@@ -64,7 +64,8 @@ def sample_run(db_session, sample_device, sample_plan):
 @pytest.fixture
 def sample_step(db_session, sample_run):
     """创建示例步骤。"""
-    step = RunStep(run_id=sample_run.id, step_name=StepName.PRECHECK, step_order=1)
+    step = RunStep(run_id=sample_run.id,
+                   step_name=StepName.PRECHECK, step_order=1)
     db_session.add(step)
     db_session.commit()
     return step
@@ -277,7 +278,8 @@ class TestAllArtifactTypes:
     def test_create_all_artifact_types(self, db_session, sample_run, sample_step):
         """测试创建所有产物类型。"""
         artifact_configs = [
-            (ArtifactType.LOGCAT, "/logs/logcat.log", {"device_serial": "TEST001"}),
+            (ArtifactType.LOGCAT, "/logs/logcat.log",
+             {"device_serial": "TEST001"}),
             (ArtifactType.STDOUT, "/logs/stdout.log", {"size_mb": 5}),
             (ArtifactType.STDERR, "/logs/stderr.log", {"error_count": 3}),
             (
@@ -285,9 +287,12 @@ class TestAllArtifactTypes:
                 "/img/screenshot.png",
                 {"resolution": "1080x2400"},
             ),
-            (ArtifactType.MONKEY_RESULT, "/results/monkey.json", {"events": 10000}),
-            (ArtifactType.PERF_DATA, "/data/perf.csv", {"metrics": ["cpu", "mem"]}),
-            (ArtifactType.REPORT, "/reports/report.md", {"format": "markdown"}),
+            (ArtifactType.MONKEY_RESULT,
+             "/results/monkey.json", {"events": 10000}),
+            (ArtifactType.PERF_DATA, "/data/perf.csv",
+             {"metrics": ["cpu", "mem"]}),
+            (ArtifactType.REPORT, "/reports/report.md",
+             {"format": "markdown"}),
             (ArtifactType.TIMELINE, "/data/timeline.json", {"events": 50}),
         ]
 

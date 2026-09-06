@@ -36,7 +36,8 @@ def test_adb_push_command_format():
     cmd = executor._build_adb_command(
         "push", "/local/file", "/remote/path", device="ABC123"
     )
-    assert cmd == ["adb", "-s", "ABC123", "push", "/local/file", "/remote/path"]
+    assert cmd == ["adb", "-s", "ABC123",
+                   "push", "/local/file", "/remote/path"]
 
 
 def test_adb_executor_interface():

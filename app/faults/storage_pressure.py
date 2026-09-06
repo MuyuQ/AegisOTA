@@ -99,7 +99,8 @@ class StoragePressureFault(FaultPlugin):
                 success=True,
                 fault_type=self.fault_type,
                 message=f"当前存储使用率 {current_usage}% 已超过目标",
-                data={"current_usage": current_usage, "target": self.fill_percent},
+                data={"current_usage": current_usage,
+                      "target": self.fill_percent},
             )
 
         # 获取存储总大小（简化处理）
@@ -119,7 +120,8 @@ class StoragePressureFault(FaultPlugin):
 
         # 计算需要填充的大小
         target_usage_kb = int(total_size_kb * self.fill_percent / 100)
-        fill_size_kb = target_usage_kb - int(total_size_kb * current_usage / 100)
+        fill_size_kb = target_usage_kb - \
+            int(total_size_kb * current_usage / 100)
 
         if fill_size_kb <= 0:
             return FaultResult(

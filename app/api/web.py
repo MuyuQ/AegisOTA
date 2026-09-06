@@ -19,7 +19,8 @@ from app.services.diagnosis_service import DiagnosisService
 from app.services.pool_service import PoolService
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
+templates = Jinja2Templates(directory=str(
+    Path(__file__).parent.parent / "templates"))
 
 settings = get_settings()
 if not settings.DEBUG:
@@ -82,7 +83,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     """仪表盘首页。"""
     # 优化: 单次聚合查询替代多次 count
     device_stats = (
-        db.query(Device.status, func.count(Device.id)).group_by(Device.status).all()
+        db.query(Device.status, func.count(Device.id)
+                 ).group_by(Device.status).all()
     )
 
     status_counts = {status: count for status, count in device_stats}
@@ -97,7 +99,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     # 今日任务
     today = datetime.now(timezone.utc).date()
     today_tasks = (
-        db.query(RunSession).filter(func.date(RunSession.created_at) == today).count()
+        db.query(RunSession).filter(
+            func.date(RunSession.created_at) == today).count()
     )
 
     # 最近任务 (带 eager loading)
@@ -171,7 +174,8 @@ async def devices_page(request: Request, db: Session = Depends(get_db)):
     ]
 
     return templates.TemplateResponse(
-        request, "devices.html", get_template_context(request, devices=devices_data)
+        request, "devices.html", get_template_context(
+            request, devices=devices_data)
     )
 
 
@@ -275,7 +279,8 @@ async def run_detail_page(
 
     # 获取执行步骤
     steps = (
-        db.query(RunStep).filter_by(run_id=run_id).order_by(RunStep.step_order).all()
+        db.query(RunStep).filter_by(run_id=run_id).order_by(
+            RunStep.step_order).all()
     )
 
     # 获取任务选项
@@ -315,7 +320,8 @@ async def run_detail_page(
         {
             "id": s.id,
             "step_name": (
-                s.step_name.value if hasattr(s.step_name, "value") else s.step_name
+                s.step_name.value if hasattr(
+                    s.step_name, "value") else s.step_name
             ),
             "status": s.status.value if hasattr(s.status, "value") else s.status,
             "started_at": s.started_at.isoformat() if s.started_at else "-",
@@ -381,10 +387,12 @@ async def plans_page(request: Request, db: Session = Depends(get_db)):
             "parallelism": p.parallelism or 1,
             "default_pool_id": p.default_pool_id,
             "default_pool_name": (
-                pool_names.get(p.default_pool_id) if p.default_pool_id else None
+                pool_names.get(
+                    p.default_pool_id) if p.default_pool_id else None
             ),
             "created_at": (
-                p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else "-"
+                p.created_at.strftime(
+                    "%Y-%m-%d %H:%M") if p.created_at else "-"
             ),
         }
         for p in plans
@@ -464,7 +472,8 @@ async def pool_detail_page(
         )
 
     # 获取未分配设备（用于分配设备下拉框）
-    unassigned_devices = db.query(Device).filter(Device.pool_id.is_(None)).all()
+    unassigned_devices = db.query(Device).filter(
+        Device.pool_id.is_(None)).all()
     unassigned_data = []
     for device in unassigned_devices:
         unassigned_data.append(
@@ -485,7 +494,8 @@ async def pool_detail_page(
         "id": pool.id,
         "name": pool.name,
         "purpose": (
-            pool.purpose.value if hasattr(pool.purpose, "value") else str(pool.purpose)
+            pool.purpose.value if hasattr(
+                pool.purpose, "value") else str(pool.purpose)
         ),
         "reserved_ratio": pool.reserved_ratio,
         "enabled": pool.enabled,
@@ -590,7 +600,8 @@ def _render_device_list_html(pool_id: int, devices: list) -> str:
 
     rows = []
     for d in devices:
-        status_val = d.status.value if hasattr(d.status, "value") else str(d.status)
+        status_val = d.status.value if hasattr(
+            d.status, "value") else str(d.status)
         status_text = {
             "idle": "空闲",
             "busy": "忙碌",
@@ -700,7 +711,8 @@ async def diagnosis_list_page(
 
     # 应用筛选条件
     if serial:
-        query = query.filter(DiagnosticResult.device_serial.ilike(f"%{serial}%"))
+        query = query.filter(
+            DiagnosticResult.device_serial.ilike(f"%{serial}%"))
     if category:
         query = query.filter(DiagnosticResult.category == category)
 
@@ -708,7 +720,8 @@ async def diagnosis_list_page(
     total_count = query.count()
 
     # 计算分页
-    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+    total_pages = (total_count + page_size -
+                   1) // page_size if total_count > 0 else 1
     offset = (page - 1) * page_size
 
     # 获取诊断记录（按诊断时间倒序）

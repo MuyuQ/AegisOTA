@@ -84,7 +84,8 @@ def calculate_confidence(
     # 扣分项：多规则冲突（存在竞争规则）
     if matched_rules_count > 1:
         confidence = max(
-            0.0, confidence - CONFIDENCE_CONFlict_PENALTY * (matched_rules_count - 1)
+            0.0, confidence - CONFIDENCE_CONFlict_PENALTY *
+            (matched_rules_count - 1)
         )
 
     return round(confidence, 2)

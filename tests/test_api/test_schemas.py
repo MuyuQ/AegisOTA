@@ -45,7 +45,8 @@ class TestPaginatedResponse:
     def test_create_with_data(self):
         """测试创建带数据的响应。"""
         data = [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]
-        response = PaginatedResponse.create(data=data, total=10, limit=2, offset=0)
+        response = PaginatedResponse.create(
+            data=data, total=10, limit=2, offset=0)
 
         assert len(response.data) == 2
         assert response.pagination.total == 10
@@ -55,7 +56,8 @@ class TestPaginatedResponse:
 
     def test_create_empty_data(self):
         """测试创建空数据响应。"""
-        response = PaginatedResponse.create(data=[], total=0, limit=10, offset=0)
+        response = PaginatedResponse.create(
+            data=[], total=0, limit=10, offset=0)
 
         assert len(response.data) == 0
         assert response.pagination.total == 0

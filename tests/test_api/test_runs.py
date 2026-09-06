@@ -20,7 +20,8 @@ def setup_data():
     """设置测试数据。"""
     db = SessionLocal()
 
-    device = Device(serial="RUN001", status=DeviceStatus.IDLE, battery_level=80)
+    device = Device(serial="RUN001", status=DeviceStatus.IDLE,
+                    battery_level=80)
     db.add(device)
 
     plan = UpgradePlan(
@@ -115,7 +116,8 @@ def test_abort_run(client, setup_data):
     plan = setup_data["plan"]
     device = setup_data["device"]
 
-    run = RunSession(plan_id=plan.id, device_id=device.id, status=RunStatus.QUEUED)
+    run = RunSession(plan_id=plan.id, device_id=device.id,
+                     status=RunStatus.QUEUED)
     db.add(run)
     db.commit()
 

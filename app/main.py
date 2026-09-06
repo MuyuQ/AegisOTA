@@ -173,7 +173,8 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
                 return JSONResponse(
                     {"detail": "Invalid or missing API key"},
                     status_code=401,
-                    headers={"WWW-Authenticate": f"ApiKey header={self.header_name}"},
+                    headers={
+                        "WWW-Authenticate": f"ApiKey header={self.header_name}"},
                 )
 
         return await call_next(request)

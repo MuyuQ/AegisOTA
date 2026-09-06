@@ -71,14 +71,16 @@ class TestAPIKeyMiddlewareWithKeys:
     def test_api_with_valid_key(self, app_with_keys):
         """测试有效 API Key 可访问 API。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/v1/test", headers={"X-API-Key": "test-key-123"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "test-key-123"})
         assert response.status_code == 200
         assert response.json()["message"] == "success"
 
     def test_api_with_admin_key(self, app_with_keys):
         """测试管理员 API Key 可访问 API。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/v1/test", headers={"X-API-Key": "admin-key-456"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "admin-key-456"})
         assert response.status_code == 200
 
     def test_api_without_key(self, app_with_keys):
@@ -91,7 +93,8 @@ class TestAPIKeyMiddlewareWithKeys:
     def test_api_with_invalid_key(self, app_with_keys):
         """测试无效 API Key 时返回 401。"""
         client = TestClient(app_with_keys)
-        response = client.get("/api/v1/test", headers={"X-API-Key": "invalid-key"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "invalid-key"})
         assert response.status_code == 401
 
     def test_health_check_still_public(self, app_with_keys):
@@ -137,11 +140,13 @@ class TestAPIKeyMiddlewareEdgeCases:
         """测试自定义请求头名称。"""
         client = TestClient(app_custom_header)
         # 使用自定义请求头
-        response = client.get("/api/v1/test", headers={"X-Custom-Auth": "secret-key"})
+        response = client.get(
+            "/api/v1/test", headers={"X-Custom-Auth": "secret-key"})
         assert response.status_code == 200
 
         # 使用默认请求头应失败
-        response = client.get("/api/v1/test", headers={"X-API-Key": "secret-key"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 401
 
     @pytest.fixture
@@ -194,9 +199,11 @@ class TestAPIKeyMiddlewareEdgeCases:
 
         client = TestClient(test_app)
         # 正确大小写
-        response = client.get("/api/v1/test", headers={"X-API-Key": "Secret-Key"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "Secret-Key"})
         assert response.status_code == 200
 
         # 错误大小写
-        response = client.get("/api/v1/test", headers={"X-API-Key": "secret-key"})
+        response = client.get(
+            "/api/v1/test", headers={"X-API-Key": "secret-key"})
         assert response.status_code == 401

@@ -132,9 +132,11 @@ class ReportGenerator:
         duration_seconds = None
         if started_at and ended_at:
             if isinstance(started_at, str):
-                started_at = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                started_at = datetime.fromisoformat(
+                    started_at.replace("Z", "+00:00"))
             if isinstance(ended_at, str):
-                ended_at = datetime.fromisoformat(ended_at.replace("Z", "+00:00"))
+                ended_at = datetime.fromisoformat(
+                    ended_at.replace("Z", "+00:00"))
             duration_seconds = (ended_at - started_at).total_seconds()
 
         # 格式化时长显示
@@ -151,11 +153,13 @@ class ReportGenerator:
         ended_at_display = None
         if started_at:
             if isinstance(started_at, str):
-                started_at = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                started_at = datetime.fromisoformat(
+                    started_at.replace("Z", "+00:00"))
             started_at_display = started_at.strftime("%Y-%m-%d %H:%M:%S")
         if ended_at:
             if isinstance(ended_at, str):
-                ended_at = datetime.fromisoformat(ended_at.replace("Z", "+00:00"))
+                ended_at = datetime.fromisoformat(
+                    ended_at.replace("Z", "+00:00"))
             ended_at_display = ended_at.strftime("%Y-%m-%d %H:%M:%S")
 
         # 渲染模板
@@ -176,7 +180,8 @@ class ReportGenerator:
             ended_at_display=ended_at_display,
             duration_seconds=duration_seconds,
             duration_display=duration_display,
-            generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+            generated_at=datetime.now(timezone.utc).strftime(
+                "%Y-%m-%d %H:%M:%S UTC"),
         )
 
     def generate_markdown(

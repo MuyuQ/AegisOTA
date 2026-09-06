@@ -45,7 +45,8 @@ class FaultProfile(Base):
 
     __tablename__ = "fault_profiles"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
 
     # 故障配置
@@ -60,7 +61,8 @@ class FaultProfile(Base):
     parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 状态与描述
-    enabled: Mapped[bool] = mapped_column(Integer, default=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(
+        Integer, default=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳

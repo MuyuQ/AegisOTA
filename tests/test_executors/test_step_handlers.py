@@ -98,7 +98,8 @@ class TestIdempotency:
         run_context.step_results[StepName.PRECHECK.value] = result1.to_dict()
 
         # 再次执行时应该跳过
-        result2 = handler.execute_with_idempotency(run_context, enable_idempotency=True)
+        result2 = handler.execute_with_idempotency(
+            run_context, enable_idempotency=True)
 
         assert result2.success is True
         assert result2.skipped is True
@@ -150,10 +151,12 @@ class TestIdempotency:
 
         # 执行一次
         result = handler.execute(run_context)
-        run_context.step_results[StepName.PACKAGE_PREPARE.value] = result.to_dict()
+        run_context.step_results[StepName.PACKAGE_PREPARE.value] = result.to_dict(
+        )
 
         # 设置 mock 响应使文件检查通过
-        mock_executor.set_response("ls -la", stdout="/data/local/tmp/update.zip")
+        mock_executor.set_response(
+            "ls -la", stdout="/data/local/tmp/update.zip")
 
         # 现在应该可以跳过
         assert handler.can_resume(run_context) is True
@@ -181,7 +184,8 @@ class TestIdempotency:
 
         # 执行一次
         result = handler.execute(run_context)
-        run_context.step_results[StepName.POST_VALIDATE.value] = result.to_dict()
+        run_context.step_results[StepName.POST_VALIDATE.value] = result.to_dict(
+        )
 
         # 验证仍然通过
         assert handler.can_resume(run_context) is True

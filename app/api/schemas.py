@@ -69,7 +69,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
         """
         return cls(
             data=data,
-            pagination=PaginationInfo.create(total=total, limit=limit, offset=offset),
+            pagination=PaginationInfo.create(
+                total=total, limit=limit, offset=offset),
         )
 
     @classmethod

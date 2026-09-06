@@ -58,7 +58,8 @@ def test_get_device_not_found(client):
 
 def test_quarantine_device(client, setup_db):
     """测试隔离设备。"""
-    response = client.post("/api/v1/devices/API001/quarantine", json={"reason": "Test"})
+    response = client.post(
+        "/api/v1/devices/API001/quarantine", json={"reason": "Test"})
     assert response.status_code == 200
 
 

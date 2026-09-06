@@ -50,7 +50,8 @@ class SimilarCaseService:
         evidence_hash = self._generate_evidence_hash(key_evidence)
 
         # 检查是否已存在
-        stmt = select(SimilarCaseIndex).where(SimilarCaseIndex.run_id == run_id)
+        stmt = select(SimilarCaseIndex).where(
+            SimilarCaseIndex.run_id == run_id)
         existing = self.session.execute(stmt).scalar_one_or_none()
 
         if existing:
@@ -236,7 +237,8 @@ class SimilarCaseService:
             self.session.delete(index)
 
         # 获取所有诊断结果
-        results = self.session.execute(select(DiagnosticResult)).scalars().all()
+        results = self.session.execute(
+            select(DiagnosticResult)).scalars().all()
 
         count = 0
         for result in results:
@@ -262,7 +264,8 @@ class SimilarCaseService:
         """
         # 总数
         total = (
-            self.session.execute(select(SimilarCaseIndex).where(True)).scalars().all()
+            self.session.execute(
+                select(SimilarCaseIndex).where(True)).scalars().all()
         )
         total_count = len(total)
 

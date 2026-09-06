@@ -174,7 +174,8 @@ class TestReportModel:
         test_session.commit()
 
         # 验证报告也被删除
-        deleted_report = test_session.query(Report).filter_by(id=report_id).first()
+        deleted_report = test_session.query(
+            Report).filter_by(id=report_id).first()
         assert deleted_report is None
 
     def test_report_timestamps(self, test_session):

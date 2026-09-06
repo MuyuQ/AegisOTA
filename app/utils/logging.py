@@ -95,7 +95,8 @@ class DebugFormatter(logging.Formatter):
 
         # 添加额外字段
         if hasattr(record, "extra") and record.extra:
-            extra_str = " | " + " ".join(f"{k}={v}" for k, v in record.extra.items())
+            extra_str = " | " + \
+                " ".join(f"{k}={v}" for k, v in record.extra.items())
             base_msg += extra_str
 
         # 添加异常信息

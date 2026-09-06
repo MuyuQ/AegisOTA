@@ -134,8 +134,10 @@ def test_abort_run_session(run_service, test_db, sample_plan, sample_device):
 def test_list_pending_runs(run_service, test_db, sample_plan, sample_device):
     """测试列出待执行任务。"""
     # 创建多个任务
-    run_service.create_run_session(plan_id=sample_plan.id, device_id=sample_device.id)
-    run_service.create_run_session(plan_id=sample_plan.id, device_id=sample_device.id)
+    run_service.create_run_session(
+        plan_id=sample_plan.id, device_id=sample_device.id)
+    run_service.create_run_session(
+        plan_id=sample_plan.id, device_id=sample_device.id)
 
     pending = run_service.list_pending_runs()
     assert len(pending) == 2

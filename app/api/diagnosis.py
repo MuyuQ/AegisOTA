@@ -201,7 +201,8 @@ async def list_diagnosis(
     支持按设备序列号和故障分类过滤，分页返回。
     """
     # 构建查询
-    stmt = select(DiagnosticResult).order_by(DiagnosticResult.created_at.desc())
+    stmt = select(DiagnosticResult).order_by(
+        DiagnosticResult.created_at.desc())
 
     # 应用过滤条件
     if serial:
@@ -264,7 +265,8 @@ async def get_diagnosis_detail(
     # 获取诊断结果
     result = service.get_diagnosis_for_run(run_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Diagnosis result not found")
+        raise HTTPException(
+            status_code=404, detail="Diagnosis result not found")
 
     # 获取标准化事件
     events = service.get_events_for_run(run_id)
@@ -428,7 +430,8 @@ async def export_diagnosis_report(
     # 获取诊断结果
     result = service.get_diagnosis_for_run(run_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Diagnosis result not found")
+        raise HTTPException(
+            status_code=404, detail="Diagnosis result not found")
 
     # 获取标准化事件
     events = service.get_events_for_run(run_id)
@@ -527,7 +530,8 @@ def _generate_markdown_report(
         )
         for rh in rule_hits:
             codes = ", ".join(rh.get_matched_codes())
-            lines.append(f"| {rh.rule_id} | {rh.rule_name} | {rh.priority} | {codes} |")
+            lines.append(
+                f"| {rh.rule_id} | {rh.rule_name} | {rh.priority} | {codes} |")
         lines.append("")
 
     # 相似案例
@@ -710,7 +714,8 @@ async def list_rules(
 
     支持按启用状态和故障分类过滤。
     """
-    stmt = select(DiagnosticRuleModel).order_by(DiagnosticRuleModel.priority.desc())
+    stmt = select(DiagnosticRuleModel).order_by(
+        DiagnosticRuleModel.priority.desc())
 
     if enabled is not None:
         stmt = stmt.where(DiagnosticRuleModel.enabled == enabled)
@@ -808,7 +813,8 @@ async def update_rule(
     """更新诊断规则。"""
     # 查找规则
     rule = db.execute(
-        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == rule_id)
+        select(DiagnosticRuleModel).where(
+            DiagnosticRuleModel.rule_id == rule_id)
     ).scalar_one_or_none()
 
     if not rule:
@@ -868,7 +874,8 @@ async def delete_rule(
     """删除诊断规则。"""
     # 查找规则
     rule = db.execute(
-        select(DiagnosticRuleModel).where(DiagnosticRuleModel.rule_id == rule_id)
+        select(DiagnosticRuleModel).where(
+            DiagnosticRuleModel.rule_id == rule_id)
     ).scalar_one_or_none()
 
     if not rule:
@@ -917,7 +924,8 @@ async def search_similar_cases(
         ]
 
     # 否则使用数据库查询搜索
-    stmt = select(SimilarCaseIndex).order_by(SimilarCaseIndex.created_at.desc())
+    stmt = select(SimilarCaseIndex).order_by(
+        SimilarCaseIndex.created_at.desc())
 
     if category:
         stmt = stmt.where(SimilarCaseIndex.category == category)
@@ -936,7 +944,8 @@ async def search_similar_cases(
         if run_ids:
             results = (
                 db.execute(
-                    select(DiagnosticResult).where(DiagnosticResult.run_id.in_(run_ids))
+                    select(DiagnosticResult).where(
+                        DiagnosticResult.run_id.in_(run_ids))
                 )
                 .scalars()
                 .all()
@@ -945,7 +954,8 @@ async def search_similar_cases(
             # 过滤包含关键词的结果
             filtered_indices = []
             for idx in indices:
-                result = next((r for r in results if r.run_id == idx.run_id), None)
+                result = next(
+                    (r for r in results if r.run_id == idx.run_id), None)
                 if result:
                     key_evidence = result.get_key_evidence()
                     evidence_text = " ".join(
