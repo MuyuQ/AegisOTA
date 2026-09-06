@@ -60,10 +60,13 @@ async def save_config(
 ):
     """保存配置。"""
     # 逐个更新 key，保留 .env 中其他配置（如 API Keys）
-    set_key(str(ENV_FILE), "AEGISOTA_MAX_CONCURRENT_RUNS", str(max_concurrent_runs))
+    set_key(str(ENV_FILE), "AEGISOTA_MAX_CONCURRENT_RUNS",
+            str(max_concurrent_runs))
     set_key(str(ENV_FILE), "AEGISOTA_DEFAULT_TIMEOUT", str(default_timeout))
-    set_key(str(ENV_FILE), "AEGISOTA_REBOOT_WAIT_TIMEOUT", str(reboot_wait_timeout))
-    set_key(str(ENV_FILE), "AEGISOTA_MONKEY_DEFAULT_COUNT", str(monkey_default_count))
+    set_key(str(ENV_FILE), "AEGISOTA_REBOOT_WAIT_TIMEOUT",
+            str(reboot_wait_timeout))
+    set_key(str(ENV_FILE), "AEGISOTA_MONKEY_DEFAULT_COUNT",
+            str(monkey_default_count))
     set_key(str(ENV_FILE), "AEGISOTA_MONKEY_THROTTLE", str(monkey_throttle))
 
     # 清除配置缓存以重新加载

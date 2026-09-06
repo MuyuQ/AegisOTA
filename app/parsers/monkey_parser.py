@@ -25,7 +25,8 @@ class MonkeyParser(BaseParser):
     default_severity = Severity.INFO
 
     # 时间戳格式: [2026-03-28 15:12:44.310]
-    TIMESTAMP_PATTERN = re.compile(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]")
+    TIMESTAMP_PATTERN = re.compile(
+        r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\]")
 
     # 匹配规则定义: (pattern, normalized_code, stage, severity, event_type, package_extractor)
     PATTERNS = [

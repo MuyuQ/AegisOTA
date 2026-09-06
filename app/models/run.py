@@ -77,22 +77,27 @@ class UpgradePlan(Base):
 
     __tablename__ = "upgrade_plans"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
 
     # 升级配置
     upgrade_type: Mapped[UpgradeType] = mapped_column(
         String(32), default=UpgradeType.FULL, nullable=False
     )
-    package_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    source_build: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
-    target_build: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    package_path: Mapped[Optional[str]] = mapped_column(
+        String(512), nullable=True)
+    source_build: Mapped[Optional[str]] = mapped_column(
+        String(256), nullable=True)
+    target_build: Mapped[Optional[str]] = mapped_column(
+        String(256), nullable=True)
 
     # 配置关联
     fault_profile_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("fault_profiles.id", ondelete="SET NULL"), nullable=True
     )
-    validation_profile_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    validation_profile_id: Mapped[Optional[int]
+                                  ] = mapped_column(Integer, nullable=True)
 
     # 默认设备池
     default_pool_id: Mapped[Optional[int]] = mapped_column(
@@ -103,11 +108,14 @@ class UpgradePlan(Base):
     device_selector: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 执行配置
-    parallelism: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    enable_cycle_test: Mapped[bool] = mapped_column(default=False, nullable=False)
+    parallelism: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False)
+    enable_cycle_test: Mapped[bool] = mapped_column(
+        default=False, nullable=False)
 
     # 创建者
-    created_by: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    created_by: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True)
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
@@ -147,7 +155,8 @@ class RunSession(Base):
 
     __tablename__ = "run_sessions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     plan_id: Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("upgrade_plans.id", ondelete="SET NULL"),
@@ -171,7 +180,8 @@ class RunSession(Base):
         nullable=True,
         index=True,
     )
-    preemptible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    preemptible: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
     drill_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # 状态与结果
@@ -188,8 +198,10 @@ class RunSession(Base):
     run_options: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 压力测试追踪
-    current_iteration: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    total_iterations: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    current_iteration: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False)
+    total_iterations: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False)
 
     # 父任务关联（用于压力测试子任务）
     parent_run_id: Mapped[Optional[int]] = mapped_column(
@@ -197,8 +209,10 @@ class RunSession(Base):
     )
 
     # 时间戳
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
@@ -264,7 +278,8 @@ class RunStep(Base):
 
     __tablename__ = "run_steps"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -279,13 +294,17 @@ class RunStep(Base):
         String(32), default=StepStatus.PENDING, nullable=False
     )
     command: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    stdout_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    stderr_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    stdout_path: Mapped[Optional[str]] = mapped_column(
+        String(512), nullable=True)
+    stderr_path: Mapped[Optional[str]] = mapped_column(
+        String(512), nullable=True)
     step_result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

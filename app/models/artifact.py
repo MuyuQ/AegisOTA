@@ -37,7 +37,8 @@ class Artifact(Base):
 
     __tablename__ = "artifacts"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("run_sessions.id", ondelete="CASCADE"),
@@ -55,7 +56,8 @@ class Artifact(Base):
     mime_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # 元数据（JSON 存储）
-    artifact_metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    artifact_metadata: Mapped[Optional[str]
+                              ] = mapped_column(Text, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳

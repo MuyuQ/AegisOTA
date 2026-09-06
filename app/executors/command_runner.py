@@ -95,7 +95,8 @@ class ShellCommandRunner(CommandRunner):
 
         # 判断是否使用 shell 模式
         use_shell = isinstance(command, str)
-        command_display = command if isinstance(command, str) else " ".join(command)
+        command_display = command if isinstance(
+            command, str) else " ".join(command)
 
         try:
             process = subprocess.run(

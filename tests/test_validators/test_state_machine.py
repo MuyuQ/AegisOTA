@@ -86,7 +86,8 @@ class TestDeviceStateMachine:
 
     def test_idle_can_transition_to(self):
         """测试 IDLE 状态可以转换到的状态。"""
-        allowed = device_state_machine.get_allowed_transitions(DeviceStatus.IDLE.value)
+        allowed = device_state_machine.get_allowed_transitions(
+            DeviceStatus.IDLE.value)
         assert DeviceStatus.RESERVED.value in allowed
         assert DeviceStatus.BUSY.value in allowed
         assert DeviceStatus.OFFLINE.value in allowed
@@ -94,7 +95,8 @@ class TestDeviceStateMachine:
 
     def test_busy_can_transition_to(self):
         """测试 BUSY 状态可以转换到的状态。"""
-        allowed = device_state_machine.get_allowed_transitions(DeviceStatus.BUSY.value)
+        allowed = device_state_machine.get_allowed_transitions(
+            DeviceStatus.BUSY.value)
         assert DeviceStatus.IDLE.value in allowed
         assert DeviceStatus.OFFLINE.value in allowed
         assert DeviceStatus.QUARANTINED.value in allowed
@@ -131,14 +133,16 @@ class TestRunStateMachine:
 
     def test_queued_can_transition_to(self):
         """测试 QUEUED 状态可以转换到的状态。"""
-        allowed = run_state_machine.get_allowed_transitions(RunStatus.QUEUED.value)
+        allowed = run_state_machine.get_allowed_transitions(
+            RunStatus.QUEUED.value)
         assert RunStatus.ALLOCATING.value in allowed
         assert RunStatus.RESERVED.value in allowed
         assert RunStatus.ABORTED.value in allowed
 
     def test_running_can_transition_to(self):
         """测试 RUNNING 状态可以转换到的状态。"""
-        allowed = run_state_machine.get_allowed_transitions(RunStatus.RUNNING.value)
+        allowed = run_state_machine.get_allowed_transitions(
+            RunStatus.RUNNING.value)
         assert RunStatus.VALIDATING.value in allowed
         assert RunStatus.FAILED.value in allowed
         assert RunStatus.ABORTED.value in allowed
@@ -146,15 +150,21 @@ class TestRunStateMachine:
 
     def test_terminal_states(self):
         """测试终态。"""
-        assert run_state_machine.is_terminal_state(RunStatus.PASSED.value) is True
-        assert run_state_machine.is_terminal_state(RunStatus.FAILED.value) is True
-        assert run_state_machine.is_terminal_state(RunStatus.ABORTED.value) is True
-        assert run_state_machine.is_terminal_state(RunStatus.PREEMPTED.value) is True
+        assert run_state_machine.is_terminal_state(
+            RunStatus.PASSED.value) is True
+        assert run_state_machine.is_terminal_state(
+            RunStatus.FAILED.value) is True
+        assert run_state_machine.is_terminal_state(
+            RunStatus.ABORTED.value) is True
+        assert run_state_machine.is_terminal_state(
+            RunStatus.PREEMPTED.value) is True
 
     def test_non_terminal_states(self):
         """测试非终态。"""
-        assert run_state_machine.is_terminal_state(RunStatus.QUEUED.value) is False
-        assert run_state_machine.is_terminal_state(RunStatus.RUNNING.value) is False
+        assert run_state_machine.is_terminal_state(
+            RunStatus.QUEUED.value) is False
+        assert run_state_machine.is_terminal_state(
+            RunStatus.RUNNING.value) is False
 
     def test_invalid_run_transition(self):
         """测试非法的任务状态转换。"""
@@ -201,7 +211,8 @@ class TestValidateDeviceTransition:
     def test_error_message_contains_allowed_states(self):
         """测试异常消息包含允许的状态列表。"""
         with pytest.raises(StateTransitionError) as exc_info:
-            validate_device_transition(DeviceStatus.IDLE, DeviceStatus.RECOVERING)
+            validate_device_transition(
+                DeviceStatus.IDLE, DeviceStatus.RECOVERING)
 
         error_msg = str(exc_info.value)
         assert "idle" in error_msg

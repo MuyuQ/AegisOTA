@@ -55,7 +55,8 @@ class LogExportService:
         )
 
         # 导出 logcat
-        exported_files.extend(self._export_logcat(run_id, device_serial, artifact_dir))
+        exported_files.extend(self._export_logcat(
+            run_id, device_serial, artifact_dir))
 
         # 导出设备信息
         exported_files.extend(
@@ -93,7 +94,8 @@ class LogExportService:
         for src_path, dst_name in recovery_sources:
             try:
                 dst_path = artifact_dir / dst_name
-                result = self.adb.pull(src_path, str(dst_path), device=device_serial)
+                result = self.adb.pull(src_path, str(
+                    dst_path), device=device_serial)
 
                 if result.success and dst_path.exists():
                     exported.append(dst_name)
@@ -136,7 +138,8 @@ class LogExportService:
             src_path = "/data/misc/update_engine_log/"
             temp_dir = artifact_dir / "update_engine_temp"
 
-            result = self.adb.pull(src_path, str(temp_dir), device=device_serial)
+            result = self.adb.pull(src_path, str(
+                temp_dir), device=device_serial)
 
             if result.success and temp_dir.exists():
                 # 查找目录中的日志文件
@@ -203,7 +206,8 @@ class LogExportService:
 
         try:
             dst_path = artifact_dir / "logcat.txt"
-            result = self.adb.logcat(device=device_serial, output_path=str(dst_path))
+            result = self.adb.logcat(
+                device=device_serial, output_path=str(dst_path))
 
             if result.success and dst_path.exists():
                 exported.append("logcat.txt")

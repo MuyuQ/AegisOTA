@@ -141,7 +141,8 @@ class DiagnosisService:
         )
 
         # 查找相似案例
-        similar_cases = self._find_similar_cases(result_data, device_serial, run_id)
+        similar_cases = self._find_similar_cases(
+            result_data, device_serial, run_id)
 
         # 保存诊断结果
         diagnostic_result = self._save_diagnostic_result(
@@ -248,7 +249,8 @@ class DiagnosisService:
                 file_path = log_dir / file_name
                 if file_path.exists():
                     try:
-                        content = file_path.read_text(encoding="utf-8", errors="ignore")
+                        content = file_path.read_text(
+                            encoding="utf-8", errors="ignore")
                         if content.strip():
                             log_files[log_type] = content
                             logger.debug(f"Loaded {log_type} from {file_path}")
@@ -272,7 +274,8 @@ class DiagnosisService:
 
         # 解析 recovery 日志
         if "recovery_log" in log_files:
-            events = self.recovery_parser.parse(log_files["recovery_log"], str(run_id))
+            events = self.recovery_parser.parse(
+                log_files["recovery_log"], str(run_id))
             all_events.extend(events)
             logger.debug(f"Recovery parser found {len(events)} events")
 
@@ -300,7 +303,8 @@ class DiagnosisService:
 
         # 解析 monkey 日志
         if "monkey_output" in log_files:
-            events = self.monkey_parser.parse(log_files["monkey_output"], str(run_id))
+            events = self.monkey_parser.parse(
+                log_files["monkey_output"], str(run_id))
             all_events.extend(events)
             logger.debug(f"Monkey parser found {len(events)} events")
 
@@ -323,7 +327,8 @@ class DiagnosisService:
         for raw_event in raw_events:
             source_type = raw_event.get("source_type", "recovery_log")
             try:
-                events = self.normalizer.normalize(run_id, source_type, [raw_event])
+                events = self.normalizer.normalize(
+                    run_id, source_type, [raw_event])
                 normalized_events.extend(events)
             except Exception as e:
                 logger.warning(f"Failed to normalize event: {e}")
@@ -432,7 +437,8 @@ class DiagnosisService:
         key_evidence = [
             {"normalized_code": code} for code in result_data.key_evidence[:3]
         ]
-        evidence_hash = self.similar_service._generate_evidence_hash(key_evidence)
+        evidence_hash = self.similar_service._generate_evidence_hash(
+            key_evidence)
 
         # 查找相似案例
         similar_cases = self.similar_service.find_similar(
@@ -483,7 +489,8 @@ class DiagnosisService:
         )
 
         # 设置关键证据
-        key_evidence_list = [{"raw_line": line} for line in result_data.key_evidence]
+        key_evidence_list = [{"raw_line": line}
+                             for line in result_data.key_evidence]
         diagnostic_result.set_key_evidence(key_evidence_list)
 
         # 设置相似案例
@@ -618,7 +625,8 @@ class DiagnosisService:
         Returns:
             诊断结果，如果没有返回 None
         """
-        stmt = select(DiagnosticResult).where(DiagnosticResult.run_id == run_id)
+        stmt = select(DiagnosticResult).where(
+            DiagnosticResult.run_id == run_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
     def get_events_for_run(self, run_id: int) -> list[NormalizedEventDB]:

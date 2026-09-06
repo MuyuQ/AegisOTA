@@ -43,7 +43,8 @@ def submit_run(
         # 查找可用设备
         device_id = None
         if device_serial:
-            device = db.query(Device).filter(Device.serial == device_serial).first()
+            device = db.query(Device).filter(
+                Device.serial == device_serial).first()
             if not device:
                 typer.echo(f"设备不存在: {device_serial}", err=True)
                 raise typer.Exit(1)
@@ -55,7 +56,8 @@ def submit_run(
             device_id = device.id
         else:
             # 自动分配空闲设备
-            device = db.query(Device).filter(Device.status == DeviceStatus.IDLE).first()
+            device = db.query(Device).filter(
+                Device.status == DeviceStatus.IDLE).first()
             if not device:
                 typer.echo("没有可用设备", err=True)
                 raise typer.Exit(1)
@@ -89,7 +91,8 @@ def submit_run(
 
 @app.command("list")
 def list_runs(
-    status: Optional[str] = typer.Option(None, "--status", "-s", help="按状态筛选任务"),
+    status: Optional[str] = typer.Option(
+        None, "--status", "-s", help="按状态筛选任务"),
     limit: int = typer.Option(20, "--limit", "-l", help="显示数量限制"),
 ):
     """列出所有任务。

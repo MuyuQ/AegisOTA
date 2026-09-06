@@ -44,7 +44,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_device_pools_name"), "device_pools", ["name"], unique=True)
+    op.create_index(op.f("ix_device_pools_name"),
+                    "device_pools", ["name"], unique=True)
     op.create_table(
         "fault_profiles",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -112,12 +113,16 @@ def upgrade() -> None:
         ),
         sa.Column("quarantine_reason", sa.Text(), nullable=True),
         sa.Column("current_run_id", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["pool_id"], ["device_pools.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["pool_id"], ["device_pools.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_devices_pool_id"), "devices", ["pool_id"], unique=False)
-    op.create_index(op.f("ix_devices_serial"), "devices", ["serial"], unique=True)
-    op.create_index(op.f("ix_devices_status"), "devices", ["status"], unique=False)
+    op.create_index(op.f("ix_devices_pool_id"),
+                    "devices", ["pool_id"], unique=False)
+    op.create_index(op.f("ix_devices_serial"),
+                    "devices", ["serial"], unique=True)
+    op.create_index(op.f("ix_devices_status"),
+                    "devices", ["status"], unique=False)
     op.create_table(
         "upgrade_plans",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -187,12 +192,15 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["device_id"], ["devices.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["device_id"], ["devices.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(
             ["parent_run_id"], ["run_sessions.id"], ondelete="SET NULL"
         ),
-        sa.ForeignKeyConstraint(["plan_id"], ["upgrade_plans.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["pool_id"], ["device_pools.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["plan_id"], ["upgrade_plans.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["pool_id"], ["device_pools.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -227,8 +235,10 @@ def upgrade() -> None:
         sa.Column("preemptible", sa.Boolean(), nullable=False),
         sa.Column("preempted_at", sa.DateTime(), nullable=True),
         sa.Column("preempted_by_run_id", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(["device_id"], ["devices.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["run_id"], ["run_sessions.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["device_id"], ["devices.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["run_id"], ["run_sessions.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -262,10 +272,12 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["run_id"], ["run_sessions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["run_id"], ["run_sessions.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_run_steps_run_id"), "run_steps", ["run_id"], unique=False)
+    op.create_index(op.f("ix_run_steps_run_id"),
+                    "run_steps", ["run_id"], unique=False)
     op.create_table(
         "artifacts",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -283,11 +295,14 @@ def upgrade() -> None:
             server_default=sa.text("(CURRENT_TIMESTAMP)"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["run_id"], ["run_sessions.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["step_id"], ["run_steps.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["run_id"], ["run_sessions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["step_id"], ["run_steps.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_artifacts_run_id"), "artifacts", ["run_id"], unique=False)
+    op.create_index(op.f("ix_artifacts_run_id"),
+                    "artifacts", ["run_id"], unique=False)
     # ### end Alembic commands ###
 
 
@@ -299,7 +314,8 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_run_steps_run_id"), table_name="run_steps")
     op.drop_table("run_steps")
     op.drop_index(op.f("ix_device_leases_run_id"), table_name="device_leases")
-    op.drop_index(op.f("ix_device_leases_device_id"), table_name="device_leases")
+    op.drop_index(op.f("ix_device_leases_device_id"),
+                  table_name="device_leases")
     op.drop_table("device_leases")
     op.drop_index(op.f("ix_run_sessions_status"), table_name="run_sessions")
     op.drop_index(op.f("ix_run_sessions_priority"), table_name="run_sessions")
@@ -314,8 +330,10 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_devices_pool_id"), table_name="devices")
     op.drop_table("devices")
     op.drop_index(op.f("ix_fault_profiles_name"), table_name="fault_profiles")
-    op.drop_index(op.f("ix_fault_profiles_fault_type"), table_name="fault_profiles")
-    op.drop_index(op.f("ix_fault_profiles_fault_stage"), table_name="fault_profiles")
+    op.drop_index(op.f("ix_fault_profiles_fault_type"),
+                  table_name="fault_profiles")
+    op.drop_index(op.f("ix_fault_profiles_fault_stage"),
+                  table_name="fault_profiles")
     op.drop_table("fault_profiles")
     op.drop_index(op.f("ix_device_pools_name"), table_name="device_pools")
     op.drop_table("device_pools")

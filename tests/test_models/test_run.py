@@ -147,7 +147,8 @@ class TestUpgradePlanCreation:
         assert plan.id is not None
         assert plan.upgrade_type == UpgradeType.INCREMENTAL
         assert plan.parallelism == 4
-        assert plan.get_device_selector() == {"brand": "Google", "model": "Pixel 7"}
+        assert plan.get_device_selector(
+        ) == {"brand": "Google", "model": "Pixel 7"}
 
     def test_plan_device_selector_methods(self, db_session):
         """测试设备选择器方法。"""
@@ -180,7 +181,8 @@ class TestRunSessionCreation:
 
     def test_create_session_minimal(self, db_session, sample_device, sample_plan):
         """测试创建最小运行会话。"""
-        session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id)
+        session = RunSession(device_id=sample_device.id,
+                             plan_id=sample_plan.id)
         db_session.add(session)
         db_session.commit()
 
@@ -271,7 +273,8 @@ class TestRunSessionRelationships:
 
     def test_session_plan_relationship(self, db_session, sample_device, sample_plan):
         """测试会话与计划的关联。"""
-        session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id)
+        session = RunSession(device_id=sample_device.id,
+                             plan_id=sample_plan.id)
         db_session.add(session)
         db_session.commit()
 
@@ -281,7 +284,8 @@ class TestRunSessionRelationships:
 
     def test_session_device_relationship(self, db_session, sample_device, sample_plan):
         """测试会话与设备的关联。"""
-        session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id)
+        session = RunSession(device_id=sample_device.id,
+                             plan_id=sample_plan.id)
         db_session.add(session)
         db_session.commit()
 
@@ -291,11 +295,13 @@ class TestRunSessionRelationships:
 
     def test_session_steps_relationship(self, db_session, sample_device, sample_plan):
         """测试会话与步骤的关联。"""
-        session = RunSession(device_id=sample_device.id, plan_id=sample_plan.id)
+        session = RunSession(device_id=sample_device.id,
+                             plan_id=sample_plan.id)
         db_session.add(session)
         db_session.commit()
 
-        step1 = RunStep(run_id=session.id, step_name=StepName.PRECHECK, step_order=1)
+        step1 = RunStep(run_id=session.id,
+                        step_name=StepName.PRECHECK, step_order=1)
         step2 = RunStep(
             run_id=session.id, step_name=StepName.APPLY_UPDATE, step_order=2
         )
@@ -315,7 +321,8 @@ class TestRunStepCreation:
         db_session.add(run)
         db_session.commit()
 
-        step = RunStep(run_id=run.id, step_name=StepName.PRECHECK, step_order=1)
+        step = RunStep(
+            run_id=run.id, step_name=StepName.PRECHECK, step_order=1)
         db_session.add(step)
         db_session.commit()
 
@@ -353,7 +360,8 @@ class TestRunStepCreation:
         db_session.add(run)
         db_session.commit()
 
-        step = RunStep(run_id=run.id, step_name=StepName.POST_VALIDATE, step_order=3)
+        step = RunStep(
+            run_id=run.id, step_name=StepName.POST_VALIDATE, step_order=3)
         db_session.add(step)
         db_session.commit()
 
@@ -531,7 +539,8 @@ class TestCascadeDelete:
         db_session.add(run)
         db_session.commit()
 
-        step = RunStep(run_id=run.id, step_name=StepName.PRECHECK, step_order=1)
+        step = RunStep(
+            run_id=run.id, step_name=StepName.PRECHECK, step_order=1)
         db_session.add(step)
         db_session.commit()
 

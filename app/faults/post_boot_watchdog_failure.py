@@ -18,7 +18,8 @@ class PostBootWatchdogFailureFault(FaultPlugin):
     fault_stage = "post_validate"
     description = "模拟启动后 Watchdog 故障"
 
-    DEFAULT_FAILURE_TYPE = "system_server_crash"  # system_server_crash, boot_loop, anr
+    # system_server_crash, boot_loop, anr
+    DEFAULT_FAILURE_TYPE = "system_server_crash"
     DEFAULT_DELAY_SECONDS = 30
 
     def __init__(

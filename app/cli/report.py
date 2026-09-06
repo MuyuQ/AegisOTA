@@ -20,7 +20,8 @@ console = Console()
 @app.command("export")
 def export_report(
     run_id: int = typer.Argument(..., help="任务 ID"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="输出文件路径"),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="输出文件路径"),
     format: str = typer.Option(
         "markdown", "--format", "-f", help="报告格式 (markdown/html/json)"
     ),

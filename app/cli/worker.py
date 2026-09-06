@@ -25,7 +25,8 @@ def signal_handler(signum, frame):
 @worker_app.command("start")
 def worker_start(
     poll_interval: int = typer.Option(5, "--poll", "-p", help="轮询间隔（秒）"),
-    max_concurrent: int = typer.Option(5, "--concurrent", "-c", help="最大并发任务数"),
+    max_concurrent: int = typer.Option(
+        5, "--concurrent", "-c", help="最大并发任务数"),
     max_iterations: int = typer.Option(
         -1, "--max-iterations", "-n", help="最大迭代次数（-1 为无限）"
     ),

@@ -1,4 +1,6 @@
 # 导入项目配置和模型
+from app.database import Base
+from app.config import get_settings
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -9,8 +11,6 @@ from sqlalchemy import engine_from_config, pool
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.config import get_settings
-from app.database import Base
 from app.models.artifact import Artifact  # noqa: F401
 
 # 导入所有模型以确保它们注册到 Base.metadata
@@ -74,7 +74,8 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(connection=connection,
+                          target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

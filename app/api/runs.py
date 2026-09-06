@@ -192,7 +192,8 @@ async def list_runs(
             id=r.id,
             plan_id=r.plan_id,
             device_id=r.device_id,
-            status=r.status.value if hasattr(r.status, "value") else str(r.status),
+            status=r.status.value if hasattr(
+                r.status, "value") else str(r.status),
             started_at=r.started_at.isoformat() if r.started_at else None,
             ended_at=r.ended_at.isoformat() if r.ended_at else None,
             result=r.result,
@@ -219,7 +220,8 @@ async def create_run(
     # 选择设备
     device = None
     if request.device_serial:
-        device = db.query(Device).filter_by(serial=request.device_serial).first()
+        device = db.query(Device).filter_by(
+            serial=request.device_serial).first()
         if not device:
             raise HTTPException(status_code=404, detail="Device not found")
 
@@ -311,7 +313,8 @@ async def create_run_form(
     if len(created_runs) == 1:
         run = created_runs[0]
         status_str = (
-            run.status.value if hasattr(run.status, "value") else str(run.status)
+            run.status.value if hasattr(
+                run.status, "value") else str(run.status)
         )
         msg_parts = [
             "任务创建成功！",
@@ -323,7 +326,8 @@ async def create_run_form(
         if enable_cycle_test:
             msg_parts.append("循环升级: 已启用 (A↔B)")
         if monkey_enabled:
-            event_count = run_options.get("monkey_params", {}).get("event_count", 1000)
+            event_count = run_options.get(
+                "monkey_params", {}).get("event_count", 1000)
             msg_parts.append(f"Monkey 测试: 已启用 ({event_count} 事件)")
 
         return HTMLResponse(content=f"""<div class="alert alert-success">
@@ -359,7 +363,8 @@ async def get_run(
         id=run.id,
         plan_id=run.plan_id,
         device_id=run.device_id,
-        status=run.status.value if hasattr(run.status, "value") else str(run.status),
+        status=run.status.value if hasattr(
+            run.status, "value") else str(run.status),
         started_at=run.started_at.isoformat() if run.started_at else None,
         ended_at=run.ended_at.isoformat() if run.ended_at else None,
         result=run.result,
@@ -378,7 +383,8 @@ async def abort_run(
     run = service.abort_run_session(run_id)
 
     if not run:
-        raise HTTPException(status_code=404, detail="Run not found or cannot abort")
+        raise HTTPException(
+            status_code=404, detail="Run not found or cannot abort")
 
     return {"status": "aborted", "run_id": run_id}
 
