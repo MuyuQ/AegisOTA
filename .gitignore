@@ -67,6 +67,9 @@ uv-cache/
 Thumbs.db
 desktop.ini
 
+# Cloud-sync conflict leftovers (坚果云等同步工具)
+*.sync-conflict-*
+
 # Workspace tooling (local session memory, never commit)
 .workbuddy/
 
