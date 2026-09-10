@@ -44,6 +44,8 @@ htmlcov/
 # Environment
 .env
 .env.local
+.env.*
+!.env.example
 
 # Database
 *.sqlite
@@ -52,10 +54,25 @@ htmlcov/
 # Project specific
 artifacts/*
 !artifacts/.gitkeep
+test_results/
+ota_packages/*
+!ota_packages/.gitkeep
+
+# Package manager caches
+.uv-cache/
+uv-cache/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Cloud-sync conflict leftovers (坚果云等同步工具)
+*.sync-conflict-*
+
+# Workspace tooling (local session memory, never commit)
+.workbuddy/
 
 # Claude Code
 CLAUDE.md
-
-.DS_Store
-*.pyc
-*.sync-conflict-*
+CODE_REVIEW_REPORT.md
