@@ -44,6 +44,8 @@ htmlcov/
 # Environment
 .env
 .env.local
+.env.*
+!.env.example
 
 # Database
 *.sqlite
@@ -53,6 +55,20 @@ htmlcov/
 artifacts/*
 !artifacts/.gitkeep
 test_results/
+ota_packages/*
+!ota_packages/.gitkeep
+
+# Package manager caches
+.uv-cache/
+uv-cache/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Workspace tooling (local session memory, never commit)
+.workbuddy/
 
 # Claude Code
 CLAUDE.md
