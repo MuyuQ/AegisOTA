@@ -29,8 +29,7 @@ async def get_report(
         run_id=run.id,
         plan_name=run.plan.name if run.plan else "Unknown",
         device_serial=run.device.serial if run.device else "Unknown",
-        status=run.status.value if hasattr(
-            run.status, "value") else str(run.status),
+        status=run.status.value if hasattr(run.status, "value") else str(run.status),
         started_at=run.started_at,
         ended_at=run.ended_at,
         failure_category=run.failure_category,
@@ -58,8 +57,7 @@ async def get_report_html(
         run_id=run.id,
         plan_name=run.plan.name if run.plan else "Unknown",
         device_serial=run.device.serial if run.device else "Unknown",
-        status=run.status.value if hasattr(
-            run.status, "value") else str(run.status),
+        status=run.status.value if hasattr(run.status, "value") else str(run.status),
         timeline=[],
     )
 
@@ -83,8 +81,7 @@ async def get_report_markdown(
         run_id=run.id,
         plan_name=run.plan.name if run.plan else "Unknown",
         device_serial=run.device.serial if run.device else "Unknown",
-        status=run.status.value if hasattr(
-            run.status, "value") else str(run.status),
+        status=run.status.value if hasattr(run.status, "value") else str(run.status),
         timeline=[],
     )
 
