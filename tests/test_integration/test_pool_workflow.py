@@ -32,6 +32,7 @@ def test_db():
 
 @pytest.fixture
 def client(test_db):
+    """client 功能说明。"""
     return TestClient(app)
 
 
