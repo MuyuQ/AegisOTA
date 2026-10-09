@@ -73,8 +73,7 @@ class PreemptionService:
         """
         try:
             # 获取受害者任务
-            victim_run = self.db.query(RunSession).filter_by(
-                id=victim_run_id).first()
+            victim_run = self.db.query(RunSession).filter_by(id=victim_run_id).first()
             if not victim_run:
                 return False
 
@@ -84,8 +83,7 @@ class PreemptionService:
 
             # 获取抢占者任务
             preemptor_run = (
-                self.db.query(RunSession).filter_by(
-                    id=preemptor_run_id).first()
+                self.db.query(RunSession).filter_by(id=preemptor_run_id).first()
             )
             if not preemptor_run:
                 return False
@@ -144,8 +142,7 @@ class PreemptionService:
             是否执行了抢占
         """
         # 获取紧急任务
-        emergency_run = self.db.query(RunSession).filter_by(
-            id=emergency_run_id).first()
+        emergency_run = self.db.query(RunSession).filter_by(id=emergency_run_id).first()
         if not emergency_run:
             return False
 
@@ -159,8 +156,7 @@ class PreemptionService:
             return False
 
         # 查找可抢占的任务
-        preemptible_runs = self.find_preemptible_runs(
-            pool_id, allow_preempt_high)
+        preemptible_runs = self.find_preemptible_runs(pool_id, allow_preempt_high)
 
         if not preemptible_runs:
             return False

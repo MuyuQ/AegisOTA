@@ -163,8 +163,7 @@ class TestPostBootWatchdogFailureFault:
 
     def test_validate_parameters(self):
         """测试参数验证。"""
-        fault = PostBootWatchdogFailureFault(
-            failure_type="system_server_crash")
+        fault = PostBootWatchdogFailureFault(failure_type="system_server_crash")
         assert fault.validate_parameters() is True
 
         fault = PostBootWatchdogFailureFault(failure_type="boot_loop")

@@ -83,8 +83,7 @@ def create_pool(
                 reserved_ratio=reserved_ratio,
                 max_parallel=max_parallel,
             )
-            console.print(
-                f"[green]Created pool '{pool.name}' (ID: {pool.id})[/green]")
+            console.print(f"[green]Created pool '{pool.name}' (ID: {pool.id})[/green]")
         except ValueError as e:
             console.print(f"[red]Error: {e}[/red]")
             raise typer.Exit(1)
@@ -142,8 +141,7 @@ def update_pool(
     reserved_ratio: float = typer.Option(
         None, "--reserved-ratio", "-r", help="保留比例"
     ),
-    max_parallel: int = typer.Option(
-        None, "--max-parallel", "-m", help="最大并行数"),
+    max_parallel: int = typer.Option(None, "--max-parallel", "-m", help="最大并行数"),
     enabled: bool = typer.Option(None, "--enabled/--disabled", help="启用/禁用"),
 ):
     """更新设备池配置。"""

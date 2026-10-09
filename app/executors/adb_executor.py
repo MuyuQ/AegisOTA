@@ -91,8 +91,7 @@ class ADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """推送文件到设备。"""
-        cmd = self._build_adb_command(
-            "push", local_path, remote_path, device=device)
+        cmd = self._build_adb_command("push", local_path, remote_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def pull(
@@ -103,8 +102,7 @@ class ADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """从设备拉取文件。"""
-        cmd = self._build_adb_command(
-            "pull", remote_path, local_path, device=device)
+        cmd = self._build_adb_command("pull", remote_path, local_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def reboot(
@@ -161,8 +159,7 @@ class ADBExecutor:
         timeout: Optional[int] = None,
     ) -> CommandResult:
         """安装 APK。"""
-        cmd = self._build_adb_command(
-            "install", "-r", package_path, device=device)
+        cmd = self._build_adb_command("install", "-r", package_path, device=device)
         return self.runner.run(cmd, timeout=timeout)
 
     def logcat(
@@ -214,8 +211,7 @@ class ADBExecutor:
         props = self.getprop(device=device)
 
         # 获取电量
-        battery_result = self.shell(
-            "dumpsys battery | grep level", device=device)
+        battery_result = self.shell("dumpsys battery | grep level", device=device)
         battery_level = None
         if battery_result.success:
             match = re.search(r"level: (\d+)", battery_result.stdout)

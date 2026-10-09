@@ -88,8 +88,7 @@ async def list_pools(
         PoolResponse(
             id=p.id,
             name=p.name,
-            purpose=p.purpose.value if hasattr(
-                p.purpose, "value") else str(p.purpose),
+            purpose=p.purpose.value if hasattr(p.purpose, "value") else str(p.purpose),
             reserved_ratio=p.reserved_ratio,
             tag_selector=p.get_tag_selector(),
             enabled=p.enabled,
@@ -128,8 +127,7 @@ async def create_pool(
     return PoolResponse(
         id=pool.id,
         name=pool.name,
-        purpose=pool.purpose.value if hasattr(
-            pool.purpose, "value") else pool.purpose,
+        purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
@@ -151,8 +149,7 @@ async def get_pool(
     return PoolResponse(
         id=pool.id,
         name=pool.name,
-        purpose=pool.purpose.value if hasattr(
-            pool.purpose, "value") else pool.purpose,
+        purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
@@ -184,8 +181,7 @@ async def update_pool(
     return PoolResponse(
         id=pool.id,
         name=pool.name,
-        purpose=pool.purpose.value if hasattr(
-            pool.purpose, "value") else pool.purpose,
+        purpose=pool.purpose.value if hasattr(pool.purpose, "value") else pool.purpose,
         reserved_ratio=pool.reserved_ratio,
         tag_selector=pool.get_tag_selector(),
         enabled=pool.enabled,
@@ -244,8 +240,7 @@ async def get_pool_devices(
         DeviceResponse(
             id=d.id,
             serial=d.serial,
-            status=d.status.value if hasattr(
-                d.status, "value") else str(d.status),
+            status=d.status.value if hasattr(d.status, "value") else str(d.status),
             pool_id=d.pool_id,
         )
         for d in devices
@@ -278,7 +273,6 @@ async def remove_device_from_pool(
     device = service.remove_device_from_pool(device_id)
 
     if not device:
-        raise HTTPException(
-            status_code=404, detail="Device not found or not in a pool")
+        raise HTTPException(status_code=404, detail="Device not found or not in a pool")
 
     return {"status": "removed", "device_id": device_id}
